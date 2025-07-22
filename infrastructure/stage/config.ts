@@ -1,19 +1,68 @@
 import { getDefaultApiGatewayConfiguration } from '@orcabus/platform-cdk-constructs/api-gateway';
-import { StageName } from '@orcabus/platform-cdk-constructs/utils';
+import {
+  API_NAME,
+  API_SUBDOMAIN_NAME,
+  DATA_SHARING_BUCKET_NAME,
+  DYNAMODB_PACKAGING_API_TABLE_NAME,
+  DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
+  DYNAMODB_PUSH_API_TABLE_NAME,
+  EVENT_BUS_NAME,
+  s3CopyStepsBucket,
+  s3CopyStepsFunctionArn,
+} from './constants';
+import {
+  ACCOUNT_ID_ALIAS,
+  REGION,
+  StageName,
+} from '@orcabus/platform-cdk-constructs/shared-config/accounts';
+import { StatefulApplicationStackConfig, StatelessApplicationStackConfig } from './interfaces';
 
-export const getStackProps = (stage: StageName) => {
-  const serviceDomainNameDict: Record<StageName, string> = {
-    BETA: 'service.dev.umccr.org',
-    GAMMA: 'service.stg.umccr.org',
-    PROD: 'service.prod.umccr.org',
-  };
-
+export const getStatefulApplicationStackProps = (
+  stage: StageName
+): StatefulApplicationStackConfig => {
   return {
-    apiGatewayConstructProps: {
+    // Table names
+    packagingJobsTableName: DYNAMODB_PACKAGING_API_TABLE_NAME,
+    pushJobsTableName: DYNAMODB_PUSH_API_TABLE_NAME,
+    packagingLookUpTableName: DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
+
+    // S3 Bucket names
+    dataSharingBucketName: DATA_SHARING_BUCKET_NAME.replace(
+      '__ACCOUNT_ID__',
+      ACCOUNT_ID_ALIAS[stage]
+    ).replace('__REGION__', REGION),
+  };
+};
+
+export const getStatelessApplicationStackProps = (
+  stage: StageName
+): StatelessApplicationStackConfig => {
+  return {
+    // Stage name
+    stageName: stage,
+    // Event stuff
+    eventBusName: EVENT_BUS_NAME,
+
+    // Table names
+    packagingJobsTableName: DYNAMODB_PACKAGING_API_TABLE_NAME,
+    pushJobsTableName: DYNAMODB_PUSH_API_TABLE_NAME,
+    packagingLookUpTableName: DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
+
+    // S3 stuff
+    dataSharingBucketName: DATA_SHARING_BUCKET_NAME.replace(
+      '__ACCOUNT_ID__',
+      ACCOUNT_ID_ALIAS[stage]
+    ).replace('__REGION__', REGION),
+
+    // Steps Copy stuff
+    s3StepsCopyBucketName: s3CopyStepsBucket[stage],
+    s3StepsCopySfnArn: s3CopyStepsFunctionArn[stage],
+
+    /* API Stuff */
+    apiGatewayCognitoProps: {
       ...getDefaultApiGatewayConfiguration(stage),
-      apiName: 'ServiceAPI',
-      customDomainNamePrefix: 'service-orcabus',
+      apiName: API_NAME,
+      customDomainNamePrefix: API_SUBDOMAIN_NAME,
     },
-    serviceDomainName: serviceDomainNameDict[stage],
   };
 };
