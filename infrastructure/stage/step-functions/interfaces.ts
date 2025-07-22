@@ -61,11 +61,11 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
     needsDbRwPermissions: true,
     needsDbQueryPermissions: true,
     needsDistributedMapPermissions: true,
-    isExpressSfn: true,
   },
   presigning: {
     needsDbRwPermissions: true,
     needsDbQueryPermissions: true,
+    isExpressSfn: true,
   },
   pushIcav2Data: {
     needsEventPutPermissions: true,
