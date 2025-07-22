@@ -20,7 +20,12 @@ export class StatelessStack extends cdk.Stack {
         prod: getStatelessApplicationStackProps('PROD'),
       },
       pipelineName: 'StatelessDataSharingStackPipeline',
-      cdkSynthCmd: ['pnpm install --frozen-lockfile --ignore-scripts', 'pnpm cdk-stateless synth'],
+      cdkSynthCmd: [
+        'pnpm install --frozen-lockfile --ignore-scripts',
+        'pnpm cdk-stateless synth',
+        // https://github.com/aws/aws-cdk/issues/21325
+        'rm -rf cdk.out/asset.*',
+      ],
       enableSlackNotification: false,
     });
   }
