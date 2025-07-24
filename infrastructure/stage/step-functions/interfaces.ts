@@ -41,7 +41,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'createCsvForS3StepsCopy',
     'updatePushJobApi',
   ],
-  push: ['updatePushJobApi'],
+  push: ['updatePushJobApi', 'uploadPushJobToS3'],
 };
 
 export interface StepFunctionRequirements {
