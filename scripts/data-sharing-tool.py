@@ -830,7 +830,7 @@ def _dispatch():
     if environ.get("AWS_PROFILE") is not None and environ.get("AWS_DEFAULT_PROFILE") is not None:
         logger.warning(
             f"Due to bug https://github.com/boto/botocore/issues/1725 "
-            f"we are overriding the AWS_DEFAULT_PROFILE environment variable {environ.get("AWS_DEFAULT_PROFILE")} with AWS_PROFILE {environ.get("AWS_PROFILE")}")
+            f"we are overriding the AWS_DEFAULT_PROFILE environment variable {environ.get('AWS_DEFAULT_PROFILE')} with AWS_PROFILE {environ.get('AWS_PROFILE')}")
         _ = environ.pop('AWS_DEFAULT_PROFILE')
     try:
         # Check if the profile is valid
