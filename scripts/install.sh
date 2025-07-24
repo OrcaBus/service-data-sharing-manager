@@ -40,7 +40,9 @@ uv pip install --quiet \
   pandera \
   docopt \
   requests \
-  boto3
+  boto3 \
+  pytz \
+  tzlocal
 
 # Copy the python script into the virtual environment bin directory
 cp "${THIS_DIR}/data-sharing-tool.py" "${DATA_SHARING_INSTALL_VENV}/bin/data-sharing-tool"

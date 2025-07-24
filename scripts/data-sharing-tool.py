@@ -26,6 +26,8 @@ from pathlib import Path
 from textwrap import dedent
 import re
 from time import sleep
+from datetime import datetime
+from tzlocal import get_localzone
 
 from botocore.exceptions import TokenRetrievalError
 from docopt import docopt
@@ -33,7 +35,7 @@ import requests
 import pandas as pd
 import pandera as pa
 from pandera.typing import DataFrame
-from typing import Optional, List, Dict, TypedDict
+from typing import Optional, List, Dict, TypedDict, NotRequired
 import typing
 import boto3
 from requests import HTTPError
@@ -43,6 +45,9 @@ import logging
 # Setup logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Timezone setup
+tz = get_localzone()
 
 if typing.TYPE_CHECKING:
     from mypy_boto3_ssm import SSMClient
@@ -60,8 +65,8 @@ class PackageRequestResponseDict(TypedDict):
     packageName: str
     stepsExecutionArn: str
     status: str
-    requestTime: str
-    completionTime: Optional[str]
+    requestTime: datetime
+    completionTime: Optional[datetime]
     hasExpired: bool
 
 
@@ -186,7 +191,12 @@ def create_package(
     return response.json()['id']
 
 
-def list_packages(package_name: Optional[str]) -> List[PackageRequestResponseDict]:
+def list_packages(
+        package_name: Optional[str],
+        max_packages: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+) -> List[PackageRequestResponseDict]:
     response = requests.get(
         headers=get_default_get_headers(),
         params=dict(filter(
@@ -211,13 +221,28 @@ def list_packages(package_name: Optional[str]) -> List[PackageRequestResponseDic
         reverse=True
     )
 
-    if package_name is None:
-        return response_results
+    if package_name is not None:
+        response_results = list(filter(
+            lambda package_obj_iter_: package_obj_iter_['packageName'] == package_name,
+            response_results
+        ))
 
-    return list(filter(
-        lambda package_obj_iter_: package_obj_iter_['packageName'] == package_name,
-        response_results
-    ))
+    if start_date is not None:
+        response_results = list(filter(
+            lambda package_obj_iter_: pd.to_datetime(package_obj_iter_['requestTime']) >= start_date,
+            response_results
+        ))
+
+    if end_date is not None:
+        response_results = list(filter(
+            lambda package_obj_iter_: pd.to_datetime(package_obj_iter_['requestTime']) <= end_date,
+            response_results
+        ))
+
+    if max_packages is not None:
+        response_results = response_results[:min(len(response_results), max_packages)]
+
+    return response_results
 
 
 def list_push_jobs(package_id: Optional[str]) -> List[PushJobRequestResponseDict]:
@@ -471,6 +496,9 @@ class ListPackagesSubCommand(Command):
     Usage:
         data-sharing-tool list-packages --help
         data-sharing-tool list-packages [--package-name=<package_name>]
+                                        [--start-date=<start_date>]
+                                        [--end-date=<end_date>]
+                                        [--max-packages=<max_packages>]
 
     Description:
       List packages, you may specify the package name to filter by,
@@ -480,9 +508,12 @@ class ListPackagesSubCommand(Command):
 
     Options:
       --package-name=<package_name>  The package name to filter by
-
       --help                         Show this help message and exit
 
+      Query Parameters:
+      --start-date=<start_date>      The start date to filter by, in the format YYYY-MM-DD
+      --end-date=<end_date>          The end date to filter by, in the format YYYY-MM-DD
+      --max-packages=<max_packages>  The maximum number of packages to return, defaults to 1000
 
     Environment variables:
       AWS_PROFILE       The AWS profile used by boto3
@@ -496,10 +527,18 @@ class ListPackagesSubCommand(Command):
         super().__init__(command_argv)
         # Import args
         self.package_name = self.cli_args['--package-name']
+        self.start_date = self.cli_args['--start-date']
+        self.end_date = self.cli_args['--end-date']
+        self.max_packages = int(self.cli_args['--max-packages']) if self.cli_args['--max-packages'] else 1000
 
         # Generate the package
         print(json.dumps(
-            list_packages(package_name=self.package_name),
+            list_packages(
+                package_name=self.package_name,
+                start_date=pd.to_datetime(self.start_date).tz_localize(get_localzone()) if self.start_date else None,
+                end_date=pd.to_datetime(self.end_date).tz_localize(get_localzone()) if self.end_date else None,
+                max_packages=int(self.max_packages) if self.max_packages else None,
+            ),
             indent=4
         ))
 
@@ -787,6 +826,12 @@ def _dispatch():
         print(f"Could not find cmd \"{cmd}\". Please refer to usage above")
         sys.exit(1)
 
+    # To handle https://github.com/boto/botocore/issues/1725
+    if environ.get("AWS_PROFILE") is not None and environ.get("AWS_DEFAULT_PROFILE") is not None:
+        logger.warning(
+            f"Due to bug https://github.com/boto/botocore/issues/1725 "
+            f"we are overriding the AWS_DEFAULT_PROFILE environment variable {environ.get('AWS_DEFAULT_PROFILE')} with AWS_PROFILE {environ.get('AWS_PROFILE')}")
+        _ = environ.pop('AWS_DEFAULT_PROFILE')
     try:
         # Check if the profile is valid
         account_id = boto3.client('sts').get_caller_identity()['Account']
