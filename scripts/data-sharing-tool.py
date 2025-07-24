@@ -240,7 +240,7 @@ def list_packages(
         ))
 
     if max_packages is not None:
-        response_results = response_results[:max(len(response_results), max_packages)]
+        response_results = response_results[:min(len(response_results), max_packages)]
 
     return response_results
 
