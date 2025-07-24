@@ -113,6 +113,7 @@ export class StatelessApplicationStack extends cdk.Stack {
     const lambdas = buildAllLambdas(this, {
       dataSharingToolsLayer: dataSharingToolsLayer,
       packagingLookUpTable: packagingLookUpTable,
+      packagingLookUpBucket: dataSharingBucket,
       s3StepsCopyBucket: s3StepsCopyBucket,
       s3StepsCopyBucketPrefix: S3_STEPS_COPY_PREFIX,
     });
@@ -135,7 +136,7 @@ export class StatelessApplicationStack extends cdk.Stack {
       // Packaging lookup table
       packagingLookupTable: packagingLookUpTable,
       // S3 Steps Copy Bucket
-      s3StepsCopyBucket: dataSharingBucket,
+      s3StepsCopyBucket: s3StepsCopyBucket,
       s3StepsCopySfn: s3StepsCopySfn,
       // Packaging Bucket
       packagingBucket: dataSharingBucket,

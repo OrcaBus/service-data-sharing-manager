@@ -13,10 +13,16 @@ This includes
 import json
 from os import environ
 from datetime import datetime
-
+import typing
 import boto3
-from typing import List, Dict, Union, TypedDict, NotRequired
+from typing import List, Dict, Union, TypedDict, NotRequired, cast
+
+# Local imports
 from .models import FileObjectWithRelativePathTypeDef, FileObjectWithPresignedUrlTypeDef
+
+
+if typing.TYPE_CHECKING:
+    from mypy_boto3_dynamodb import DynamoDBClient
 
 
 class DynamoDbFileObjectWithPresignedUrlTypeDef(TypedDict):
@@ -49,7 +55,7 @@ def query_dynamodb_table(
                 lambda kv: kv[1] is not None,
                 {
                     "TableName": environ['PACKAGING_TABLE_NAME'],
-                    "IndexName": environ['CONTENT_INDEX_NAME'],
+                    "IndexName": f"{environ['CONTENT_INDEX_NAME']}-index",
                     "KeyConditionExpression": "#context = :context",
                     "ExpressionAttributeNames": {
                         "#context": "context"
@@ -100,16 +106,23 @@ def get_file_objects_with_presigned_urls(
     :return:
     """
     # Get the file objects with presigned url
-    dynamodb_file_objects_list: List[DynamoDbFileObjectWithPresignedUrlTypeDef] = (
-        query_dynamodb_table(job_id, "file", collect_presigned_url=True)
+    dynamodb_file_objects_list = (
+        query_dynamodb_table(
+            job_id,
+            "file",
+            collect_presigned_url=True
+        )
     )
 
     return list(map(
-        lambda item_iter_: dict(
-            **item_iter_['file_object'],
-            **{
-                "presignedUrl": item_iter_.get("presigned_url", None),
-            }
+        lambda item_iter_: cast(
+            DynamoDbFileObjectWithPresignedUrlTypeDef,
+            dict(
+                **item_iter_['file_object'],
+                **{
+                    "presignedUrl": item_iter_.get("presigned_url", None),
+                }
+            )
         ),
         dynamodb_file_objects_list
     ))

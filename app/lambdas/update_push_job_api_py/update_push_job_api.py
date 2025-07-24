@@ -29,9 +29,7 @@ OR
 }
 
 """
-
-from data_sharing_tools import update_push_job_status_from_steps_execution_id
-
+from orcabus_api_tools.data_sharing import update_push_job_status
 
 def handler(event, context):
     """
@@ -41,27 +39,22 @@ def handler(event, context):
     :return:
     """
     # Get inputs
-    packaging_job_id = event.get('packagingJobId')
+    push_job_id = event.get('pushJobId')
     status = event.get('status')
     has_error = event.get('hasError', False)
-    push_job_execution_arn = event.get('pushJobExecutionArn', None)
+    error_message = event.get('errorMessage', None)
 
     # Get job id by querying the steps execution name in the database
-
-    if not has_error:
-        return update_push_job_status_from_steps_execution_id(
-            steps_execution_id=push_job_execution_arn,
-            job_status=status,
-            package_job_id=packaging_job_id
-        )
-    else:
-        error_message = event.get('errorMessages', None)
-        update_push_job_status_from_steps_execution_id(
-            steps_execution_id=push_job_execution_arn,
-            job_status=status,
-            error_message=error_message,
-            package_job_id=packaging_job_id
-        )
+    return update_push_job_status(
+        push_job_id=push_job_id,
+        **dict(filter(
+            lambda kv_iter_: kv_iter_[1] is not None,
+             {
+                "status": status,
+                "errorMessage": error_message if has_error else None
+            }.items()
+        ))
+    )
 
 # if __name__ == '__main__':
 #     import json

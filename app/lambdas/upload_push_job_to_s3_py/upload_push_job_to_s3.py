@@ -18,45 +18,31 @@ This involves:
 
 3. Uploading the parquet file to s3
 """
+
+# Standard library imports
 import typing
 from urllib.parse import urlparse
+import boto3
+from pathlib import Path
+from datetime import datetime
+from tempfile import TemporaryDirectory
+from typing import TypedDict, Dict, List, Tuple, Hashable, Any
 
+# Big Data imports
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
-
-import boto3
-from pathlib import Path
-
 from pyarrow import LargeStringScalar
 
+# Orcabus Api tools layer imports
+from orcabus_api_tools.data_sharing import get_push_job
+
+# Data Sharing layer imports
 from data_sharing_tools.utils.dynamodb_helpers import query_dynamodb_table
-from data_sharing_tools.utils.update_helpers import get_push_job_from_steps_execution_id
-from datetime import datetime
-from tempfile import TemporaryDirectory
 
-from typing import TypedDict, Dict, List, Union, Tuple, Hashable, Any
-
+# Type checking imports
 if typing.TYPE_CHECKING:
-
     from mypy_boto3_s3 import S3Client
-
-    class PackageJobData(TypedDict):
-        library: pd.DataFrame
-        fastq: pd.DataFrame
-        workflow: pd.DataFrame
-        file: pd.DataFrame
-
-
-    class PushJobData(TypedDict):
-        """
-        Push job data
-        """
-        push_job_id: str
-        packaging_job_id: str
-        share_destination: LargeStringScalar
-        share_date: datetime
-        package: PackageJobData
 
 
 def get_s3_client() -> 'S3Client':
@@ -114,16 +100,13 @@ def handler(event, context):
     # Get inputs
     packaging_job_id = event.get("packagingJobId")
     share_destination = event.get("shareDestination")
-    push_execution_arn = event.get("pushExecutionArn")
+    push_job_id = event.get("pushJobId")
 
     # Get the push job id by querying the execution id
-    push_job_obj = get_push_job_from_steps_execution_id(
-        push_execution_arn,
-        package_job_id=packaging_job_id
+    push_job_obj = get_push_job(
+        push_job_id=push_job_id
     )
 
-    # Get the push job object attributes
-    push_job_id = push_job_obj.get("id")
     share_date = push_job_obj.get("startTime")
     output_uri = push_job_obj.get("logUri")
 
@@ -143,12 +126,14 @@ def handler(event, context):
         ]
     )
 
+    # Create the parquet table from pandas
     table = pa.Table.from_pandas(push_data)
 
     # Get the temp directory object
     temp_dir = Path(TemporaryDirectory(delete=False).name)
     output_path = temp_dir / f'{push_job_id}.parquet'
 
+    # Write out the parquet file
     pq.write_table(
         table,
         output_path

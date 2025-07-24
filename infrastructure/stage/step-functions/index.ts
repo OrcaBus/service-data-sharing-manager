@@ -122,6 +122,20 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
   // needsDbQueryPermissions
   // needsNestedSfnPermissions
 
+  // Express Step functions will have * on log Permissions
+  if (sfnRequirements.isExpressSfn) {
+    NagSuppressions.addResourceSuppressions(
+      props.stateMachineObj,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason: 'Need ability to write log files',
+        },
+      ],
+      true
+    );
+  }
+
   // Grant event bus permissions if needed
   if (sfnRequirements.needsEventPutPermissions) {
     props.eventBusObject.grantPutEventsTo(props.stateMachineObj);
