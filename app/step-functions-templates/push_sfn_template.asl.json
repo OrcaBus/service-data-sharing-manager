@@ -19,7 +19,7 @@
       "Arguments": {
         "FunctionName": "${__update_push_job_api_lambda_function_arn__}",
         "Payload": {
-          "pushJobID": "{% $psuhJobId %}",
+          "pushJobId": "{% $pushJobId %}",
           "packagingJobId": "{% $packagingJobId %}",
           "status": "RUNNING"
         }

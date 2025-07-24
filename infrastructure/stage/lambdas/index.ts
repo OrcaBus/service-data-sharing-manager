@@ -14,7 +14,12 @@ import { camelCaseToSnakeCase } from '../utils';
 import * as path from 'path';
 import { Duration } from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { LAMBDA_DIR, LAYERS_DIR, PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES } from '../constants';
+import {
+  CONTENT_INDEX_NAME,
+  LAMBDA_DIR,
+  LAYERS_DIR,
+  PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
+} from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cdk from 'aws-cdk-lib';
@@ -53,6 +58,10 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
         resources: [...packaging_index_arn_list],
       })
     );
+
+    // Add the environment variable 'PACKAGING_TABLE_NAME' to the lambda function
+    lambdaObject.addEnvironment('PACKAGING_TABLE_NAME', props.packagingLookUpTable.tableName);
+    lambdaObject.addEnvironment('CONTENT_INDEX_NAME', CONTENT_INDEX_NAME);
   }
 
   if (lambdaRequirements.needsMartLayer) {
@@ -62,6 +71,21 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
         {
           id: 'AwsSolutions-IAM5',
           reason: 'Mart need asterisk across athena resources',
+        },
+      ],
+      true
+    );
+  }
+
+  if (lambdaRequirements.needsPackagingBucketPermissions) {
+    // Grant read/write permissions to the packaging bucket
+    props.packagingLookUpBucket.grantReadWrite(lambdaObject.currentVersion);
+    NagSuppressions.addResourceSuppressions(
+      lambdaObject,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason: 'Packaging bucket needs asterisk across s3 resources',
         },
       ],
       true
