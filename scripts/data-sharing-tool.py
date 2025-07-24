@@ -537,6 +537,7 @@ class ListPackagesSubCommand(Command):
                 package_name=self.package_name,
                 start_date=pd.to_datetime(self.start_date).tz_localize(get_localzone()) if self.start_date else None,
                 end_date=pd.to_datetime(self.end_date).tz_localize(get_localzone()) if self.end_date else None,
+                max_packages=int(self.max_packages) if self.max_packages else None,
             ),
             indent=4
         ))
