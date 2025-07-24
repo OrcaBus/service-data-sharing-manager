@@ -529,7 +529,7 @@ class ListPackagesSubCommand(Command):
         self.package_name = self.cli_args['--package-name']
         self.start_date = self.cli_args['--start-date']
         self.end_date = self.cli_args['--end-date']
-        self.max_packages = self.cli_args['--max-packages']
+        self.max_packages = int(self.cli_args['--max-packages']) if self.cli_args['--max-packages'] else 1000
 
         # Generate the package
         print(json.dumps(
