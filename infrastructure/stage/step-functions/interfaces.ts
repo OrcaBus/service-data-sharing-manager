@@ -34,7 +34,11 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'getFilesAndRelativePathsFromS3AttributeIds',
     'updatePackagingJobApi',
   ],
-  presigning: ['generatePresignedUrlsForDataObjects', 'createScriptFromPresignedUrlsList'],
+  presigning: [
+    'getDynamodbEvaluatedKeyList',
+    'generatePresignedUrlsForDataObjects',
+    'createScriptFromPresignedUrlsList',
+  ],
   pushIcav2Data: ['queryAndCollectIcav2Prefixes'],
   pushS3Data: [
     'getS3DestinationAndSourceUriMappings',

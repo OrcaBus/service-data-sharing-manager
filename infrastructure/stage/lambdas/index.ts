@@ -16,6 +16,7 @@ import { Duration } from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import {
   CONTENT_INDEX_NAME,
+  CONTEXT_INDEX_NAME,
   LAMBDA_DIR,
   LAYERS_DIR,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
@@ -62,6 +63,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     // Add the environment variable 'PACKAGING_TABLE_NAME' to the lambda function
     lambdaObject.addEnvironment('PACKAGING_TABLE_NAME', props.packagingLookUpTable.tableName);
     lambdaObject.addEnvironment('CONTENT_INDEX_NAME', CONTENT_INDEX_NAME);
+    lambdaObject.addEnvironment('CONTEXT_INDEX_NAME', CONTEXT_INDEX_NAME);
   }
 
   if (lambdaRequirements.needsMartLayer) {

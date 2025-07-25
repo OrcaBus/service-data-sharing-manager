@@ -84,6 +84,11 @@ def handler(event, context) -> Dict[str, List[Dict[str, str]]]:
     if ingest_id_list is None:
         raise ValueError("ingestIdList input parameter is required")
 
+    if len(ingest_id_list) == 0:
+        return {
+            "ingestIdsWithPresignedUrlDataOutputs": []
+        }
+
     return {
         "ingestIdsWithPresignedUrlDataOutputs": list(map(
             lambda presigned_url_dict_iter: {
