@@ -49,11 +49,16 @@
       ],
       "Next": "For each evaluated key list",
       "Output": {
-        "startKeyList": "{% $states.result.Payload.startKeylist %}"
+        "startKeyList": "{% $states.result.Payload.startKeyList %}"
       }
     },
     "For each evaluated key list": {
       "Type": "Map",
+      "Items": "{% $states.input.startKeyList %}",
+      "ItemSelector": {
+        "startKey": "{% $states.context.Map.Item.Value %}",
+        "iterable": "{% $states.context.Map.Item.Index %}"
+      },
       "ItemProcessor": {
         "ProcessorConfig": {
           "Mode": "INLINE"
@@ -104,7 +109,7 @@
             "Resource": "arn:aws:states:::aws-sdk:dynamodb:batchGetItem",
             "Next": "Needs Presigned Url (for each s3 id)",
             "Output": {
-              "responseList": "{% /* Get the list of items for this table */\n$lookup($states.result.responses, $dynamoDbTableName)\n %}"
+              "responseList": "{% /* Get the list of items for this table */\n$lookup($states.result.Responses, $dynamoDbTableName)\n %}"
             }
           },
           "Query File (Presign) - with exclusive start key": {
@@ -134,8 +139,8 @@
             "Type": "Map",
             "Items": "{% $states.input.responseList %}",
             "ItemSelector": {
-              "s3IngestIdMapIter": "{% $states.context.Map.Item.Value.s3IngestId.S %}",
-              "presignExpiry": "{% $states.context.Map.Item.Value.presignExpiry ? $states.context.Map.Item.Value.presignExpiry.S : null %}"
+              "s3IngestIdMapIter": "{% $states.context.Map.Item.Value.id.S %}",
+              "presignedExpiry": "{% $states.context.Map.Item.Value.presigned_expiry ? $states.context.Map.Item.Value.presigned_expiry.S : null %}"
             },
             "ItemProcessor": {
               "ProcessorConfig": {
@@ -148,27 +153,23 @@
                   "Choices": [
                     {
                       "Next": "Pass",
-                      "Condition": "{% /* https://try.jsonata.org/zAMPCOvNG */\n(\n    /* Check presignedExpiry is set */\n    ( $states.input.presignedExpiry ? true : false ) \n    and \n    /* That it is at least six days away - 60 * 60 * 24 * 6 * 1000 == 518400000 */\n \n    (\n        $toMillis($states.input.presignedExpiry) > ( $toMillis($now()) + 518400000) \n    )\n) %}"
+                      "Condition": "{% /* https://try.jsonata.org/zAMPCOvNG */\n(\n    /* Check presignedExpiry is set */\n    ( $states.input.presignedExpiry ? true : false ) \n    and \n    /* That it is at least six days away - 60 * 60 * 24 * 6 * 1000 == 518400000 */\n \n    (\n        $toMillis($states.input.presignedExpiry) > ( $toMillis($now()) + 518400000) \n    )\n) %}",
+                      "Comment": "If the presign expiry is set and at least 6 days away, we can skip presigning"
                     }
                   ],
-                  "Default": "Append to list to presign",
-                  "Output": {
-                    "s3FileObject": "{% $states.input.s3FileObject %}"
-                  }
+                  "Default": "Append to list to presign"
                 },
                 "Append to list to presign": {
                   "Type": "Pass",
                   "End": true,
                   "Output": {
-                    "s3IngestId": "{% $s3IngestIdMapIter %}"
+                    "s3IngestId": "{% $states.input.s3IngestIdMapIter %}"
                   }
                 },
                 "Pass": {
                   "Type": "Pass",
                   "End": true,
-                  "Output": {
-                    "s3IngestId": null
-                  }
+                  "Output": {}
                 }
               }
             },
@@ -243,7 +244,6 @@
                       }
                     }
                   },
-                  "Output": {},
                   "End": true,
                   "Retry": [
                     {
@@ -258,16 +258,13 @@
                 }
               }
             },
-            "End": true
+            "End": true,
+            "Output": null
           }
         }
       },
       "Next": "Create script from presigned urls list",
-      "Items": "{% $states.input.startKeyList %}",
-      "ItemSelector": {
-        "startKey": "{% $states.context.Map.Item.Value %}",
-        "iterable": "{% $states.context.Map.Item.Index %}"
-      }
+      "Output": null
     },
     "Create script from presigned urls list": {
       "Type": "Task",

@@ -21,7 +21,8 @@ export type LambdaName =
   | 'updatePackagingJobApi'
   | 'updatePushJobApi'
   | 'uploadArchiveFileListAsCsv'
-  | 'uploadPushJobToS3';
+  | 'uploadPushJobToS3'
+  | 'getDynamodbEvaluatedKeyList';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -42,6 +43,7 @@ export const lambdaNameList: LambdaName[] = [
   'updatePushJobApi',
   'uploadArchiveFileListAsCsv',
   'uploadPushJobToS3',
+  'getDynamodbEvaluatedKeyList',
 ];
 
 export interface Requirements {
@@ -61,6 +63,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   createScriptFromPresignedUrlsList: {
     needsDataSharingToolsLayer: true,
+    needsOrcabusApiToolsLayer: true,
+    needsDbPermissions: true,
+    needsPackagingBucketPermissions: true,
   },
   generatePresignedUrlsForDataObjects: {
     needsOrcabusApiToolsLayer: true,
@@ -118,6 +123,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsDataSharingToolsLayer: true,
     needsPackagingBucketPermissions: true,
     needsOrcabusApiToolsLayer: true,
+  },
+  getDynamodbEvaluatedKeyList: {
+    needsDbPermissions: true,
   },
 };
 

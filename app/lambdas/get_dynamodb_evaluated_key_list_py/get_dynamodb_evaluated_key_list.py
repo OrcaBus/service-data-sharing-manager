@@ -3,24 +3,27 @@ from os import environ
 
 import boto3
 import typing
-from typing import List, Union
+from typing import List, Union, Optional, Dict
 
 if typing.TYPE_CHECKING:
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_dynamodb.type_defs import AttributeValueTypeDef
+    PaginationKeyType = Dict[str, 'AttributeValueTypeDef']
 
 def get_dynamodb_client() -> 'DynamoDBClient':
     return boto3.client('dynamodb')
 
 def get_table_name() -> str:
-    return environ['TABLE_NAME']
+    return environ['PACKAGING_TABLE_NAME']
 
 def get_index_name() -> str:
-    return environ['INDEX_NAME']
+    return environ['CONTEXT_INDEX_NAME']
 
 def get_evaluated_key_list_in_package_query(package_id: str, chunk_size: int = 100) -> List[Union[None, str]]:
     starting_item = True
+
     # Start with None, so that we have the correct number of iterations in the sfn map
-    key_list = [None]
+    key_list: List[Optional['PaginationKeyType']] = [None]
     exclusive_start_key = None
 
     while True:
@@ -62,7 +65,7 @@ def get_evaluated_key_list_in_package_query(package_id: str, chunk_size: int = 1
             )
 
         # Set the new key list for the next iteration
-        exclusive_start_key = dynamodb_response.get('LastEvaluatedKey', None)
+        exclusive_start_key: Optional['PaginationKeyType'] = dynamodb_response.get('LastEvaluatedKey', None)
 
         # And add the key to the list
         if exclusive_start_key is not None:
