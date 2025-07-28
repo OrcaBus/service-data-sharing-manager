@@ -76,6 +76,7 @@ class PackageRequestDict(TypedDict):
     portalRunIdList: Optional[List[str]]
     defrostArchivedFastqs: NotRequired[bool]
     useWorkflowFilters: NotRequired[bool]
+    instrumentRunIdList: NotRequired[List[str]]
 
 
 class PushJobRequestResponseDict(TypedDict):
@@ -365,6 +366,8 @@ def generate_package(
         lims_manifest['library_id'].unique().tolist()
     ))
 
+    instrument_run_ids = lims_manifest['sequencing_run_id'].unique().tolist()
+
     # Get the portal run ids from the workflow manifest
     if workflow_manifest is not None:
         portal_run_ids = workflow_manifest['portal_run_id'].unique().tolist()
@@ -378,6 +381,7 @@ def generate_package(
             (["fastq"] if not exclude_primary_data else []) +
             (["secondaryAnalysis"] if workflow_manifest is not None else [])
         ),
+        "instrumentRunIdList": instrument_run_ids,
         "portalRunIdList": portal_run_ids,
         "defrostArchivedFastqs": True if defrost_archived_fastqs else False,
         "useWorkflowFilters": use_workflow_filters
