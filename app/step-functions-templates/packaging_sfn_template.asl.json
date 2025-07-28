@@ -327,7 +327,18 @@
                               "JitterStrategy": "FULL"
                             }
                           ],
-                          "Next": "Fastq Available Sync"
+                          "Next": "Unarchiving requested"
+                        },
+                        "Unarchiving requested": {
+                          "Type": "Choice",
+                          "Choices": [
+                            {
+                              "Next": "Fastq Available Sync",
+                              "Condition": "{% $defrostArchivedFastqsMapIter %}",
+                              "Comment": "Unarchive fastqs"
+                            }
+                          ],
+                          "Default": "For each fastq id"
                         },
                         "Fastq Available Sync": {
                           "Type": "Task",
@@ -351,7 +362,6 @@
                               }
                             ]
                           },
-                          "Next": "For each fastq id",
                           "Catch": [
                             {
                               "ErrorEquals": ["FastqArchivedError"],
@@ -359,7 +369,8 @@
                               "Comment": "Fastq not found"
                             }
                           ],
-                          "Output": "{% $states.input %}"
+                          "Output": "{% $states.input %}",
+                          "Next": "For each fastq id"
                         },
                         "For each fastq id": {
                           "Type": "Map",
