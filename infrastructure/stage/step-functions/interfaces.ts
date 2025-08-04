@@ -10,14 +10,15 @@ export type StepFunctionsName =
   | 'presigning'
   | 'pushIcav2Data'
   | 'pushS3Data'
-  | 'push';
+  | 'push'
+  | 'triggerDataSharing';
 
 export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
   'presigning',
   'pushIcav2Data',
-  'pushS3Data',
   'push',
+  'triggerDataSharing',
 ];
 
 export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
@@ -47,6 +48,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'packageFileToJsonlData',
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
+  triggerDataSharing: ['startPackaging', 'checkPackagingStatus', 'initiateDataCopy'],
 };
 
 export interface StepFunctionRequirements {
@@ -81,6 +83,9 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   },
   push: {
     needsNestedSfnPermissions: true,
+  },
+  triggerDataSharing: {
+    needsEventPutPermissions: true,
   },
 };
 

@@ -23,7 +23,10 @@ export type LambdaName =
   | 'updatePushJobApi'
   | 'uploadArchiveFileListAsCsv'
   | 'uploadPushJobToS3'
-  | 'getDynamodbEvaluatedKeyList';
+  | 'getDynamodbEvaluatedKeyList'
+  | 'startPackaging'
+  | 'checkPackagingStatus'
+  | 'initiateDataCopy';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -46,6 +49,9 @@ export const lambdaNameList: LambdaName[] = [
   'uploadArchiveFileListAsCsv',
   'uploadPushJobToS3',
   'getDynamodbEvaluatedKeyList',
+  'startPackaging',
+  'checkPackagingStatus',
+  'initiateDataCopy',
 ];
 
 export interface Requirements {
@@ -133,6 +139,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   getDynamodbEvaluatedKeyList: {
     needsDbPermissions: true,
   },
+  startPackaging: {},
+  checkPackagingStatus: {},
+  initiateDataCopy: {},
 };
 
 export interface LambdaProps {
