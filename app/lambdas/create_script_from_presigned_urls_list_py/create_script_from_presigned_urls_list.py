@@ -81,13 +81,21 @@ def get_script_template(
         echo "
     Usage: download-data.sh (--download-path local/download_path/)
                             [--dryrun]
+                            [--decompress-ora]
+                            [--print-tree]
                             [-h | --help]
 
     Options:
-      --download-path  The local path to download the data to, folders may be created underneath this path.
-      --dryrun         If set, the script will only detail the files that will be downloaded, but will not download them.
-      --print-tree     Print the tree of files that will be downloaded and exists
-      --help           Print this help message and exits
+      --download-path    The local path to download the data to, folders may be created underneath this path.
+      --dryrun           If set, the script will only detail the files that will be downloaded, but will not download them.
+      --print-tree       Print the tree of files that will be downloaded and exists
+      --decompress-ora   If set, the script will decompress .ora files.
+                         orad binrary must be installed and ORADATA_PATH must be set to a valid directory containing the 'refbin' binary.
+                         For help on installing orad, see https://sapac.support.illumina.com/sequencing/sequencing_software/DRAGENORA/software-downloads.html
+      --help             Print this help message and exits
+
+    Environment Variables:
+      ORADATA_PATH       The path to the orad reference directory, required if --decompress-ora is set.
 
     Example:
         download-data.sh --download-path /path/to/download/folder/
@@ -114,13 +122,20 @@ def get_script_template(
             fi
         fi
 
+        if [[ "${decompress_ora}" == "true" ]] && [[ "${file_path}" == *.ora ]]; then
+            curl_command="curl --silent --url \\\"${file_url}\\\" | orad --quiet --ora-reference \\\"${ORADATA_PATH}\\\" --force --gz --out \\\"${file_path%.ora}.gz\\\" -"
+        else
+            curl_command="curl --silent --create-dirs --continue-at - --output \\\"${file_path}\\\" --url \\\"${file_url}\\\""
+        fi
+
         # Create the directory if it doesn't exist
         if [[ "${dryrun}" == "false" ]]; then
             mkdir -p "$(dirname "${file_path}")"
 
             # Download the file
             echo "Downloading ${file_size} bytes (${hf_file_size}) to '${file_path}', ${count_num} / __FILE_COUNT__" 1>&2
-            curl --create-dirs --continue-at - --output "${file_path}" --url "${file_url}"
+
+            eval ${curl_command}
         else
             # Print the mkdir command
             if [[ ! -d "$(dirname "${file_path}")" ]]; then
@@ -128,7 +143,7 @@ def get_script_template(
             fi
 
             # Print the curl command
-            echo "curl --create-dirs --continue-at - --output \"${file_path}\" --url \"${file_url}\""
+            echo "${curl_command}"
         fi
     }
 
@@ -139,6 +154,7 @@ def get_script_template(
     # Initialise the arguments
     download_path=""
     dryrun="false"
+    decompress_ora="false"
 
     # Parse the arguments
     while [ $# -gt 0 ]; do
@@ -149,6 +165,9 @@ def get_script_template(
           ;;
         --dryrun | --dry-run)
           dryrun="true"
+          ;;
+        --decompress-ora)
+          decompress_ora="true"
           ;;
         -h | --help)
           print_help
@@ -173,6 +192,20 @@ def get_script_template(
     if [ ! -d "${download_path}" ]; then
         echo "Error! Download path '${download_path}' does not exist" 1>&2
         exit 1
+    fi
+
+    # if decompress_ora is set to true
+    # check if orad is installed and ORADATA_PATH is set to a directory
+    if [[ "${decompress_ora}" == "true" ]]; then
+        if ! command -v orad &> /dev/null; then
+            echo "Error! 'orad' command is not found, please install it to decompress .ora files" 1>&2
+            exit 1
+        fi
+
+        if [[ -z "${ORADATA_PATH:-}" ]] || [[ ! -d "${ORADATA_PATH}" ]]; then
+            echo "Error! ORADATA_PATH is not set or does not point to a valid directory" 1>&2
+            exit 1
+        fi
     fi
 
     # Standardise the download path
