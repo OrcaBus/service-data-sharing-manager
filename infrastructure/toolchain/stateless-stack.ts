@@ -24,7 +24,8 @@ export class StatelessStack extends cdk.Stack {
         'pnpm install --frozen-lockfile --ignore-scripts',
         'pnpm cdk-stateless synth',
         // https://github.com/aws/aws-cdk/issues/21325
-        'rm -rf cdk.out/asset.*',
+        // Need to keep asset.*.json though for AWS SFN Step Function Definition Bodies
+        'rm -rf cdk.out/asset.*.zip',
       ],
       enableSlackNotification: false,
     });
