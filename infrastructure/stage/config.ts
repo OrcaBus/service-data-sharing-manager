@@ -7,6 +7,7 @@ import {
   DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
   DYNAMODB_PUSH_API_TABLE_NAME,
   EVENT_BUS_NAME,
+  S3_STEPS_COPY_PREFIX,
   s3CopyStepsBucket,
   s3CopyStepsFunctionArn,
 } from './constants';
@@ -57,6 +58,7 @@ export const getStatelessApplicationStackProps = (
     // Steps Copy stuff
     s3StepsCopyBucketName: s3CopyStepsBucket[stage],
     s3StepsCopySfnArn: s3CopyStepsFunctionArn[stage],
+    s3StepsCopyPrefix: S3_STEPS_COPY_PREFIX[stage],
 
     /* API Stuff */
     apiGatewayCognitoProps: {

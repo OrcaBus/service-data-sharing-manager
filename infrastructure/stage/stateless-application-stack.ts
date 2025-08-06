@@ -7,7 +7,7 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { buildAllLambdas, buildDataSharingToolsLayer } from './lambdas';
-import { DATA_SHARING_BUCKET_PREFIX, S3_STEPS_COPY_PREFIX } from './constants';
+import { DATA_SHARING_BUCKET_PREFIX } from './constants';
 import { buildRMarkdownFargateTask } from './ecs';
 import { buildAllStepFunctions } from './step-functions';
 import {
@@ -23,6 +23,7 @@ export type StatelessApplicationStackProps = cdk.StackProps & StatelessApplicati
 
 export class StatelessApplicationStack extends cdk.Stack {
   public readonly stageName: StageName;
+
   constructor(scope: Construct, id: string, props: StatelessApplicationStackProps) {
     super(scope, id, props);
 
@@ -108,14 +109,14 @@ export class StatelessApplicationStack extends cdk.Stack {
     );
 
     /*
-        Part 1: Build the Lambda functions
-         */
+    Part 1: Build the Lambda functions
+     */
     const lambdas = buildAllLambdas(this, {
       dataSharingToolsLayer: dataSharingToolsLayer,
       packagingLookUpTable: packagingLookUpTable,
       packagingLookUpBucket: dataSharingBucket,
       s3StepsCopyBucket: s3StepsCopyBucket,
-      s3StepsCopyBucketPrefix: S3_STEPS_COPY_PREFIX,
+      s3StepsCopyBucketPrefix: props.s3StepsCopyPrefix,
     });
 
     /*

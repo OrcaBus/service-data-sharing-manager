@@ -51,14 +51,12 @@ export interface Requirements {
   needsDataSharingToolsLayer?: boolean;
   needsMartLayer?: boolean;
   needsDbPermissions?: boolean;
-  needsStsPermissions?: boolean;
   needsStepsS3UploadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   createCsvForS3StepsCopy: {
-    needsStsPermissions: true,
     needsStepsS3UploadPermissions: true,
   },
   createScriptFromPresignedUrlsList: {
