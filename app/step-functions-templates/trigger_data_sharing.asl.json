@@ -3,11 +3,14 @@
   "States": {
     "Start Packaging": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
       "Output": "{% $states.result.Payload %}",
       "Arguments": {
-        "FunctionName": "",
-        "Payload": "{% $states.input %}"
+        "FunctionName": "start_packaging",
+        "Payload": {
+          "token.$": "$$.Task.Token",
+          "packageInput.$": "$"
+        }
       },
       "Retry": [
         {
@@ -23,53 +26,14 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Wait for Status Check"
+      "Next": "Start Data Copy"
     },
-    "Wait for Status Check": {
-      "Type": "Wait",
-      "Seconds": 5,
-      "Next": "Check Packaging Status"
-    },
-    "Check Packaging Status": {
+    "Start Data Copy": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Output": "{% $states.result.Payload %}",
       "Arguments": {
-        "FunctionName": "",
-        "Payload": "{% $states.input %}"
-      },
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 1,
-          "MaxAttempts": 3,
-          "BackoffRate": 2,
-          "JitterStrategy": "FULL"
-        }
-      ],
-      "Next": "Is Packaging Complete?"
-    },
-    "Is Packaging Complete?": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Next": "Initiate Data Copy",
-          "Condition": "{% ($.ready) = (true) %}"
-        }
-      ],
-      "Default": "Wait for Status Check"
-    },
-    "Initiate Data Copy": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
-      "Arguments": {
-        "FunctionName": "",
+        "FunctionName": "start_data_copy",
         "Payload": "{% $states.input %}"
       },
       "Retry": [

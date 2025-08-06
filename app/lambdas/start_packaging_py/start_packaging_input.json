@@ -1,0 +1,8 @@
+{
+  "packageName": "fji-test-2",
+  "packageRequest": {
+    "libraryIdList": ["L2401544"],
+    "dataTypeList": ["fastq"],
+    "useWorkflowFilters": true
+  }
+}
