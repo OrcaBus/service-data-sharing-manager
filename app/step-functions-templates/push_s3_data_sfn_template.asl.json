@@ -11,7 +11,7 @@
         "packagingJobId": "{% $states.input.packagingJobId %}",
         "pushLocation": "{% $states.input.pushLocation %}",
         "s3StepsCopyBucket": "${__aws_s3_copy_steps_bucket__}",
-        "s3StepsCopyCsvKey": "{% '${__aws_s3_copy_steps_prefix__}' & $states.context.Execution.Name & '.__index__.csv' %}"
+        "s3StepsCopyJsonlKey": "{% '${__aws_s3_copy_steps_prefix__}' & $states.context.Execution.Name & '.__index__.jsonl' %}"
       }
     },
     "Query and collect prefixes Count": {
@@ -54,8 +54,8 @@
           "packagingJobIdMapIter": "{% $packagingJobId %}",
           "pushLocationMapIter": "{% $pushLocation %}",
           "s3StepsCopyBucketMapIter": "{% $s3StepsCopyBucket %}",
-          "s3StepsCopyCsvKeyMapIter": "{% $s3StepsCopyCsvKey %}",
-          "s3StepsCopyKeyMapIter": "{% $s3StepsCopyCsvKey %}"
+          "s3StepsCopyJsonlKeyMapIter": "{% $s3StepsCopyJsonlKey %}",
+          "s3StepsCopyKeyMapIter": "{% $s3StepsCopyJsonlKey %}"
         }
       },
       "ItemProcessor": {
@@ -72,7 +72,7 @@
               "packagingJobIdMapIter": "{% $states.input.BatchInput.packagingJobIdMapIter %}",
               "pushLocationMapIter": "{% $states.input.BatchInput.pushLocationMapIter %}",
               "s3StepsCopyBucketMapIter": "{% $states.input.BatchInput.s3StepsCopyBucketMapIter %}",
-              "s3StepsCopyCsvKeyMapIter": "{% $states.input.BatchInput.s3StepsCopyCsvKeyMapIter %}",
+              "s3StepsCopyJsonlKeyMapIter": "{% $states.input.BatchInput.s3StepsCopyJsonlKeyMapIter %}",
               "itemRangeMin": "{% $states.input.Items[0] %}",
               "itemRangeMax": "{% $states.input.Items[-1] %}"
             }
@@ -114,7 +114,7 @@
               "destinationUriMapIterX": "{% $states.context.Map.Item.Value.destinationUri %}",
               "sourceUrisListMapIterX": "{% $states.context.Map.Item.Value.sourceUrisList %}",
               "s3StepsCopyBucketMapIterX": "{% $s3StepsCopyBucketMapIter %}",
-              "s3StepsCopyKeyMapIterX": "{% /* https://try.jsonata.org/mZnjTty1- */ $replace($s3StepsCopyCsvKeyMapIter, '__index__', $string($states.context.Map.Item.Index + $itemRangeMin)) %}"
+              "s3StepsCopyJsonlKeyMapIterX": "{% /* https://try.jsonata.org/mZnjTty1- */ $replace($s3StepsCopyJsonlKeyMapIter, '__index__', $string($states.context.Map.Item.Index + $itemRangeMin)) %}"
             },
             "ItemProcessor": {
               "ProcessorConfig": {
@@ -129,20 +129,20 @@
                     "destinationKeyMapIterX": "{% $replace($states.input.destinationUriMapIterX, /^s3:\\/\\/(?:.*?)\\/(.*)/, \"$1\") & '/' %}",
                     "sourceUrisListMapIterX": "{% $states.input.sourceUrisListMapIterX %}",
                     "s3StepsCopyBucketMapIterX": "{% $states.input.s3StepsCopyBucketMapIterX %}",
-                    "s3StepsCopyKeyMapIterX": "{% $states.input.s3StepsCopyKeyMapIterX %}"
+                    "s3StepsCopyJsonlKeyMapIterX": "{% $states.input.s3StepsCopyJsonlKeyMapIterX %}"
                   },
-                  "Next": "Generate steps function csv and upload to s3"
+                  "Next": "Generate steps function jsonl and upload to s3"
                 },
-                "Generate steps function csv and upload to s3": {
+                "Generate steps function jsonl and upload to s3": {
                   "Type": "Task",
                   "Resource": "arn:aws:states:::lambda:invoke",
                   "Output": "{% $states.result.Payload %}",
                   "Arguments": {
-                    "FunctionName": "${__create_csv_for_s3_steps_copy_lambda_function_arn__}",
+                    "FunctionName": "${__create_jsonl_for_s3_steps_copy_lambda_function_arn__}",
                     "Payload": {
                       "sourceUrisList": "{% $sourceUrisListMapIterX %}",
                       "s3StepsCopyBucket": "{% $s3StepsCopyBucketMapIterX %}",
-                      "s3StepsCopyKey": "{% $s3StepsCopyKeyMapIterX %}"
+                      "s3StepsCopyKey": "{% $s3StepsCopyJsonlKeyMapIterX %}"
                     }
                   },
                   "Retry": [
@@ -167,7 +167,7 @@
                   "Arguments": {
                     "StateMachineArn": "${__aws_s3_steps_copy_sfn_arn__}",
                     "Input": {
-                      "sourceFilesCsvKey": "{% $s3StepsCopyKeyMapIterX %}",
+                      "sourceFilesJsonlKey": "{% $s3StepsCopyJsonlKeyMapIterX %}",
                       "destinationBucket": "{% $destinationBucketMapIterX %}",
                       "destinationPrefixKey": "{% $destinationKeyMapIterX %}",
                       "maxItemsPerBatch": 1
