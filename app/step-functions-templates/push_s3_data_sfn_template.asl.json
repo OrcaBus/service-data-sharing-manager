@@ -167,7 +167,7 @@
                   "Arguments": {
                     "StateMachineArn": "${__aws_s3_steps_copy_sfn_arn__}",
                     "Input": {
-                      "sourceFilesJsonlKey": "{% $s3StepsCopyJsonlKeyMapIterX %}",
+                      "sourceFilesCsvKey": "{% $s3StepsCopyJsonlKeyMapIterX %}",
                       "destinationBucket": "{% $destinationBucketMapIterX %}",
                       "destinationPrefixKey": "{% $destinationKeyMapIterX %}",
                       "maxItemsPerBatch": 1

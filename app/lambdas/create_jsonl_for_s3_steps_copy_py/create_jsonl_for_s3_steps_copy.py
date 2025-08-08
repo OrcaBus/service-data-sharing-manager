@@ -40,7 +40,7 @@ def handler(event, context):
         for uri in source_uris_list
     ]
 
-    # Convert to JSONL format (one JSON object per line)
+    # Convert to JSONL format
     jsonl_content = "\n".join(json.dumps(item) for item in copy_instructions)
 
     # Upload to s3
