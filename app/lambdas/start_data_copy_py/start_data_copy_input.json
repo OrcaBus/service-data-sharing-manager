@@ -1,3 +1,4 @@
 {
-  "shareDestination": "s3://umccr-temp-dev/"
+  "package_id": "pkg.01K213HDP7FR8QAFCNC49JZM7X",
+  "shareDestination": "s3://umccr-temp-dev/fji/"
 }
