@@ -42,7 +42,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   pushIcav2Data: ['queryAndCollectIcav2Prefixes'],
   pushS3Data: [
     'getS3DestinationAndSourceUriMappings',
-    'createCsvForS3StepsCopy',
+    'createJsonlForS3StepsCopy',
     'updatePushJobApi',
     'packageFileToJsonlData',
   ],

@@ -4,7 +4,7 @@ import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 
 export type LambdaName =
-  | 'createCsvForS3StepsCopy'
+  | 'createJsonlForS3StepsCopy'
   | 'createScriptFromPresignedUrlsList'
   | 'generatePresignedUrlsForDataObjects'
   | 'getFastqObjectFromFastqId'
@@ -26,7 +26,7 @@ export type LambdaName =
   | 'getDynamodbEvaluatedKeyList';
 
 export const lambdaNameList: LambdaName[] = [
-  'createCsvForS3StepsCopy',
+  'createJsonlForS3StepsCopy',
   'createScriptFromPresignedUrlsList',
   'generatePresignedUrlsForDataObjects',
   'getFastqObjectFromFastqId',
@@ -58,7 +58,7 @@ export interface Requirements {
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
-  createCsvForS3StepsCopy: {
+  createJsonlForS3StepsCopy: {
     needsStepsS3UploadPermissions: true,
   },
   createScriptFromPresignedUrlsList: {
