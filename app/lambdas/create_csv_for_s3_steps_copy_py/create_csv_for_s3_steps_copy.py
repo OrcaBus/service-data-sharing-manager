@@ -5,17 +5,13 @@ import pandas as pd
 from urllib.parse import urlparse
 import boto3
 
+
 if typing.TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
-    from mypy_boto3_sts import STSClient
 
 
 def get_s3_client() -> 'S3Client':
     return boto3.client("s3")
-
-
-def get_sts_client() -> 'STSClient':
-    return boto3.client("sts")
 
 
 def handler(event, context):
@@ -46,21 +42,9 @@ def handler(event, context):
         ))
     )
 
-    # In development we have to add in 'a-working-folder/' as the prefix
-    if get_sts_client().get_caller_identity()['Account'] == "843407916570":
-        s3_steps_copy_key = 'a-working-folder/' + s3_steps_copy_key
-        # Upload to s3
-        # Upload to s3
-        get_s3_client().put_object(
-            Bucket=s3_steps_copy_bucket,
-            Key=s3_steps_copy_key,
-            Body=s3_steps_copy_df.to_json(orient='records').encode("utf-8"),
-        )
-
-    else:
-        # Upload to s3
-        get_s3_client().put_object(
-            Bucket=s3_steps_copy_bucket,
-            Key=s3_steps_copy_key,
-            Body=s3_steps_copy_df.to_csv(index=False, header=False).encode("utf-8"),
-        )
+    # Upload to s3
+    get_s3_client().put_object(
+        Bucket=s3_steps_copy_bucket,
+        Key=s3_steps_copy_key,
+        Body=s3_steps_copy_df.to_csv(index=False, header=False).encode("utf-8"),
+    )

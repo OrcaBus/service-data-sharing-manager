@@ -12,11 +12,8 @@ Generate a presigned url for a data object using the ICAv2 API
 # Imports
 from urllib.parse import urlunparse, urlparse, parse_qs
 from typing import Dict, List
-
-
 from datetime import datetime, timedelta, timezone
 from orcabus_api_tools.filemanager import get_presigned_urls_from_ingest_ids
-from orcabus_api_tools.filemanager.models import FileObject
 
 # Set logging
 import logging

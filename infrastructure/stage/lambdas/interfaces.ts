@@ -17,6 +17,7 @@ export type LambdaName =
   | 'getFastqsFromLibraryIdAndInstrumentRunIdList'
   | 'getFilesListFromPortalRunId'
   | 'listPortalRunIdsInLibrary'
+  | 'packageFileToJsonlData'
   | 'queryAndCollectIcav2Prefixes'
   | 'updatePackagingJobApi'
   | 'updatePushJobApi'
@@ -38,6 +39,7 @@ export const lambdaNameList: LambdaName[] = [
   'getFastqsFromLibraryIdAndInstrumentRunIdList',
   'getFilesListFromPortalRunId',
   'listPortalRunIdsInLibrary',
+  'packageFileToJsonlData',
   'queryAndCollectIcav2Prefixes',
   'updatePackagingJobApi',
   'updatePushJobApi',
@@ -51,14 +53,12 @@ export interface Requirements {
   needsDataSharingToolsLayer?: boolean;
   needsMartLayer?: boolean;
   needsDbPermissions?: boolean;
-  needsStsPermissions?: boolean;
   needsStepsS3UploadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   createCsvForS3StepsCopy: {
-    needsStsPermissions: true,
     needsStepsS3UploadPermissions: true,
   },
   createScriptFromPresignedUrlsList: {
@@ -107,6 +107,10 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   listPortalRunIdsInLibrary: {
     needsOrcabusApiToolsLayer: true,
+  },
+  packageFileToJsonlData: {
+    needsDbPermissions: true,
+    needsStepsS3UploadPermissions: true,
   },
   updatePackagingJobApi: {
     needsOrcabusApiToolsLayer: true,
