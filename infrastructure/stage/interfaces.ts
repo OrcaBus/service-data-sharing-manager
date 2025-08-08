@@ -34,6 +34,7 @@ export interface StatelessApplicationStackConfig {
   s3StepsCopyBucketName: string;
   s3StepsCopySfnArn: string;
   s3StepsCopyPrefix: string;
+  s3StepsUseJsonLCopyFormat: boolean;
 
   /* API Stuff */
   apiGatewayCognitoProps: OrcaBusApiGatewayProps;

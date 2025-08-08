@@ -99,6 +99,16 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
       lambdaObject.currentVersion,
       path.join(props.s3StepsCopyBucketPrefix, '*')
     );
+    NagSuppressions.addResourceSuppressions(
+      lambdaObject,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason: 'Lambda needs asterisk across s3 resources',
+        },
+      ],
+      true
+    );
   }
 
   return {

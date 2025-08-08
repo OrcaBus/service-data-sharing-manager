@@ -87,3 +87,10 @@ export const s3CopyStepsFunctionArn: Record<StageName, string> = {
   GAMMA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['GAMMA']}:stateMachine:StepsS3CopyStateMachine157A1409-ikBos7HzwDtL`, // pragma: allowlist secret
   PROD: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['PROD']}:stateMachine:StepsS3CopyStateMachine157A1409-YbCgUX7dCZRm`, // pragma: allowlist secret
 };
+
+// S3 Steps Copy Implementations
+export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
+  BETA: true,
+  GAMMA: false,
+  PROD: false,
+};

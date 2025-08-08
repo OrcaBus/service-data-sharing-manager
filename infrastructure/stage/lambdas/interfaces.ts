@@ -17,6 +17,7 @@ export type LambdaName =
   | 'getFastqsFromLibraryIdAndInstrumentRunIdList'
   | 'getFilesListFromPortalRunId'
   | 'listPortalRunIdsInLibrary'
+  | 'packageFileToJsonlData'
   | 'queryAndCollectIcav2Prefixes'
   | 'updatePackagingJobApi'
   | 'updatePushJobApi'
@@ -38,6 +39,7 @@ export const lambdaNameList: LambdaName[] = [
   'getFastqsFromLibraryIdAndInstrumentRunIdList',
   'getFilesListFromPortalRunId',
   'listPortalRunIdsInLibrary',
+  'packageFileToJsonlData',
   'queryAndCollectIcav2Prefixes',
   'updatePackagingJobApi',
   'updatePushJobApi',
@@ -105,6 +107,10 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   listPortalRunIdsInLibrary: {
     needsOrcabusApiToolsLayer: true,
+  },
+  packageFileToJsonlData: {
+    needsDbPermissions: true,
+    needsStepsS3UploadPermissions: true,
   },
   updatePackagingJobApi: {
     needsOrcabusApiToolsLayer: true,

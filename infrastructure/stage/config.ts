@@ -10,6 +10,7 @@ import {
   S3_STEPS_COPY_PREFIX,
   s3CopyStepsBucket,
   s3CopyStepsFunctionArn,
+  USE_JSONL_COPY_FORMAT,
 } from './constants';
 import {
   ACCOUNT_ID_ALIAS,
@@ -59,6 +60,7 @@ export const getStatelessApplicationStackProps = (
     s3StepsCopyBucketName: s3CopyStepsBucket[stage],
     s3StepsCopySfnArn: s3CopyStepsFunctionArn[stage],
     s3StepsCopyPrefix: S3_STEPS_COPY_PREFIX[stage],
+    s3StepsUseJsonLCopyFormat: USE_JSONL_COPY_FORMAT[stage],
 
     /* API Stuff */
     apiGatewayCognitoProps: {
