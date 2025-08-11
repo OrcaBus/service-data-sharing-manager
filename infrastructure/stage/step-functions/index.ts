@@ -25,7 +25,6 @@ import { camelCaseToSnakeCase } from '../utils';
 import {
   FASTQ_SYNC_DETAIL_TYPE,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
-  S3_STEPS_COPY_PREFIX,
   SFN_PREFIX,
   STACK_SOURCE,
   STEP_FUNCTIONS_DIR,
@@ -77,7 +76,9 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
 
   // S3 Steps Copy stuff
   definitionSubstitutions['__aws_s3_copy_steps_bucket__'] = props.s3StepsCopyBucket.bucketName;
-  definitionSubstitutions['__aws_s3_copy_steps_prefix__'] = S3_STEPS_COPY_PREFIX;
+  definitionSubstitutions['__aws_s3_copy_steps_prefix__'] = props.s3StepsCopyPrefix;
+  definitionSubstitutions['__aws_s3_copy_steps_midfix__'] = props.s3StepsCopyMidfix;
+  definitionSubstitutions['__use_jsonl_format__'] = props.s3StepsUseJsonLCopyFormat.toString();
 
   // Nested state machines
   for (const nestedSfnName of stepFunctionsNameList) {

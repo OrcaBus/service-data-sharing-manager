@@ -94,30 +94,20 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
-  if (lambdaRequirements.needsStsPermissions) {
-    lambdaObject.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['sts:GetCallerIdentity'],
-        resources: ['*'],
-      })
+  if (lambdaRequirements.needsStepsS3UploadPermissions) {
+    props.s3StepsCopyBucket.grantReadWrite(
+      lambdaObject.currentVersion,
+      path.join(props.s3StepsCopyBucketPrefix, '*')
     );
-
     NagSuppressions.addResourceSuppressions(
       lambdaObject,
       [
         {
           id: 'AwsSolutions-IAM5',
-          reason: 'GetCallerIdentity is required to get the account id, resources is not relevant',
+          reason: 'Lambda needs asterisk across s3 resources',
         },
       ],
       true
-    );
-  }
-
-  if (lambdaRequirements.needsStepsS3UploadPermissions) {
-    props.s3StepsCopyBucket.grantReadWrite(
-      lambdaObject.currentVersion,
-      path.join(props.s3StepsCopyBucketPrefix, '*')
     );
   }
 

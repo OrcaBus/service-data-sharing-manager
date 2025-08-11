@@ -44,6 +44,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'getS3DestinationAndSourceUriMappings',
     'createCsvForS3StepsCopy',
     'updatePushJobApi',
+    'packageFileToJsonlData',
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
 };
@@ -93,6 +94,10 @@ export interface SfnProps {
   // S3 Steps Copy Bucket
   s3StepsCopyBucket: IBucket;
   s3StepsCopySfn: IStateMachine;
+  s3StepsCopyPrefix: string;
+  s3StepsCopyMidfix: string;
+  s3StepsUseJsonLCopyFormat: boolean;
+
   // Packaging Bucket
   packagingBucket: IBucket;
   // ECS Cluster
