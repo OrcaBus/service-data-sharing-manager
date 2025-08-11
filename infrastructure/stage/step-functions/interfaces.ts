@@ -48,7 +48,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'packageFileToJsonlData',
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
-  triggerDataSharing: ['startPackaging', 'startDataCopy'],
+  triggerDataSharing: ['triggerPackaging', 'triggerPush'],
 };
 
 export interface StepFunctionRequirements {

@@ -81,29 +81,14 @@
 
 
 
-import inspect
-import orcabus_api_tools.data_sharing as ds
-print([name for name, obj in inspect.getmembers(ds, inspect.isfunction)])
+from orcabus_api_tools.data_sharing import get_data_sharing_url
+from orcabus_api_tools.utils.requests_helpers import post_request
 
-
-from orcabus_api_tools.data_sharing import create_package
 def handler(event, context):
-    """
-    Get inputs then use the fastq unarchiving tools layer to update the status of a job in the database
-    :param event:
-    :param context:
-    :return:
-    """
-    # Get inputs
-    package_name = event.get("packageInput", {}).get("packageName")
-    package_request = event.get("packageInput", {}).get("packageRequest")
 
-    return create_package(
-        **dict(filter(
-            lambda kv: kv[1] is not None,
-            {
-                "packageName": package_name,
-                "packageRequest": package_request
-            }.items()
-        ))
+    payload = event
+
+    return post_request(
+        url=get_data_sharing_url("api/v1/package/"),
+        json_data=payload
     )

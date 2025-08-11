@@ -1,12 +1,12 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Start Packaging",
+  "StartAt": "Trigger Packaging",
   "States": {
-    "Start Packaging": {
+    "Trigger Packaging": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__start_packaging_lambda_function_arn__}",
+        "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
         "Payload": "{% $states.input %}"
       },
       "Retry": [
@@ -23,24 +23,6 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Send Auto Sharing Completion Event"
-    },
-    "Send Auto Sharing Completion Event": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::events:putEvents",
-      "Arguments": {
-        "Entries": [
-          {
-            "Detail": {
-              "Message": "Auto sharing workflow finished",
-              "packageName": "{% $states.input.packageInput.packageName ? $states.input.packageInput.packageName : $states.input.packageName %}"
-            },
-            "DetailType": "DataSharingStatus",
-            "EventBusName": "default",
-            "Source": "data-sharing/automation"
-          }
-        ]
-      },
       "End": true
     }
   }
