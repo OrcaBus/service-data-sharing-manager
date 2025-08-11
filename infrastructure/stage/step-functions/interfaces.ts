@@ -42,7 +42,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   pushIcav2Data: ['queryAndCollectIcav2Prefixes'],
   pushS3Data: [
     'getS3DestinationAndSourceUriMappings',
-    'createJsonlForS3StepsCopy',
+    'createCsvForS3StepsCopy',
     'updatePushJobApi',
     'packageFileToJsonlData',
   ],
@@ -95,6 +95,7 @@ export interface SfnProps {
   s3StepsCopyBucket: IBucket;
   s3StepsCopySfn: IStateMachine;
   s3StepsCopyPrefix: string;
+  s3StepsCopyMidfix: string;
   s3StepsUseJsonLCopyFormat: boolean;
 
   // Packaging Bucket

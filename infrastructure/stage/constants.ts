@@ -76,11 +76,14 @@ export const s3CopyStepsBucket: Record<StageName, string> = {
   GAMMA: 'stg-stepss3copystack-stepss3copyworking01b34927-szqxpff5lsbx', // pragma: allowlist secret
   PROD: 'prod-stepss3copystack-stepss3copyworking01b34927-mp9y88d9e1py', // pragma: allowlist secret
 };
+
 export const S3_STEPS_COPY_PREFIX: Record<StageName, string> = {
-  BETA: 'a-working-folder/DATA_SHARING/',
-  GAMMA: 'DATA_SHARING/',
-  PROD: 'DATA_SHARING/',
+  BETA: 'a-working-folder/',
+  GAMMA: '',
+  PROD: '',
 };
+
+export const S3_STEPS_COPY_MIDFIX: string = 'DATA_SHARING/';
 
 export const s3CopyStepsFunctionArn: Record<StageName, string> = {
   BETA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['BETA']}:stateMachine:StepsS3CopyStateMachine157A1409-jx4WNxpdckgQ`, // pragma: allowlist secret

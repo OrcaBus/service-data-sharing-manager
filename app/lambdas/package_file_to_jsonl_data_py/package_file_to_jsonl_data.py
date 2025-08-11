@@ -14,6 +14,7 @@ from typing import Dict, Optional
 from tempfile import NamedTemporaryFile
 import boto3
 
+# Layer imports
 from data_sharing_tools.utils.dynamodb_helpers import query_dynamodb_table
 
 if typing.TYPE_CHECKING:
@@ -60,7 +61,7 @@ def get_instrument_run_id_from_relative_path(relative_path: Path) -> str:
     return relative_path.parts[1]
 
 
-def handler(event, context) -> Optional[Dict[str, int]]:
+def handler(event, context) -> dict[str, str]:
     """
     Given the following inputs:
       * jobId
@@ -115,8 +116,8 @@ def handler(event, context) -> Optional[Dict[str, int]]:
     # Get the portal run id by the relative path (for secondary analysis)
     data_df["portalRunId"] = data_df.apply(
         lambda row_iter_: (
-            get_portal_run_id_from_relative_path((Path(row_iter_['relativePath'].parent)))
-            if row_iter_['relativePath'].str.startswith("secondary-analysis")
+            get_portal_run_id_from_relative_path(Path(row_iter_['relativePath']).parent)
+            if row_iter_['relativePath'].startswith("secondary-analysis")
             else None
         ),
         axis='columns'
@@ -124,10 +125,11 @@ def handler(event, context) -> Optional[Dict[str, int]]:
 
     data_df["instrumentRunId"] = data_df.apply(
         lambda row_iter_: (
-            get_instrument_run_id_from_relative_path((Path(row_iter_['relativePath'].parent)))
-            if row_iter_['relativePath'].str.startswith("fastq")
+            get_instrument_run_id_from_relative_path(Path(row_iter_['relativePath']).parent)
+            if row_iter_['relativePath'].startswith("fastq")
             else None
-        )
+        ),
+        axis='columns'
     )
 
     # Group by parent path and collect the relative paths
@@ -149,28 +151,35 @@ def handler(event, context) -> Optional[Dict[str, int]]:
     # Okay we mean business and were uploading
     s3_client: S3Client = boto3.client("s3")
 
-    # Get the pagination value
-    item = items_list[pagination_index]
-
     if pagination_index < len(sorted(primary_data_df['instrumentRunId'].unique().tolist())):
         instrument_run_id = sorted(primary_data_df['instrumentRunId'].unique().tolist())[pagination_index]
         data_df = primary_data_df.query("instrumentRunId == @instrument_run_id")
+        destination_folder_key = Path(f"fastq/{instrument_run_id}")
+        # Get the relative path parent for each file
+        data_df["relativeFolderKey"] = data_df['relativePath'].apply(
+            lambda relative_path_iter_: str(Path(relative_path_iter_.parent).relative_to(destination_folder_key)) + "/"
+        )
     else:
         pagination_index -= len(sorted(primary_data_df['instrumentRunId'].unique().tolist()))
         portal_run_id = sorted(secondary_data_df['portalRunId'].unique().tolist())[pagination_index]
         data_df = secondary_data_df.query("portalRunId == @portal_run_id")
+        destination_folder_key = Path(f"secondary-analysis/{portal_run_id}")
+        # Get the relative path parent for each file
+        data_df["relativeFolderKey"] = data_df['relativePath'].apply(
+            lambda relative_path_iter_: str(Path(relative_path_iter_.parent).relative_to(destination_folder_key)) + "/"
+        )
 
     # Now generate the jsonl data
     with NamedTemporaryFile(suffix="*.jsonl") as temp_file:
         data_df[[
             "bucket",
             "key",
-            "relativePathParent"
+            "relativeFolderKey"
         ]].rename(
-            {
+            columns={
                 "bucket": "sourceBucket",
                 "key": "sourceKey",
-                "relativePathParent": "destinationRelativeFolderKey"
+                "relativeFolderKey": "destinationRelativeFolderKey"
             }
         ).to_json(
             temp_file,
@@ -187,4 +196,7 @@ def handler(event, context) -> Optional[Dict[str, int]]:
             Filename=temp_file.name
         )
 
-    return {}
+    return {
+        "destinationBucket": push_location_url_obj.netloc,
+        "destinationFolderKey": str(Path(push_location_url_obj.path.lstrip('/')).joinpath(destination_folder_key)) + "/",
+    }

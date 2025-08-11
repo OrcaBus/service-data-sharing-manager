@@ -77,6 +77,8 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   // S3 Steps Copy stuff
   definitionSubstitutions['__aws_s3_copy_steps_bucket__'] = props.s3StepsCopyBucket.bucketName;
   definitionSubstitutions['__aws_s3_copy_steps_prefix__'] = props.s3StepsCopyPrefix;
+  definitionSubstitutions['__aws_s3_copy_steps_midfix__'] = props.s3StepsCopyMidfix;
+  definitionSubstitutions['__use_jsonl_format__'] = props.s3StepsUseJsonLCopyFormat.toString();
 
   // Nested state machines
   for (const nestedSfnName of stepFunctionsNameList) {
