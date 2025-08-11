@@ -1,78 +1,109 @@
 #!/usr/bin/env python3
 
-import json
-import requests
-import logging
-import boto3
 
-# Set up logging
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+# #  This is the locally trigger version
+# import json
+# import requests
+# import logging
+# import boto3
 
-# API entry point for OrcaBus packaging
-# This is the base URL for the OrcaBus API packaging endpoint
-API_BASE_URL = "https://data-sharing.dev.umccr.org/api/v1/package/"
+# # Set up logging
+# logger = logging.getLogger()
+# logger.setLevel(logging.INFO)
 
-# This API token retrieval logic follows the approach (almost a copy)
-# from data-sharing-tool.py for retrieving the OrcaBus API token from AWS
-# Secrets Manager. In the future, this could be refactored into a shared
-# module so that the authentication routine is callable across services.
-AWS_ORCABUS_TOKEN_SECRET_ID = 'orcabus/token-service-jwt'
+# # API entry point for OrcaBus packaging
+# # This is the base URL for the OrcaBus API packaging endpoint
+# API_BASE_URL = "https://data-sharing.dev.umccr.org/api/v1/package/"
 
-def get_orcabus_token() -> str:
-    sm = boto3.client("secretsmanager")
-    sec = sm.get_secret_value(SecretId=AWS_ORCABUS_TOKEN_SECRET_ID)["SecretString"]
-    token = json.loads(sec).get("id_token")
-    if not token:
-        raise ValueError("id_token missing in Secrets Manager secret")
-    return token
+# # This API token retrieval logic follows the approach (almost a copy)
+# # from data-sharing-tool.py for retrieving the OrcaBus API token from AWS
+# # Secrets Manager. In the future, this could be refactored into a shared
+# # module so that the authentication routine is callable across services.
+# AWS_ORCABUS_TOKEN_SECRET_ID = 'orcabus/token-service-jwt'
 
-def handler(event, context=None):
-    ORCABUS_API_TOKEN = get_orcabus_token()
-    if not ORCABUS_API_TOKEN:
-        raise RuntimeError("Could not retrieve OrcaBus API token from Secrets Manager")
+# def get_orcabus_token() -> str:
+#     sm = boto3.client("secretsmanager")
+#     sec = sm.get_secret_value(SecretId=AWS_ORCABUS_TOKEN_SECRET_ID)["SecretString"]
+#     token = json.loads(sec).get("id_token")
+#     if not token:
+#         raise ValueError("id_token missing in Secrets Manager secret")
+#     return token
 
-    logger.info("Received event: %s", json.dumps(event or {}))
+# def handler(event, context=None):
+#     ORCABUS_API_TOKEN = get_orcabus_token()
+#     if not ORCABUS_API_TOKEN:
+#         raise RuntimeError("Could not retrieve OrcaBus API token from Secrets Manager")
 
-    # Validate required input
-    if not event or "packageInput" not in event:
-        raise ValueError("Missing 'packageInput' in event")
+#     logger.info("Received event: %s", json.dumps(event or {}))
 
-    payload = event["packageInput"]
-    logger.info("Packaging input payload: %s", json.dumps(payload))
+#     # Validate required input
+#     if not event or "packageInput" not in event:
+#         raise ValueError("Missing 'packageInput' in event")
 
-    headers = {
-        "Authorization": f"Bearer {ORCABUS_API_TOKEN}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
+#     payload = event["packageInput"]
+#     logger.info("Packaging input payload: %s", json.dumps(payload))
 
-    logger.info("Sending request to OrcaBus packaging API...")
-    response = requests.post(API_BASE_URL, headers=headers, json=payload, timeout=30)
+#     headers = {
+#         "Authorization": f"Bearer {ORCABUS_API_TOKEN}",
+#         "Content-Type": "application/json",
+#         "Accept": "application/json",
+#     }
 
-    logger.info("API responded with status: %s", response.status_code)
-    logger.info("API response body: %s", response.text)
+#     logger.info("Sending request to OrcaBus packaging API...")
+#     response = requests.post(API_BASE_URL, headers=headers, json=payload, timeout=30)
 
-    if not response.ok:
-        raise Exception(f"API call failed: {response.status_code} - {response.text}")
+#     logger.info("API responded with status: %s", response.status_code)
+#     logger.info("API response body: %s", response.text)
 
-    resp_json = response.json()
-    package_id_value = resp_json.get("id") or resp_json.get("package_id")
-    if not package_id_value:
-        raise ValueError("Could not find package_id in API response")
+#     if not response.ok:
+#         raise Exception(f"API call failed: {response.status_code} - {response.text}")
 
-    logger.info(f"Extracted package_id: {package_id_value}")
-    return {"message": "Packaging job started successfully", "package_id": package_id_value}
+#     resp_json = response.json()
+#     package_id_value = resp_json.get("id") or resp_json.get("package_id")
+#     if not package_id_value:
+#         raise ValueError("Could not find package_id in API response")
 
-if __name__ == "__main__":
-    fake_event = {
-        "packageInput": {
-            "packageName": "fji-test",
-            "packageRequest": {
-                "libraryIdList": ["L2401544"],
-                "dataTypeList": ["fastq"],
-                "useWorkflowFilters": "true"
-            }
-        }
-    }
-    print(json.dumps(handler(fake_event), indent=2))
+#     logger.info(f"Extracted package_id: {package_id_value}")
+#     return {"message": "Packaging job started successfully", "package_id": package_id_value}
+
+# if __name__ == "__main__":
+#     fake_event = {
+#         "packageInput": {
+#             "packageName": "fji-test",
+#             "packageRequest": {
+#                 "libraryIdList": ["L2401544"],
+#                 "dataTypeList": ["fastq"],
+#                 "useWorkflowFilters": "true"
+#             }
+#         }
+#     }
+#     print(json.dumps(handler(fake_event), indent=2))
+
+
+
+import inspect
+import orcabus_api_tools.data_sharing as ds
+print([name for name, obj in inspect.getmembers(ds, inspect.isfunction)])
+
+
+from orcabus_api_tools.data_sharing import create_package
+def handler(event, context):
+    """
+    Get inputs then use the fastq unarchiving tools layer to update the status of a job in the database
+    :param event:
+    :param context:
+    :return:
+    """
+    # Get inputs
+    package_name = event.get("packageInput", {}).get("packageName")
+    package_request = event.get("packageInput", {}).get("packageRequest")
+
+    return create_package(
+        **dict(filter(
+            lambda kv: kv[1] is not None,
+            {
+                "packageName": package_name,
+                "packageRequest": package_request
+            }.items()
+        ))
+    )

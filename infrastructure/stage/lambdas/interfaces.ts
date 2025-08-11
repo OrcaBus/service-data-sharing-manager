@@ -137,7 +137,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   getDynamodbEvaluatedKeyList: {
     needsDbPermissions: true,
   },
-  startPackaging: {},
+  startPackaging: {
+    needsOrcabusApiToolsLayer: true,
+  },
   startDataCopy: {},
 };
 
