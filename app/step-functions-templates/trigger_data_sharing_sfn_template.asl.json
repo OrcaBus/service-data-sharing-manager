@@ -9,6 +9,7 @@
         "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
         "Payload": "{% $states.input %}"
       },
+      "Output": "{% $states.result.Payload %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -23,7 +24,49 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "End": true
+      "Next": "Wait"
+    },
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Check Packaging Status"
+    },
+    "Check Packaging Status": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__check_packaging_status_lambda_function_arn__}",
+        "Payload": "{% {'id': $states.input.id} %}"
+      },
+      "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
+          "Next": "Done"
+        }
+      ],
+      "Default": "Wait"
+    },
+    "Done": {
+      "Type": "Succeed"
     }
   }
 }
