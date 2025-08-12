@@ -53,8 +53,8 @@ from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import post_request
 
 def handler(event, context):
-    package_id = event["package_id"]
-    share_dest = event.get("shareDestination")
+    package_id = event["id"]
+    share_dest =  's3://umccr-temp-dev/fji/' # event.get("shareDestination")
     payload = {"shareDestination": share_dest}
 
     return post_request(

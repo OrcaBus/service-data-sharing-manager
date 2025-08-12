@@ -53,17 +53,41 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Choice"
+      "Next": "Is Packaging Complete"
     },
-    "Choice": {
+    "Is Packaging Complete": {
       "Type": "Choice",
       "Choices": [
         {
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Done"
+          "Next": "Trigger Push"
         }
       ],
       "Default": "Wait"
+    },
+    "Trigger Push": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Output": "{% $states.result.Payload %}",
+      "Arguments": {
+        "FunctionName": "${__trigger_push_lambda_function_arn__}",
+        "Payload": "{% $states.input %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Done"
     },
     "Done": {
       "Type": "Succeed"

@@ -145,7 +145,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   checkPackagingStatus: {
     needsOrcabusApiToolsLayer: true,
   },
-  triggerPush: {},
+  triggerPush: {
+    needsOrcabusApiToolsLayer: true,
+  },
 };
 
 export interface LambdaProps {
