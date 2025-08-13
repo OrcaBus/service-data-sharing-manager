@@ -91,6 +91,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   getWorkflowFromPortalRunId: {
     needsOrcabusApiToolsLayer: true,
+    needsDataSharingToolsLayer: true,
     needsMartLayer: true,
   },
   handleWorkflowInputs: {
