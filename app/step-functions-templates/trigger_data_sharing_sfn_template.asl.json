@@ -24,9 +24,9 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Wait"
+      "Next": "Wait For Packaging"
     },
-    "Wait": {
+    "Wait For Packaging": {
       "Type": "Wait",
       "Seconds": 5,
       "Next": "Check Packaging Status"
@@ -63,7 +63,7 @@
           "Next": "Trigger Push"
         }
       ],
-      "Default": "Wait"
+      "Default": "Wait For Packaging"
     },
     "Trigger Push": {
       "Type": "Task",
@@ -87,9 +87,48 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Done"
+      "Next": "Wait For Push"
     },
-    "Done": {
+    "Wait For Push": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Check Push Status"
+    },
+    "Check Push Status": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__autotrigger_check_job_status_lambda_function_arn__}",
+        "Payload": "{% {'id': $states.input.id} %}"
+      },
+      "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Is Push Completed"
+    },
+    "Is Push Completed": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
+          "Next": "Autotrigger Complete"
+        }
+      ],
+      "Default": "Wait For Push"
+    },
+    "Autotrigger Complete": {
       "Type": "Succeed"
     }
   }
