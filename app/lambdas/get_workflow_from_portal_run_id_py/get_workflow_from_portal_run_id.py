@@ -6,6 +6,8 @@ SFN LAMBDA FUNCTION PLACEHOLDER: __get_workflow_run_id_from_portal_run_id_lambda
 Get workflow for portal run id
 
 """
+
+# Standard library imports
 import typing
 from io import BytesIO
 from textwrap import dedent
@@ -14,21 +16,19 @@ from typing import Dict, List, Optional, Tuple
 import boto3
 import json
 from urllib.parse import urlparse
-
-from data_sharing_tools.utils.models import WorkflowRunModelSlim
-from orcabus_api_tools.metadata import get_library_orcabus_id_from_library_id
-from orcabus_api_tools.workflow import (
-    get_workflow_run_from_portal_run_id, WorkflowRunNotFoundError,
-)
-
 import pandas as pd
-import ulid
 from os import environ
 
-if typing.TYPE_CHECKING:
-    from mypy_boto3_s3 import S3Client
-    from mypy_boto3_athena import AthenaClient
+# Platform layers
+from orcabus_api_tools.metadata import get_library_orcabus_id_from_library_id
+from orcabus_api_tools.workflow import (
+    get_workflow_run_from_portal_run_id,
+)
+from orcabus_api_tools.workflow.errors import WorkflowRunNotFoundError
 
+# Data sharing layer
+if typing.TYPE_CHECKING:
+    from data_sharing_tools.utils.models import WorkflowRunModelSlim
 
 # Globals
 # ATHENA
@@ -99,7 +99,7 @@ def run_athena_sql_query(sql_query: str) -> pd.DataFrame:
     )
 
 
-def get_workflow_run_from_portal_run_id_legacy(portal_run_id: str) -> Optional[List[WorkflowRunModelSlim]]:
+def get_workflow_run_from_portal_run_id_legacy(portal_run_id: str) -> Optional[List['WorkflowRunModelSlim']]:
     workflow_query = dedent(
         """
         SELECT
@@ -170,11 +170,7 @@ def get_workflow_run_from_portal_run_id_legacy(portal_run_id: str) -> Optional[L
     return df.to_dict(orient='records')
 
 
-def get_athena_client() -> 'AthenaClient':
-    return boto3.client('athena')
-
-
-def handler(event, context) -> Dict[str, WorkflowRunModelSlim]:
+def handler(event, context) -> Dict[str, 'WorkflowRunModelSlim']:
     """
     Get the portal run id, and return as a workflow object
     :param event:
@@ -184,15 +180,15 @@ def handler(event, context) -> Dict[str, WorkflowRunModelSlim]:
     portal_run_id = event['portalRunId']
 
     try:
-        workflow = get_workflow_run_from_portal_run_id(portal_run_id)
-        workflow = WorkflowRunModelSlim(
-            orcabusId=workflow["orcabusId"],
-            timestamp=workflow['currentState']['timestamp'],
-            portalRunId=workflow["portalRunId"],
-            workflowName=workflow['workflow']['workflowName'],
-            workflowVersion=workflow['workflow']['workflowVersion'],
-            libraries=workflow['libraries'],
-        )
+        workflow_run: 'WorkflowRun' = get_workflow_run_from_portal_run_id(portal_run_id)
+        workflow: 'WorkflowRunModelSlim' = {
+            "orcabusId": workflow_run["orcabusId"],
+            "timestamp": workflow_run['currentState']['timestamp'],
+            "portalRunId": workflow_run["portalRunId"],
+            "workflowName": workflow_run['workflow']['workflowName'],
+            "workflowVersion": workflow_run['workflow']['workflowVersion'],
+            "libraries": workflow_run['libraries'],
+        }
     except WorkflowRunNotFoundError:
         workflow_list = get_workflow_run_from_portal_run_id_legacy(portal_run_id)
         if workflow_list is None:
