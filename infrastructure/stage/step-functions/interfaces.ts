@@ -17,6 +17,7 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
   'presigning',
   'pushIcav2Data',
+  'pushS3Data',
   'push',
   'triggerDataSharing',
 ];

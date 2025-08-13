@@ -84,7 +84,7 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   for (const nestedSfnName of stepFunctionsNameList) {
     switch (nestedSfnName) {
       case 'pushS3Data': {
-        definitionSubstitutions['__s3_data_push_sfn_arn__'] =
+        definitionSubstitutions['__push_s3_data_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
