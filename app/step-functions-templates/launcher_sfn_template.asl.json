@@ -35,7 +35,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__autotrigger_check_job_status_lambda_function_arn__}",
+        "FunctionName": "${__launcher_check_job_status_lambda_function_arn__}",
         "Payload": "{% {'id': $states.input.id} %}"
       },
       "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
@@ -98,7 +98,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__autotrigger_check_job_status_lambda_function_arn__}",
+        "FunctionName": "${__launcher_check_job_status_lambda_function_arn__}",
         "Payload": "{% {'id': $states.input.id} %}"
       },
       "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
@@ -123,12 +123,12 @@
       "Choices": [
         {
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Autotrigger Complete"
+          "Next": "Launcher Complete"
         }
       ],
       "Default": "Wait For Push"
     },
-    "Autotrigger Complete": {
+    "Launcher Complete": {
       "Type": "Succeed"
     }
   }

@@ -21,7 +21,7 @@ def _infer_type_from_id(job_id: str) -> str | None:
 
 def handler(event, context=None):
     """
-    Generic status checker for OrcaBus Data Sharing jobs.
+    Generic status checker for Data Sharing jobs.
     Works with both packaging and push jobs.
 
     event must contain:
