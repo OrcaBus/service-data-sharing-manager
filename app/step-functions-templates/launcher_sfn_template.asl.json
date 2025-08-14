@@ -9,7 +9,7 @@
         "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
         "Payload": "{% $states.input %}"
       },
-      "Output": "{% $states.result.Payload %}",
+      "Output": "{% $merge([$states.result.Payload, {'shareDestination': $states.input.shareDestination}]) %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -71,7 +71,7 @@
       "Output": "{% $states.result.Payload %}",
       "Arguments": {
         "FunctionName": "${__trigger_push_lambda_function_arn__}",
-        "Payload": "{% $states.input %}"
+        "Payload": "{% {'id': $states.input.id, 'shareDestination': $states.input.shareDestination} %}"
       },
       "Retry": [
         {
