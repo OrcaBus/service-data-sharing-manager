@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import pandas as pd
 from os import environ
 
+
 # Platform layers
 from orcabus_api_tools.metadata import get_library_orcabus_id_from_library_id
 from orcabus_api_tools.workflow import (
@@ -28,7 +29,10 @@ from orcabus_api_tools.workflow.errors import WorkflowRunNotFoundError
 
 # Data sharing layer
 if typing.TYPE_CHECKING:
+    from mypy_boto3_athena import AthenaClient
     from data_sharing_tools.utils.models import WorkflowRunModelSlim
+    from mypy_boto3_s3 import S3Client
+
 
 # Globals
 # ATHENA
