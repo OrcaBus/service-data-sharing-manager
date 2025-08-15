@@ -1,6 +1,6 @@
 # #!/usr/bin/env python3
 """
-Lambda handler to trigger the push step in the data sharing launcher workflow.
+Lambda handler to trigger the push step in the data sharing auto_launch workflow.
 
 This script sends a POST request to the OrcaBus Data Sharing API
 (e.g., https://data-sharing.dev.umccr.org/ for development)

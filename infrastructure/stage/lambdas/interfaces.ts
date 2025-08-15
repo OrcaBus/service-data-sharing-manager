@@ -25,7 +25,7 @@ export type LambdaName =
   | 'uploadPushJobToS3'
   | 'getDynamodbEvaluatedKeyList'
   | 'triggerPackaging'
-  | 'launcherCheckJobStatus'
+  | 'autoLaunchCheckJobStatus'
   | 'triggerPush';
 
 export const lambdaNameList: LambdaName[] = [
@@ -50,7 +50,7 @@ export const lambdaNameList: LambdaName[] = [
   'uploadPushJobToS3',
   'getDynamodbEvaluatedKeyList',
   'triggerPackaging',
-  'launcherCheckJobStatus',
+  'autoLaunchCheckJobStatus',
   'triggerPush',
 ];
 
@@ -142,7 +142,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   triggerPackaging: {
     needsOrcabusApiToolsLayer: true,
   },
-  launcherCheckJobStatus: {
+  autoLaunchCheckJobStatus: {
     needsOrcabusApiToolsLayer: true,
   },
   triggerPush: {
