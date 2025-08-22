@@ -1,0 +1,57 @@
+{
+  "StartAt": "Receive Event",
+  "States": {
+    "Receive Event": {
+      "Type": "Pass",
+      "Next": "Auto Launch Planner"
+    },
+    "Auto Launch Planner": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Output": "{% $states.result.Payload %}",
+      "Arguments": {
+        "FunctionName": "${__auto_launch_planner_lambda_function_arn__}",
+        "Payload": "{% $states.input %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "For each Plan"
+    },
+    "For each Plan": {
+      "Type": "Map",
+      "Items": "{% $states.input.plans %}",
+      "MaxConcurrency": 5,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Run auto-launch",
+        "States": {
+          "Run auto-launch": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::states:startExecution.sync:2",
+            "Arguments": {
+              "StateMachineArn": "${__auto_launch_sfn_arn__}",
+              "Input": "{% $states.input %}"
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  },
+  "QueryLanguage": "JSONata"
+}

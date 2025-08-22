@@ -11,7 +11,8 @@ export type StepFunctionsName =
   | 'pushIcav2Data'
   | 'pushS3Data'
   | 'push'
-  | 'autoLaunch';
+  | 'autoLaunch'
+  | 'autoLaunchController';
 
 export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
@@ -20,6 +21,7 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'pushS3Data',
   'push',
   'autoLaunch',
+  'autoLaunchController',
 ];
 
 export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
@@ -50,6 +52,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoLaunch: ['triggerPackaging', 'triggerPush', 'autoLaunchCheckJobStatus'],
+  autoLaunchController: ['autoLaunchPlanner'],
 };
 
 export interface StepFunctionRequirements {
@@ -86,6 +89,10 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
     needsNestedSfnPermissions: true,
   },
   autoLaunch: {
+    needsEventPutPermissions: true,
+  },
+  autoLaunchController: {
+    needsNestedSfnPermissions: true,
     needsEventPutPermissions: true,
   },
 };

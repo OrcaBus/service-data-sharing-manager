@@ -26,7 +26,8 @@ export type LambdaName =
   | 'getDynamodbEvaluatedKeyList'
   | 'triggerPackaging'
   | 'autoLaunchCheckJobStatus'
-  | 'triggerPush';
+  | 'triggerPush'
+  | 'autoLaunchPlanner';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -52,6 +53,7 @@ export const lambdaNameList: LambdaName[] = [
   'triggerPackaging',
   'autoLaunchCheckJobStatus',
   'triggerPush',
+  'autoLaunchPlanner',
 ];
 
 export interface Requirements {
@@ -146,6 +148,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsOrcabusApiToolsLayer: true,
   },
   triggerPush: {
+    needsOrcabusApiToolsLayer: true,
+  },
+  autoLaunchPlanner: {
     needsOrcabusApiToolsLayer: true,
   },
 };
