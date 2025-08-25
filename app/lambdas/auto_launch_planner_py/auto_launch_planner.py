@@ -51,7 +51,6 @@ JOBS: List[Dict] = [
 # Utility functions to get project and contact IDs from library and project IDs (potentially
 # to be implemented in orcabus_api_tools/metadata/library_helpers.py
 
-)
 def get_project_ids_from_library_id(library_id: str) -> list[str]:
     library_orcabus_id = get_library_orcabus_id_from_library_id(library_id)
     library_url = f"https://metadata.dev.umccr.org/api/v1/library/{library_orcabus_id}/" # TODO: Remove hardcoding here
@@ -77,7 +76,7 @@ def get_contact_ids_from_project_id(project_id: str) -> list[str]:
 
     return contact_ids
 
-# --- End of utility functions for library_helpers.py --
+# --- End of utility functions for library_helpers.py ---
 
 
 
@@ -99,6 +98,10 @@ def handler(event, context):
     library_id_list = sorted(set(get_libraries_from_instrument_run_id(instrument_run_id)))
 
     # 2) Filter and build plans (one per job with matches). Filter may need to happend outsithe this lambda.
+    # Option: add an Athena SQL filter field to the data-sharing jobs DB.
+    # This lets each job express arbitrary selection criteria in SQL; the query
+    # returns the candidate library_ids, which we then package and push to the
+    # destination.
     plans: List[Dict] = []
     for job in JOBS:
         if not job.get("enabled", False):
