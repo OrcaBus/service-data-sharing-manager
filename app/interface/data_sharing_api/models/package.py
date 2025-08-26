@@ -8,17 +8,18 @@ import typing
 from typing import List, TypedDict, Self, Literal
 from os import environ
 from typing import Optional, ClassVar
-
 from dyntastic import Dyntastic
 from fastapi.encoders import jsonable_encoder
 from pydantic import Field, BaseModel, ConfigDict, model_validator, computed_field
 from datetime import datetime, timedelta, timezone
 
+from fastapi_tools import QueryPaginatedResponse
+
+# Layer imports
 from data_sharing_tools.utils.models import SecondaryAnalysisDataType
 
-from fastapi_tools import QueryPaginatedResponse
-from . import JobStatusType
 # Util imports
+from . import JobStatusType
 from ..utils import (
     to_camel, get_ulid, get_packaging_endpoint_url, get_s3_packaging_prefix, to_snake
 )

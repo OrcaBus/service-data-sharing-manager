@@ -54,6 +54,7 @@ export const STACK_SOURCE = 'orcabus.datasharing';
 export const PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPackagingJobStateChange';
 export const PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPushJobStateChange';
 export const FASTQ_SYNC_DETAIL_TYPE = 'FastqSync';
+export const ICAV2_DATA_COPY_SYNC_DETAIL_TYPE = 'ICAv2DataCopySync';
 
 // API
 export const API_VERSION = 'v1';
