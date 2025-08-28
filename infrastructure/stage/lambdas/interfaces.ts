@@ -27,7 +27,7 @@ export type LambdaName =
   | 'triggerPackaging'
   | 'autoLaunchCheckJobStatus'
   | 'triggerPush'
-  | 'autoLaunchPlanner';
+  | 'autoJobPlanner';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -53,7 +53,7 @@ export const lambdaNameList: LambdaName[] = [
   'triggerPackaging',
   'autoLaunchCheckJobStatus',
   'triggerPush',
-  'autoLaunchPlanner',
+  'autoJobPlanner',
 ];
 
 export interface Requirements {
@@ -150,7 +150,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   triggerPush: {
     needsOrcabusApiToolsLayer: true,
   },
-  autoLaunchPlanner: {
+  autoJobPlanner: {
     needsOrcabusApiToolsLayer: true,
   },
 };

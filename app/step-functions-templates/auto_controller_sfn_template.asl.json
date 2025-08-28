@@ -3,14 +3,14 @@
   "States": {
     "Receive Event": {
       "Type": "Pass",
-      "Next": "Auto Launch Planner"
+      "Next": "Job Planner"
     },
-    "Auto Launch Planner": {
+    "Job Planner": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Output": "{% $states.result.Payload %}",
       "Arguments": {
-        "FunctionName": "${__auto_launch_planner_lambda_function_arn__}",
+        "FunctionName": "${__auto_job_planner_lambda_function_arn__}",
         "Payload": "{% $states.input %}"
       },
       "Retry": [
@@ -27,9 +27,9 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "For each Plan"
+      "Next": "For each Job"
     },
-    "For each Plan": {
+    "For each Job": {
       "Type": "Map",
       "Items": "{% $states.input.plans %}",
       "MaxConcurrency": 5,
@@ -37,9 +37,9 @@
         "ProcessorConfig": {
           "Mode": "INLINE"
         },
-        "StartAt": "Run auto-launch",
+        "StartAt": "Run autoPackagePush",
         "States": {
-          "Run auto-launch": {
+          "Run autoPackagePush": {
             "Type": "Task",
             "Resource": "arn:aws:states:::states:startExecution.sync:2",
             "Arguments": {
