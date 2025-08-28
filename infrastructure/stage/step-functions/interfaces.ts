@@ -51,7 +51,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'packageFileToJsonlData',
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
-  autoLaunch: ['triggerPackaging', 'triggerPush', 'autoLaunchCheckJobStatus'],
+  autoLaunch: ['triggerPackaging', 'triggerPush', 'checkPackagePushStatus'],
   autoController: ['autoJobPlanner'],
 };
 

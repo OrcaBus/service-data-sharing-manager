@@ -1,9 +1,9 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Trigger Packaging",
+  "StartAt": "Trigger Package",
   "TimeoutSeconds": 86400,
   "States": {
-    "Trigger Packaging": {
+    "Trigger Package": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
@@ -25,18 +25,18 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Wait For Packaging"
+      "Next": "Wait For Package"
     },
-    "Wait For Packaging": {
+    "Wait For Package": {
       "Type": "Wait",
       "Seconds": 5,
-      "Next": "Check Packaging Status"
+      "Next": "Check Package Status"
     },
-    "Check Packaging Status": {
+    "Check Package Status": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__auto_launch_check_job_status_lambda_function_arn__}",
+        "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
         "Payload": "{% {'id': $states.input.id} %}"
       },
       "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
@@ -54,9 +54,9 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Is Packaging Complete"
+      "Next": "Is Package Complete"
     },
-    "Is Packaging Complete": {
+    "Is Package Complete": {
       "Type": "Choice",
       "Choices": [
         {
@@ -64,7 +64,7 @@
           "Next": "Trigger Push"
         }
       ],
-      "Default": "Wait For Packaging"
+      "Default": "Wait For Package"
     },
     "Trigger Push": {
       "Type": "Task",
@@ -99,7 +99,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__auto_launch_check_job_status_lambda_function_arn__}",
+        "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
         "Payload": "{% {'id': $states.input.id} %}"
       },
       "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
@@ -124,12 +124,12 @@
       "Choices": [
         {
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Auto-launch Complete"
+          "Next": "Package-Push Complete"
         }
       ],
       "Default": "Wait For Push"
     },
-    "Auto-launch Complete": {
+    "Package-Push Complete": {
       "Type": "Succeed"
     }
   }
