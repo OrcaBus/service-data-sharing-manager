@@ -258,7 +258,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
       }
     }
 
-    if (props.stateMachineName === 'autoLaunchController') {
+    if (props.stateMachineName === 'autoController') {
       props.stateMachineObj.addToRolePolicy(
         new iam.PolicyStatement({
           actions: ['states:StartExecution'],
