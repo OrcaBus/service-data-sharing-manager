@@ -43,7 +43,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::states:startExecution.sync:2",
             "Arguments": {
-              "StateMachineArn": "${__auto_launch_sfn_arn__}",
+              "StateMachineArn": "${__auto_package_push_sfn_arn__}",
               "Input": "{% $states.input %}"
             },
             "End": true

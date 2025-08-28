@@ -93,8 +93,8 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
-      case 'autoLaunch': {
-        definitionSubstitutions['__auto_launch_sfn_arn__'] =
+      case 'autoPackagePush': {
+        definitionSubstitutions['__auto_package_push_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
@@ -263,7 +263,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
         new iam.PolicyStatement({
           actions: ['states:StartExecution'],
           resources: [
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-autoLaunch`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-autoPackagePush`,
           ],
         })
       );
@@ -271,7 +271,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
         new iam.PolicyStatement({
           actions: ['states:DescribeExecution'],
           resources: [
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-autoLaunch:*`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-autoPackagePush:*`,
           ],
         })
       );

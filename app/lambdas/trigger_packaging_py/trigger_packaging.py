@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Lambda handler to trigger the packaging step in the data sharing auto_launch workflow.
+Lambda handler to trigger the packaging step in the data sharing auto_package_push workflow.
 
 This script sends a POST request to the OrcaBus Data Sharing API
 (e.g., https://data-sharing.dev.umccr.org/ for development)

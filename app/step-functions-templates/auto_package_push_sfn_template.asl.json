@@ -124,12 +124,12 @@
       "Choices": [
         {
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Package-Push Complete"
+          "Next": "Auto Package-Push Complete"
         }
       ],
       "Default": "Wait For Push"
     },
-    "Package-Push Complete": {
+    "Auto Package-Push Complete": {
       "Type": "Succeed"
     }
   }
