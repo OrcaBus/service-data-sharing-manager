@@ -1,6 +1,7 @@
 {
   "QueryLanguage": "JSONata",
   "StartAt": "Trigger Packaging",
+  "TimeoutSeconds": 86400,
   "States": {
     "Trigger Packaging": {
       "Type": "Task",

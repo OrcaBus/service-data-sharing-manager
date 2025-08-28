@@ -6,35 +6,27 @@ from typing import List, Dict
 
 
 # ---- This is a fake “DB” to be implemente later on in a proper db infrastructure ----
-
+# Tothill--> CUP, LAyton --> VENTURE
 JOBS: List[Dict] = [
     {
         "jobId": "job-1",
         "enabled": True,
-        "filter": {
-            "projectIdIn": "VENTURE",
-            "contactIdIn": "LAyton",
-        },
         "packageRequest": {
             "dataTypeList": ["fastq"],
             "instrumentRunIdList": ["241024_A00130_0336_BHW7MVDSXC"],
             "projectIdList": ["VENTURE"],
         },
-        "shareDestination": "s3://umccr-temp-dev/fji/LAyton/VENTURE/",
+        "shareDestination": "s3://umccr-temp-dev/fji/VENTURE/",
     },
     {
         "jobId": "job-2",
         "enabled": True,
-        "filter": {
-            "projectIdIn": "VENTURE",
-            "contactIdIn": "LAyton",
-        },
         "packageRequest": {
             "dataTypeList": ["fastq"],
             "instrumentRunIdList": ["241024_A00130_0336_BHW7MVDSXC"],
-            "projectIdList": ["VENTURE"],
+            "projectIdList": ["CUP"],
         },
-        "shareDestination": "s3://umccr-temp-dev/fji/LAyton/VENTURE/",
+        "shareDestination": "s3://umccr-temp-dev/fji/CUP/",
     },
 
 ]
