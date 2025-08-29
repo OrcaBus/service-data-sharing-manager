@@ -13,7 +13,6 @@ JOBS: List[Dict] = [
         "enabled": True,
         "packageRequest": {
             "dataTypeList": ["fastq"],
-            "instrumentRunIdList": ["241024_A00130_0336_BHW7MVDSXC"],
             "projectIdList": ["VENTURE"],
         },
         "shareDestination": "s3://umccr-temp-dev/fji/VENTURE/",
@@ -23,7 +22,6 @@ JOBS: List[Dict] = [
         "enabled": True,
         "packageRequest": {
             "dataTypeList": ["fastq"],
-            "instrumentRunIdList": ["241024_A00130_0336_BHW7MVDSXC"],
             "projectIdList": ["CUP"],
         },
         "shareDestination": "s3://umccr-temp-dev/fji/CUP/",
