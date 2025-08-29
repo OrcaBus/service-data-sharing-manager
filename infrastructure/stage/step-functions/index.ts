@@ -84,12 +84,17 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   for (const nestedSfnName of stepFunctionsNameList) {
     switch (nestedSfnName) {
       case 'pushS3Data': {
-        definitionSubstitutions['__s3_data_push_sfn_arn__'] =
+        definitionSubstitutions['__push_s3_data_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
       case 'pushIcav2Data': {
         definitionSubstitutions['__icav2_data_push_sfn_arn__'] =
+          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
+        break;
+      }
+      case 'autoPackagePush': {
+        definitionSubstitutions['__auto_package_push_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
@@ -251,6 +256,25 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
           }
         }
       }
+    }
+
+    if (props.stateMachineName === 'autoController') {
+      props.stateMachineObj.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['states:StartExecution'],
+          resources: [
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-autoPackagePush`,
+          ],
+        })
+      );
+      props.stateMachineObj.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['states:DescribeExecution'],
+          resources: [
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-autoPackagePush:*`,
+          ],
+        })
+      );
     }
 
     // The s3 data push SFN needs access to the s3 steps copy state machine

@@ -23,7 +23,11 @@ export type LambdaName =
   | 'updatePushJobApi'
   | 'uploadArchiveFileListAsCsv'
   | 'uploadPushJobToS3'
-  | 'getDynamodbEvaluatedKeyList';
+  | 'getDynamodbEvaluatedKeyList'
+  | 'triggerPackaging'
+  | 'checkPackagePushStatus'
+  | 'triggerPush'
+  | 'autoJobPlanner';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -46,6 +50,10 @@ export const lambdaNameList: LambdaName[] = [
   'uploadArchiveFileListAsCsv',
   'uploadPushJobToS3',
   'getDynamodbEvaluatedKeyList',
+  'triggerPackaging',
+  'checkPackagePushStatus',
+  'triggerPush',
+  'autoJobPlanner',
 ];
 
 export interface Requirements {
@@ -132,6 +140,18 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   getDynamodbEvaluatedKeyList: {
     needsDbPermissions: true,
+  },
+  triggerPackaging: {
+    needsOrcabusApiToolsLayer: true,
+  },
+  checkPackagePushStatus: {
+    needsOrcabusApiToolsLayer: true,
+  },
+  triggerPush: {
+    needsOrcabusApiToolsLayer: true,
+  },
+  autoJobPlanner: {
+    needsOrcabusApiToolsLayer: true,
   },
 };
 
