@@ -79,7 +79,7 @@ class LibraryModel(pa.DataFrameModel):
     libraryId: str = pa.Field(str_startswith="L")
     orcabusId: str = pa.Field(str_startswith="lib.")
     phenotype: str = pa.Field(nullable=True)
-    workflow: str = pa.Field()
+    workflow: str = pa.Field(nullable=True)
     quality: Optional[str] = pa.Field(nullable=True)
     type: str = pa.Field()
     assay: str = pa.Field()
