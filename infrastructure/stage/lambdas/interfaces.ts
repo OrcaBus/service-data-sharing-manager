@@ -63,6 +63,7 @@ export interface Requirements {
   needsDbPermissions?: boolean;
   needsStepsS3UploadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
+  needsAutoJobsSsmAccess?: boolean;
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
@@ -152,6 +153,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   autoJobPlanner: {
     needsOrcabusApiToolsLayer: true,
+    needsAutoJobsSsmAccess: true,
   },
 };
 

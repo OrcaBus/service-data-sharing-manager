@@ -97,3 +97,7 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
   GAMMA: false,
   PROD: false,
 };
+
+// SSM (auto sharing jobs)
+export const AUTO_JOBS_SSM_PREFIX = '/umccr/data-sharing/auto-package-push';
+export const AUTO_JOBS_JSON_RELATIVE = 'auto_package_push_jobs/dev.json';

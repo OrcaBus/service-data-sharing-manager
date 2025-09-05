@@ -29,7 +29,7 @@
     },
     "Wait For Package": {
       "Type": "Wait",
-      "Seconds": 5,
+      "Seconds": 300,
       "Next": "Check Package Status"
     },
     "Check Package Status": {
@@ -92,7 +92,7 @@
     },
     "Wait For Push": {
       "Type": "Wait",
-      "Seconds": 5,
+      "Seconds": 300,
       "Next": "Check Push Status"
     },
     "Check Push Status": {

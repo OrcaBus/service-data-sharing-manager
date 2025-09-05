@@ -1,0 +1,16 @@
+{
+  "jobs": [
+    {
+      "name": "tothill-cup",
+      "enabled": true,
+      "projectId": "CUP",
+      "shareDestination": "s3://umccr-temp-dev/fji/CUP/"
+    },
+    {
+      "name": "layton-venture",
+      "enabled": true,
+      "projectId": "VENTURE",
+      "shareDestination": "s3://umccr-temp-dev/fji/VENTURE/"
+    }
+  ]
+}

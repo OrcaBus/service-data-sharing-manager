@@ -111,6 +111,28 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
+  // Allow reading auto-package-push job configs from SSM (scoped prefix)
+  if (lambdaRequirements.needsAutoJobsSsmAccess) {
+    // Hardcoded for now
+    const ssmPrefix = '/umccr/data-sharing/auto-package-push';
+
+    // Let the lambda know where to look
+    lambdaObject.addEnvironment('SSM_JOBS_PREFIX', ssmPrefix);
+
+    // IAM to read parameters under that prefix
+    lambdaObject.currentVersion.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:GetParametersByPath', 'ssm:GetParameter'],
+        resources: [
+          // the prefix itself
+          `arn:aws:ssm:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:parameter${ssmPrefix}`,
+          // all children (the actual per-job params)
+          `arn:aws:ssm:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:parameter${ssmPrefix}/*`,
+        ],
+      })
+    );
+  }
+
   return {
     lambdaName: props.lambdaName,
     lambdaFunction: lambdaObject,
