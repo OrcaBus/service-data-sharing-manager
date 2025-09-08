@@ -24,6 +24,7 @@ import {
 import { camelCaseToSnakeCase } from '../utils';
 import {
   FASTQ_SYNC_DETAIL_TYPE,
+  ICAV2_DATA_COPY_SYNC_DETAIL_TYPE,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
   SFN_PREFIX,
   STACK_SOURCE,
@@ -60,6 +61,8 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   definitionSubstitutions['__stack_source__'] = STACK_SOURCE;
   definitionSubstitutions['__event_bus_name__'] = props.eventBusObject.eventBusName;
   definitionSubstitutions['__fastq_sync_detail_type__'] = FASTQ_SYNC_DETAIL_TYPE;
+  definitionSubstitutions['__icav2_data_copy_event_detail_type__'] =
+    ICAV2_DATA_COPY_SYNC_DETAIL_TYPE;
 
   // Ecs stuff
   definitionSubstitutions['__generate_data_package_report_container_name__'] =
