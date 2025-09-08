@@ -35,7 +35,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     architecture: lambda.Architecture.ARM_64,
     index: lambdaNameToSnakeCase + '.py',
     handler: 'handler',
-    timeout: Duration.seconds(60),
+    timeout: Duration.seconds(300),
     includeOrcabusApiToolsLayer: lambdaRequirements.needsOrcabusApiToolsLayer,
     includeMartLayer: lambdaRequirements.needsMartLayer,
   });
