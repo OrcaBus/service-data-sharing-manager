@@ -83,8 +83,8 @@ class LibraryModel(pa.DataFrameModel):
     quality: Optional[str] = pa.Field(nullable=True)
     type: str = pa.Field()
     assay: str = pa.Field()
-    coverage: float = pa.Field(ge=0, coerce=True)
-    overrideCycles: str = pa.Field()
+    coverage: float = pa.Field(ge=0, coerce=True, nullable=True)
+    overrideCycles: str = pa.Field(nullable=True)
     sample: Sample = pa.Field()
     projectSet: List[Project] = pa.Field()
     subject: Subject = pa.Field()
@@ -180,8 +180,8 @@ class MetadataSummaryModel(pa.DataFrameModel):
     sample_id: str = pa.Field(alias='Sample ID')
     external_sample_id: str = pa.Field(alias='External Sample ID')
     subject_id: str = pa.Field(alias='Subject ID')
-    individual_id: str = pa.Field(alias='Individual ID')
-    project_id: str = pa.Field(alias='Project ID')
+    individual_id: Optional[str] = pa.Field(alias='Individual ID', nullable=True)
+    project_id: Optional[str] = pa.Field(alias='Project ID', nullable=True)
     phenotype: str = pa.Field(alias='Phenotype', nullable=True)
     assay: str = pa.Field(alias='Assay')
     type_: str = pa.Field(alias='Type')
@@ -192,8 +192,8 @@ class FastqSummaryModel(pa.DataFrameModel):
     sample_id: str = pa.Field(alias='Sample ID')  # Hidden Column
     external_sample_id: str = pa.Field(alias='External Sample ID')  # Hidden Column
     subject_id: str = pa.Field(alias='Subject ID')  # Hidden Column
-    individual_id: str = pa.Field(alias='Individual ID')  # Hidden Column
-    project_id: str = pa.Field(alias='Project ID')  # Hidden Column
+    individual_id: Optional[str] = pa.Field(alias='Individual ID', nullable=True)  # Hidden Column
+    project_id: Optional[str] = pa.Field(alias='Project ID', nullable=True)  # Hidden Column
     file_name: str = pa.Field(alias='File Name')
     instrument_run_id: str = pa.Field(alias='Instrument Run ID')
     lane: int = pa.Field(alias='Lane')

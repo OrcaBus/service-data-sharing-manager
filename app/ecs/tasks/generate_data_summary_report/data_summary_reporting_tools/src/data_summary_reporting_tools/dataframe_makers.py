@@ -110,8 +110,16 @@ def get_metadata_summary_df(
                 "Sample ID": series_iter_["sample"].get("sampleId"),
                 "External Sample ID": series_iter_["sample"]["externalSampleId"],
                 "Subject ID": series_iter_["subject"]["subjectId"],
-                "Individual ID": series_iter_["subject"]["individualSet"][0]["individualId"],
-                "Project ID": series_iter_["projectSet"][0]["projectId"],
+                "Individual ID": (
+                    series_iter_["subject"]["individualSet"][0]["individualId"]
+                    if len(series_iter_["subject"]["individualSet"]) > 0
+                    else None
+                ),
+                "Project ID": (
+                    series_iter_["projectSet"][0]["projectId"]
+                    if len(series_iter_["projectSet"]) > 0
+                    else None
+                ),
                 "Phenotype": series_iter_["phenotype"],
                 "Assay": series_iter_["assay"],
                 "Type": series_iter_["type"],
@@ -179,8 +187,16 @@ def get_fastq_summary_df(
             "Sample ID": series_iter_["sample"]["sampleId"],
             "External Sample ID": series_iter_["sample"]["externalSampleId"],
             "Subject ID": series_iter_["subject"]["subjectId"],
-            "Individual ID": series_iter_["subject"]["individualSet"][0]["individualId"],
-            "Project ID": series_iter_["projectSet"][0]["projectId"],
+            "Individual ID": (
+                series_iter_["subject"]["individualSet"][0]["individualId"]
+                if len(series_iter_["subject"]["individualSet"]) > 0
+                else None
+            ),
+            "Project ID": (
+                series_iter_["projectSet"][0]["projectId"]
+                if len(series_iter_["projectSet"]) > 0
+                else None
+            ),
             "File Name": Path(series_iter_["relativePath"]).name,
             "Instrument Run ID": series_iter_["instrumentRunId"],
             "Lane": series_iter_["lane"],
