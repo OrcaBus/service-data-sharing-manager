@@ -122,7 +122,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     // IAM to read parameters under that prefix
     lambdaObject.currentVersion.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['ssm:GetParametersByPath', 'ssm:GetParameter'],
+        actions: ['ssm:GetParametersByPath'],
         resources: [
           // the prefix itself
           `arn:aws:ssm:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:parameter${ssmPrefix}`,
