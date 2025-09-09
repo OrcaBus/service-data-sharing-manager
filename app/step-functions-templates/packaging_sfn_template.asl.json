@@ -233,7 +233,8 @@
               "Resource": "arn:aws:states:::aws-sdk:dynamodb:query",
               "Next": "Fastq Retrieval (for each library) (batched)",
               "Output": {
-                "libraryOrcabusIds": "{% [\n  $map($states.result.Items, function($item){\n     $item.id.S\n  }\n)\n] %}"
+                "libraryOrcabusIds": "{% [\n  $map($states.result.Items, function($item){\n     $item.id.S\n  }\n)\n] %}",
+                "libraryCount": "{% $states.result.Count %}"
               }
             },
             "No fastqs to share": {
@@ -277,7 +278,8 @@
                             "packagingJobIdMapIter": "{% $states.input.packagingJobId %}",
                             "instrumentRunIdListMapIter": "{% $states.input.instrumentRunIdList %}",
                             "dynamoDbFastqGIValueMapIter": "{% $states.input.dynamoDbFastqGIValue %}",
-                            "dynamoDbFileGIValueMapIter": "{% $states.input.dynamoDbFileGIValue %}"
+                            "dynamoDbFileGIValueMapIter": "{% $states.input.dynamoDbFileGIValue %}",
+                            "libraryCountMapIter": "{% $states.input.libraryCount %}"
                           },
                           "Next": "Get Library Obj (fastq)"
                         },
@@ -333,12 +335,17 @@
                           "Type": "Choice",
                           "Choices": [
                             {
-                              "Next": "Fastq Available Sync",
+                              "Next": "Jitter Fastq Sync (hack)",
                               "Condition": "{% $defrostArchivedFastqsMapIter %}",
                               "Comment": "Unarchive fastqs"
                             }
                           ],
                           "Default": "For each fastq id"
+                        },
+                        "Jitter Fastq Sync (hack)": {
+                          "Type": "Wait",
+                          "Seconds": "{% $round($libraryCountMapIter * $random()) + 1 %}",
+                          "Next": "Fastq Available Sync"
                         },
                         "Fastq Available Sync": {
                           "Type": "Task",
@@ -395,15 +402,10 @@
                             "States": {
                               "Set Fastq Map Iter Var": {
                                 "Type": "Pass",
-                                "Next": "Jitter Fastq Sync (hack)",
+                                "Next": "Get fastq object",
                                 "Assign": {
                                   "fastqIdMapIter": "{% $states.input.fastqIdMapIter %}"
                                 }
-                              },
-                              "Jitter Fastq Sync (hack)": {
-                                "Type": "Wait",
-                                "Seconds": "{% $round(60 * $random()) + 1 %}",
-                                "Next": "Get fastq object"
                               },
                               "Get fastq object": {
                                 "Type": "Task",
@@ -584,14 +586,18 @@
                       }
                     },
                     "Output": {},
-                    "End": true
+                    "End": true,
+                    "ItemSelector": "{% [\n  $states.context.Map.Item.Value, \n  {\n    \"libraryCount\": $states.input.BatchInput.libraryCount\n  }\n] ~> $merge %}"
                   }
                 }
               },
               "Label": "FastqRetrievalforeachlibrarybatched",
               "MaxConcurrency": 1000,
               "ItemBatcher": {
-                "MaxItemsPerBatch": 10
+                "MaxItemsPerBatch": 10,
+                "BatchInput": {
+                  "libraryCount": "{% $states.input.libraryCount %}"
+                }
               },
               "Output": {},
               "End": true
