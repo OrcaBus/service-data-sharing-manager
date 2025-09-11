@@ -13,8 +13,8 @@ export function buildAutoPackagePushJobParameters(scope: Construct, props: Build
   const parsed = JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as AutoJobsFile;
 
   for (const job of parsed.jobs ?? []) {
-    new ssm.StringParameter(scope, `auto-job-${job.name}`, {
-      parameterName: `${props.ssmPrefix}/${job.name}`,
+    new ssm.StringParameter(scope, `auto-job-${job.jobName}`, {
+      parameterName: `${props.ssmPrefix}/${job.jobName}`,
       stringValue: JSON.stringify(job),
     });
   }

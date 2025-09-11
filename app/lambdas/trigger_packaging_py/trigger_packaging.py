@@ -19,7 +19,23 @@ def handler(event, context):
     packaging_request = event
     packaging_api_url = get_data_sharing_url("api/v1/package/")
 
-    return post_request(
+    return {
+        "packagingRequestObject": post_request(
         url=packaging_api_url,
         json_data=packaging_request
-    )
+        )
+    }
+
+
+# from orcabus_api_tools.data_sharing import create_package
+
+# def handler(event, context):
+#     package_name = event["packageName"]
+#     package_request = event["packageRequest"]
+
+#     return {
+#         "packagingRequestObject": create_package(
+#         package_name= package_name,
+#         package_request= package_request,
+#     )
+#     }

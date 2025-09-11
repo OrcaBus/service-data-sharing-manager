@@ -10,7 +10,7 @@
         "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
         "Payload": "{% $states.input %}"
       },
-      "Output": "{% $merge([$states.result.Payload, {'shareDestination': $states.input.shareDestination}]) %}",
+      "Output": "{% $merge([$states.result.Payload.packagingRequestObject, {'shareDestination': $states.input.shareDestination}]) %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -37,7 +37,9 @@
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
-        "Payload": "{% {'id': $states.input.id} %}"
+        "Payload": {
+          "id": "{% $states.input.id %}"
+        }
       },
       "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
       "Retry": [
@@ -69,11 +71,11 @@
     "Trigger Push": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
       "Arguments": {
         "FunctionName": "${__trigger_push_lambda_function_arn__}",
         "Payload": "{% {'id': $states.input.id, 'shareDestination': $states.input.shareDestination} %}"
       },
+      "Output": "{% $states.result.Payload.pushRequestObject %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -100,7 +102,9 @@
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
-        "Payload": "{% {'id': $states.input.id} %}"
+        "Payload": {
+          "id": "{% $states.input.id %}"
+        }
       },
       "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
       "Retry": [

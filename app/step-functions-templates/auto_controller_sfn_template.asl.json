@@ -1,17 +1,17 @@
 {
-  "StartAt": "Receive Event",
+  "StartAt": "Job Planner",
   "States": {
-    "Receive Event": {
-      "Type": "Pass",
-      "Next": "Job Planner"
-    },
     "Job Planner": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
       "Arguments": {
         "FunctionName": "${__auto_job_planner_lambda_function_arn__}",
-        "Payload": "{% $states.input %}"
+        "Payload": {
+          "instrumentRunId": "{% $states.input.detail.instrumentRunId %}"
+        }
+      },
+      "Output": {
+        "plans": "{% $states.result.Payload.plans %}"
       },
       "Retry": [
         {

@@ -18,7 +18,23 @@ def handler(event, context):
 
     push_api_url = get_data_sharing_url(f"api/v1/package/{package_id}:push")
 
-    return post_request(
-        url=push_api_url,
-        json_data=push_request
-    )
+    return {
+        "pushRequestObject": post_request(
+                url=push_api_url,
+                json_data=push_request
+                )
+    }
+
+
+# from orcabus_api_tools.data_sharing import push_package
+
+# def handler(event, context):
+#     package_id = event["id"]
+#     share_dest = event.get("shareDestination")
+
+#     return {
+#         "pushRequestObject": push_package(
+#             package_id=package_id,
+#             location_uri=share_dest
+#             )
+#     }

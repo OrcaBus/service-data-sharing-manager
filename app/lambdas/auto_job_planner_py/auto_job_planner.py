@@ -20,36 +20,39 @@ def _iter_parameters_by_path(prefix: str):
         if not next_token:
             break
 
-def _load_jobs_from_ssm(prefix: str) -> List[Dict]:
-    jobs: List[Dict] = []
+def _load_job_configs_from_ssm(prefix: str) -> List[Dict]:
+    job_configs: List[Dict] = []
     for param in _iter_parameters_by_path(prefix):
-        job = json.loads(param["Value"])
-        jobs.append(job)
+        cfg = json.loads(param["Value"])
+        job_configs.append(cfg)
 
-    # deterministic ordering
-    jobs.sort(key=lambda j: j["name"])
-    return jobs
+    # deterministic sorting
+    job_configs.sort(key=lambda c: c["jobName"])
+    return job_configs
 
 def _package_name(instrument_run_id: str, job_name: str) -> str:
-    return f"autosharing-{instrument_run_id}-{job_name}"
+    return f"autosharing-{job_name}-{instrument_run_id}"
 
 def handler(event, context):
-    instrument_run_id = event["detail"]["instrumentRunId"]
+    instrument_run_id = event["instrumentRunId"]
 
-    jobs = _load_jobs_from_ssm(SSM_JOBS_PREFIX)
+    job_configs = _load_job_configs_from_ssm(SSM_JOBS_PREFIX)
 
     plans: List[Dict] = []
-    for job in jobs:
-        project_id = job["projectId"]
+    for job_config in job_configs:
+
+        package_name = _package_name(instrument_run_id, job_config["jobName"])
+        project_id = job_config["projectId"]
+        share_destination = job_config["shareDestination"]
 
         plans.append({
-            "packageName": _package_name(instrument_run_id, job["name"]),
+            "packageName": package_name,
             "packageRequest": {
                 "instrumentRunIdList": [instrument_run_id],
                 "dataTypeList": ["fastq"],
                 "projectIdList": [project_id],
             },
-            "shareDestination": job["shareDestination"],
+            "shareDestination": share_destination,
         })
 
     return {"plans": plans}
