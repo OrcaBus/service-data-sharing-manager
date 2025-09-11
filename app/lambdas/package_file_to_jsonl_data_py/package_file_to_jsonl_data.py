@@ -157,7 +157,7 @@ def handler(event, context) -> dict[str, str]:
         destination_folder_key = Path(f"fastq/{instrument_run_id}")
         # Get the relative path parent for each file
         data_df["relativeFolderKey"] = data_df['relativePath'].apply(
-            lambda relative_path_iter_: str(Path(relative_path_iter_.parent).relative_to(destination_folder_key)) + "/"
+            lambda relative_path_iter_: str(Path(relative_path_iter_).parent.relative_to(destination_folder_key)) + "/"
         )
     else:
         pagination_index -= len(sorted(primary_data_df['instrumentRunId'].unique().tolist()))
@@ -166,7 +166,7 @@ def handler(event, context) -> dict[str, str]:
         destination_folder_key = Path(f"secondary-analysis/{portal_run_id}")
         # Get the relative path parent for each file
         data_df["relativeFolderKey"] = data_df['relativePath'].apply(
-            lambda relative_path_iter_: str(Path(relative_path_iter_.parent).relative_to(destination_folder_key)) + "/"
+            lambda relative_path_iter_: str(Path(relative_path_iter_).parent.relative_to(destination_folder_key)) + "/"
         )
 
     # Now generate the jsonl data

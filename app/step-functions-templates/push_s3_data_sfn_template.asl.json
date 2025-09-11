@@ -370,7 +370,7 @@
           "pushJobId": "{% $pushJobId %}",
           "packagingJobId": "{% $packagingJobId %}",
           "hasError": "{% $states.input.hasError %}",
-          "errorMessages": "{% $states.input.errorMessages %}",
+          "errorMessages": "{% $states.input.errorMessages ? $states.input.errorMessages : null %}",
           "status": "{% $states.input.hasError ? 'FAILED' : 'SUCCEEDED' %}"
         }
       },

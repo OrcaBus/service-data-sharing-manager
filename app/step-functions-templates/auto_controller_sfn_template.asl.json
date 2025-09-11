@@ -1,0 +1,57 @@
+{
+  "StartAt": "Job Planner",
+  "States": {
+    "Job Planner": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__auto_job_planner_lambda_function_arn__}",
+        "Payload": {
+          "instrumentRunId": "{% $states.input.detail.instrumentRunId %}"
+        }
+      },
+      "Output": {
+        "plans": "{% $states.result.Payload.plans %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "For each Job"
+    },
+    "For each Job": {
+      "Type": "Map",
+      "Items": "{% $states.input.plans %}",
+      "MaxConcurrency": 5,
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Run autoPackagePush",
+        "States": {
+          "Run autoPackagePush": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::states:startExecution.sync:2",
+            "Arguments": {
+              "StateMachineArn": "${__auto_package_push_sfn_arn__}",
+              "Input": "{% $states.input %}"
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  },
+  "QueryLanguage": "JSONata"
+}

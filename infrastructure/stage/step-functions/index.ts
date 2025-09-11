@@ -20,6 +20,7 @@ import {
   stepFunctionsNameList,
   stepFunctionsRequirementsMap,
   SfnPropsWithStateMachine,
+  StepFunctionsName,
 } from './interfaces';
 import { camelCaseToSnakeCase } from '../utils';
 import {
@@ -33,6 +34,9 @@ import {
 import { NagSuppressions } from 'cdk-nag';
 import { LogLevel, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+
+// AutoPackagePush state machine name (typed constant for safer refactors)
+const autoPackagePushSfnName: StepFunctionsName = 'autoPackagePush';
 
 /** Step Function stuff */
 function createStateMachineDefinitionSubstitutions(props: SfnProps): {
@@ -87,12 +91,17 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   for (const nestedSfnName of stepFunctionsNameList) {
     switch (nestedSfnName) {
       case 'pushS3Data': {
-        definitionSubstitutions['__s3_data_push_sfn_arn__'] =
+        definitionSubstitutions['__push_s3_data_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
       case 'pushIcav2Data': {
         definitionSubstitutions['__icav2_data_push_sfn_arn__'] =
+          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
+        break;
+      }
+      case autoPackagePushSfnName: {
+        definitionSubstitutions['__auto_package_push_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
@@ -254,6 +263,33 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
           }
         }
       }
+    }
+
+    if (props.stateMachineName === 'autoController') {
+      props.stateMachineObj.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['states:StartExecution'],
+          resources: [
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${autoPackagePushSfnName}`,
+          ],
+        })
+      );
+      props.stateMachineObj.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['states:DescribeExecution'],
+          resources: [
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${autoPackagePushSfnName}:*`,
+          ],
+        })
+      );
+      // Suppress IAM5: wildcard needed because execution ARNs include dynamic IDs
+      NagSuppressions.addResourceSuppressions(props.stateMachineObj, [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'autoController must DescribeExecution on autoPackagePush executions. ARNs are dynamic so a wildcard is required.',
+        },
+      ]);
     }
 
     // The s3 data push SFN needs access to the s3 steps copy state machine

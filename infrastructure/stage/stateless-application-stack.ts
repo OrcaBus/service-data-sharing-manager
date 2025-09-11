@@ -7,7 +7,11 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { buildAllLambdas, buildDataSharingToolsLayer } from './lambdas';
-import { DATA_SHARING_BUCKET_PREFIX } from './constants';
+import {
+  DATA_SHARING_BUCKET_PREFIX,
+  AUTO_JOBS_SSM_PREFIX,
+  AUTO_JOBS_JSON_RELATIVE,
+} from './constants';
 import { buildRMarkdownFargateTask } from './ecs';
 import { buildAllStepFunctions } from './step-functions';
 import {
@@ -18,6 +22,7 @@ import {
 } from './api';
 import { HOSTED_ZONE_DOMAIN_PARAMETER_NAME } from '@orcabus/platform-cdk-constructs/api-gateway';
 import { StageName } from '@orcabus/platform-cdk-constructs/shared-config/accounts';
+import { buildAutoPackagePushJobParameters } from './ssm';
 
 export type StatelessApplicationStackProps = cdk.StackProps & StatelessApplicationStackConfig;
 
@@ -170,6 +175,13 @@ export class StatelessApplicationStack extends cdk.Stack {
     addHttpRoutes(this, {
       apiGateway: apiGateway,
       apiIntegration: apiIntegration,
+    });
+
+    // Part 5: Register auto-package-push jobs in SSM
+    buildAutoPackagePushJobParameters(this, {
+      ssmPrefix: AUTO_JOBS_SSM_PREFIX,
+      // we only have dev.json for now
+      jsonRelativePath: AUTO_JOBS_JSON_RELATIVE,
     });
   }
 }
