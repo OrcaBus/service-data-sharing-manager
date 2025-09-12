@@ -280,13 +280,17 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
         })
       );
       // Suppress IAM5: wildcard needed because execution ARNs include dynamic IDs
-      NagSuppressions.addResourceSuppressions(props.stateMachineObj, [
-        {
-          id: 'AwsSolutions-IAM5',
-          reason:
-            'autoController must DescribeExecution on autoPackagePush executions. ARNs are dynamic so a wildcard is required.',
-        },
-      ]);
+      NagSuppressions.addResourceSuppressions(
+        props.stateMachineObj,
+        [
+          {
+            id: 'AwsSolutions-IAM5',
+            reason:
+              'autoController must DescribeExecution on autoPackagePush executions. ARNs are dynamic so a wildcard is required.',
+          },
+        ],
+        true
+      );
     }
 
     // The s3 data push SFN needs access to the s3 steps copy state machine
