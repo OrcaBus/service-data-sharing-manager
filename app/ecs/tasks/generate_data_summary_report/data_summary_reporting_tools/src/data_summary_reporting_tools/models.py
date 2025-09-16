@@ -82,7 +82,7 @@ class LibraryModel(pa.DataFrameModel):
     workflow: str = pa.Field(nullable=True)
     quality: Optional[str] = pa.Field(nullable=True)
     type: str = pa.Field()
-    assay: str = pa.Field()
+    assay: str = pa.Field(nullable=True)
     coverage: float = pa.Field(ge=0, coerce=True, nullable=True)
     overrideCycles: str = pa.Field(nullable=True)
     sample: Sample = pa.Field()
@@ -183,7 +183,7 @@ class MetadataSummaryModel(pa.DataFrameModel):
     individual_id: Optional[str] = pa.Field(alias='Individual ID', nullable=True)
     project_id: Optional[str] = pa.Field(alias='Project ID', nullable=True)
     phenotype: str = pa.Field(alias='Phenotype', nullable=True)
-    assay: str = pa.Field(alias='Assay')
+    assay: str = pa.Field(alias='Assay', nullable=True)
     type_: str = pa.Field(alias='Type')
 
 
@@ -201,7 +201,7 @@ class FastqSummaryModel(pa.DataFrameModel):
     file_size: str = pa.Field(alias='File Size')
     relative_output_path: str = pa.Field(alias='Relative Output Path')
     # Additional fields for splitting data frames
-    assay: str = pa.Field(alias='Assay')  # Hidden column
+    assay: str = pa.Field(alias='Assay', nullable=True)  # Hidden column
     type_: str = pa.Field(alias='Type')  # Hidden column
     # Additional fields for formatting purposes
     storage_class: str = pa.Field(alias='Storage Class')  # Hidden column
