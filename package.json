@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@aws-cdk/aws-lambda-python-alpha": "2.204.0-alpha.0",
-    "@orcabus/platform-cdk-constructs": "0.0.57",
+    "@orcabus/platform-cdk-constructs": "0.0.81",
     "aws-cdk-lib": "^2.207.0",
     "constructs": "^10.4.2"
   }
