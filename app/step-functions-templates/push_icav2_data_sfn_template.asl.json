@@ -1,16 +1,26 @@
 {
   "QueryLanguage": "JSONata",
   "Comment": "A description of my state machine",
-  "StartAt": "Query and collect prefixes",
+  "StartAt": "Set env vars",
   "States": {
-    "Query and collect prefixes": {
+    "Set env vars": {
+      "Type": "Pass",
+      "Next": "Count Number of Prefixes",
+      "Assign": {
+        "pushJobId": "{% $states.input.pushJobId %}",
+        "packagingJobId": "{% $states.input.packagingJobId %}",
+        "pushLocation": "{% $states.input.pushLocation %}"
+      }
+    },
+    "Count Number of Prefixes": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__query_and_collect_icav2_prefixes_lambda_function_arn__}",
         "Payload": {
-          "jobId": "{% $states.input.jobId %}",
-          "pushLocation": "{% $states.input.pushLocation %}"
+          "packagingJobId": "{% $packagingJobId %}",
+          "pushLocation": "{% $pushLocation %}",
+          "countOnly": true
         }
       },
       "Retry": [
@@ -27,46 +37,133 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "For each destination and source uri pair",
-      "Output": {
-        "destinationAndSourceUriMappingsList": "{% $states.result.Payload.destinationAndSourceUriMappingsList %}"
+      "Next": "For each index (batched)",
+      "Assign": {
+        "listCount": "{% $states.result.Payload.listCount %}"
       }
     },
-    "For each destination and source uri pair": {
+    "For each index (batched)": {
       "Type": "Map",
-      "Items": "{% $states.input.destinationAndSourceUriMappingsList %}",
-      "ItemSelector": {
-        "destinationUriMapIter": "{% $states.context.Map.Item.Value.destinationUri %}",
-        "sourceUriMapIter": "{% $states.context.Map.Item.Value.sourceUri %}"
-      },
+      "Items": "{% [$map([0..$listCount-1], function($v, $i, $a) { $i })] %}",
       "ItemProcessor": {
         "ProcessorConfig": {
-          "Mode": "INLINE"
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
         },
-        "StartAt": "Run ICAv2 Sync",
+        "StartAt": "For each index",
         "States": {
-          "Run ICAv2 Sync": {
-            "Type": "Task",
-            "Resource": "arn:aws:states:::events:putEvents.waitForTaskToken",
-            "Arguments": {
-              "Entries": [
-                {
-                  "Detail": {
-                    "taskToken": "{% $states.context.Task.Token %}",
-                    "sourceUri": "{% $states.input.sourceUriMapIter %}",
-                    "destinationUri": "{% $states.input.destinationUriMapIter %}"
+          "For each index": {
+            "Type": "Map",
+            "ItemProcessor": {
+              "ProcessorConfig": {
+                "Mode": "INLINE"
+              },
+              "StartAt": "Query and collect prefixes",
+              "States": {
+                "Query and collect prefixes": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke",
+                  "Output": {
+                    "destinationAndSourceUriMappingsList": "{% $states.result.Payload.destinationAndSourceUriMappingsList %}"
                   },
-                  "DetailType": "${__event_detail_type__}",
-                  "EventBusName": "${__event_bus_name__}",
-                  "Source": "${__stack_source__}"
+                  "Arguments": {
+                    "FunctionName": "${__query_and_collect_icav2_prefixes_lambda_function_arn__}",
+                    "Payload": {
+                      "packagingJobId": "{% $states.input.packagingJobId %}",
+                      "pushLocation": "{% $states.input.pushLocation %}",
+                      "paginationIndex": "{% $states.input.paginationIndex %}"
+                    }
+                  },
+                  "Retry": [
+                    {
+                      "ErrorEquals": [
+                        "Lambda.ServiceException",
+                        "Lambda.AWSLambdaException",
+                        "Lambda.SdkClientException",
+                        "Lambda.TooManyRequestsException"
+                      ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                  "Next": "For each dest and source uri mappings (batched)"
+                },
+                "For each dest and source uri mappings (batched)": {
+                  "Type": "Map",
+                  "ItemProcessor": {
+                    "ProcessorConfig": {
+                      "Mode": "DISTRIBUTED",
+                      "ExecutionType": "STANDARD"
+                    },
+                    "StartAt": "For each dest and source uri mapping",
+                    "States": {
+                      "For each dest and source uri mapping": {
+                        "Type": "Map",
+                        "ItemProcessor": {
+                          "ProcessorConfig": {
+                            "Mode": "INLINE"
+                          },
+                          "StartAt": "Run ICAv2 Sync",
+                          "States": {
+                            "Run ICAv2 Sync": {
+                              "Type": "Task",
+                              "Resource": "arn:aws:states:::events:putEvents.waitForTaskToken",
+                              "Arguments": {
+                                "Entries": [
+                                  {
+                                    "Detail": {
+                                      "taskToken": "{% $states.context.Task.Token %}",
+                                      "payload": {
+                                        "sourceUriList": "{% $states.input.sourceUriList %}",
+                                        "destinationUri": "{% $states.input.destinationUri %}"
+                                      }
+                                    },
+                                    "DetailType": "${__icav2_data_copy_event_detail_type__}",
+                                    "EventBusName": "${__event_bus_name__}",
+                                    "Source": "${__stack_source__}"
+                                  }
+                                ]
+                              },
+                              "End": true
+                            }
+                          }
+                        },
+                        "End": true,
+                        "Items": "{% $states.input.Items %}"
+                      }
+                    }
+                  },
+                  "End": true,
+                  "Items": "{% $states.input.destinationAndSourceUriMappingsList %}",
+                  "Label": "Foreachdestandsourceurimappingsbatched",
+                  "MaxConcurrency": 1000,
+                  "ItemBatcher": {}
                 }
-              ]
+              }
             },
-            "End": true
+            "End": true,
+            "Items": "{% $states.input.Items %}",
+            "ItemSelector": {
+              "packagingJobId": "{% $states.input.BatchInput.packagingJobId %}",
+              "pushLocation": "{% $states.input.BatchInput.pushLocation %}",
+              "paginationIndex": "{% $states.context.Map.Item.Value %}"
+            }
           }
         }
       },
-      "End": true
+      "End": true,
+      "Label": "Foreachindexbatched",
+      "MaxConcurrency": 1000,
+      "ItemBatcher": {
+        "MaxItemsPerBatch": 10,
+        "BatchInput": {
+          "pushJobId": "{% $pushJobId %}",
+          "packagingJobId": "{% $packagingJobId %}",
+          "pushLocation": "{% $pushLocation %}"
+        }
+      }
     }
   }
 }

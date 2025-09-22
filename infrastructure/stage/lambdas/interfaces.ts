@@ -113,6 +113,8 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   queryAndCollectIcav2Prefixes: {
     needsOrcabusApiToolsLayer: true,
+    needsDataSharingToolsLayer: true,
+    needsDbPermissions: true,
   },
   listPortalRunIdsInLibrary: {
     needsOrcabusApiToolsLayer: true,

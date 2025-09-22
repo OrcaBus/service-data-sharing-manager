@@ -80,6 +80,7 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   },
   pushIcav2Data: {
     needsEventPutPermissions: true,
+    needsDistributedMapPermissions: true,
   },
   pushS3Data: {
     needsNestedSfnPermissions: true,

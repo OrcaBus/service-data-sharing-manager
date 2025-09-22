@@ -370,7 +370,16 @@
                             }
                           ],
                           "Output": "{% $states.input %}",
-                          "Next": "For each fastq id"
+                          "Next": "For each fastq id",
+                          "HeartbeatSeconds": 3600,
+                          "Retry": [
+                            {
+                              "ErrorEquals": ["States.HeartbeatTimeout"],
+                              "BackoffRate": 2,
+                              "IntervalSeconds": 1,
+                              "MaxAttempts": 1
+                            }
+                          ]
                         },
                         "For each fastq id": {
                           "Type": "Map",
