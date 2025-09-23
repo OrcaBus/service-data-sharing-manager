@@ -52,7 +52,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoPackagePush: ['triggerPackaging', 'triggerPush', 'checkPackagePushStatus'],
-  autoController: ['autoJobPlanner'],
+  autoController: [],
 };
 
 export interface StepFunctionRequirements {
@@ -63,6 +63,7 @@ export interface StepFunctionRequirements {
   needsNestedSfnPermissions?: boolean;
   needsDistributedMapPermissions?: boolean;
   isExpressSfn?: boolean;
+  needsJobsConfigReadPermissions?: boolean;
 }
 
 export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctionRequirements> = {
@@ -95,6 +96,8 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   autoController: {
     needsNestedSfnPermissions: true,
     needsEventPutPermissions: true,
+    needsDistributedMapPermissions: true,
+    needsJobsConfigReadPermissions: true,
   },
 };
 
@@ -111,13 +114,15 @@ export interface SfnProps {
   s3StepsCopyPrefix: string;
   s3StepsCopyMidfix: string;
   s3StepsUseJsonLCopyFormat: boolean;
-
   // Packaging Bucket
   packagingBucket: IBucket;
   // ECS Cluster
   dataReportingEcsObject: EcsFargateTaskConstruct;
   // EventBus
   eventBusObject: IEventBus;
+  // // Jobs Config Bucket
+  // jobsConfigBucket: IBucket;
+  // jobsConfigKey: string;
 }
 
 export interface SfnPropsWithStateMachine extends SfnProps {

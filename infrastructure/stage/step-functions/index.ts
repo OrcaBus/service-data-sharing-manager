@@ -243,6 +243,17 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
     );
   }
 
+  if (stepFunctionsRequirementsMap[props.stateMachineName].needsJobsConfigReadPermissions) {
+    props.stateMachineObj.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        resources: [
+          'arn:aws:s3:::data-sharing-artifacts-843407916570-ap-southeast-2/auto_package_push_jobs/jobs.jsonl',
+        ],
+      })
+    );
+  }
+
   // Nested SFN Permissions
   if (sfnRequirements.needsNestedSfnPermissions) {
     // For push data case

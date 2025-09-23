@@ -1,44 +1,47 @@
 {
-  "StartAt": "Job Planner",
+  "QueryLanguage": "JSONata",
+  "StartAt": "For each Job (from S3)",
   "States": {
-    "Job Planner": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Arguments": {
-        "FunctionName": "${__auto_job_planner_lambda_function_arn__}",
-        "Payload": {
-          "instrumentRunId": "{% $states.input.detail.instrumentRunId %}"
-        }
-      },
-      "Output": {
-        "plans": "{% $states.result.Payload.plans %}"
-      },
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 1,
-          "MaxAttempts": 3,
-          "BackoffRate": 2,
-          "JitterStrategy": "FULL"
-        }
-      ],
-      "Next": "For each Job"
-    },
-    "For each Job": {
+    "For each Job (from S3)": {
       "Type": "Map",
-      "Items": "{% $states.input.plans %}",
       "MaxConcurrency": 5,
+      "ItemReader": {
+        "Resource": "arn:aws:states:::s3:getObject",
+        "ReaderConfig": {
+          "InputType": "JSONL"
+        },
+        "Arguments": {
+          "Bucket": "data-sharing-artifacts-843407916570-ap-southeast-2",
+          "Key": "auto_package_push_jobs/jobs.jsonl"
+        }
+      },
+      "ItemSelector": {
+        "enabled": "{% $states.context.Map.Item.Value.enabled %}",
+        "packageName": "{% 'autosharing-' & $states.context.Map.Item.Value.jobName & '-' & $states.input.detail.instrumentRunId %}",
+        "packageRequest": {
+          "instrumentRunIdList": "{% [$states.input.detail.instrumentRunId] %}",
+          "dataTypeList": ["fastq"],
+          "projectIdList": "{% [$states.context.Map.Item.Value.projectId] %}"
+        },
+        "shareDestination": "{% $states.context.Map.Item.Value.shareDestination %}"
+      },
       "ItemProcessor": {
         "ProcessorConfig": {
-          "Mode": "INLINE"
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
         },
-        "StartAt": "Run autoPackagePush",
+        "StartAt": "Check enabled",
         "States": {
+          "Check enabled": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Condition": "{% $states.input.enabled = true %}",
+                "Next": "Run autoPackagePush"
+              }
+            ],
+            "Default": "Skip (disabled)"
+          },
           "Run autoPackagePush": {
             "Type": "Task",
             "Resource": "arn:aws:states:::states:startExecution.sync:2",
@@ -46,12 +49,26 @@
               "StateMachineArn": "${__auto_package_push_sfn_arn__}",
               "Input": "{% $states.input %}"
             },
+            "Retry": [
+              {
+                "ErrorEquals": ["States.Timeout", "States.TaskFailed"],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
             "End": true
+          },
+          "Skip (disabled)": {
+            "Type": "Succeed"
           }
         }
       },
+      "Output": {
+        "plans": "{% $states.result %}"
+      },
       "End": true
     }
-  },
-  "QueryLanguage": "JSONata"
+  }
 }
