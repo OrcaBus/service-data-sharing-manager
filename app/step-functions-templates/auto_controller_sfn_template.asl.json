@@ -8,11 +8,11 @@
       "ItemReader": {
         "Resource": "arn:aws:states:::s3:getObject",
         "ReaderConfig": {
-          "InputType": "JSONL"
+          "InputType": "JSON"
         },
         "Arguments": {
-          "Bucket": "data-sharing-artifacts-843407916570-ap-southeast-2",
-          "Key": "auto_package_push_jobs/jobs.jsonl"
+          "Bucket": "${__jobs_config_bucket__}",
+          "Key": "${__jobs_config_key__}"
         }
       },
       "ItemSelector": {
@@ -20,8 +20,8 @@
         "packageName": "{% 'autosharing-' & $states.context.Map.Item.Value.jobName & '-' & $states.input.detail.instrumentRunId %}",
         "packageRequest": {
           "instrumentRunIdList": "{% [$states.input.detail.instrumentRunId] %}",
-          "dataTypeList": ["fastq"],
-          "projectIdList": "{% [$states.context.Map.Item.Value.projectId] %}"
+          "dataTypeList": "{% $states.context.Map.Item.Value.dataTypeList %}",
+          "projectIdList": "{% $states.context.Map.Item.Value.projectIdList %}"
         },
         "shareDestination": "{% $states.context.Map.Item.Value.shareDestination %}"
       },

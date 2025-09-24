@@ -30,6 +30,7 @@ import {
   SFN_PREFIX,
   STACK_SOURCE,
   STEP_FUNCTIONS_DIR,
+  AUTO_PACKAGE_PUSH_JOBS_KEY,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import { LogLevel, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
@@ -86,6 +87,10 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   definitionSubstitutions['__aws_s3_copy_steps_prefix__'] = props.s3StepsCopyPrefix;
   definitionSubstitutions['__aws_s3_copy_steps_midfix__'] = props.s3StepsCopyMidfix;
   definitionSubstitutions['__use_jsonl_format__'] = props.s3StepsUseJsonLCopyFormat.toString();
+
+  // Auto Jobs Config (for AutoController SFN)
+  definitionSubstitutions['__jobs_config_bucket__'] = props.dataSharingBucketName;
+  definitionSubstitutions['__jobs_config_key__'] = AUTO_PACKAGE_PUSH_JOBS_KEY;
 
   // Nested state machines
   for (const nestedSfnName of stepFunctionsNameList) {
@@ -247,9 +252,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
     props.stateMachineObj.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['s3:GetObject'],
-        resources: [
-          'arn:aws:s3:::data-sharing-artifacts-843407916570-ap-southeast-2/auto_package_push_jobs/jobs.jsonl',
-        ],
+        resources: [`arn:aws:s3:::${props.dataSharingBucketName}/${AUTO_PACKAGE_PUSH_JOBS_KEY}`],
       })
     );
   }

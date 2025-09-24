@@ -120,9 +120,8 @@ export interface SfnProps {
   dataReportingEcsObject: EcsFargateTaskConstruct;
   // EventBus
   eventBusObject: IEventBus;
-  // // Jobs Config Bucket
-  // jobsConfigBucket: IBucket;
-  // jobsConfigKey: string;
+  // Data sharing S3 bucket
+  dataSharingBucketName: string;
 }
 
 export interface SfnPropsWithStateMachine extends SfnProps {
