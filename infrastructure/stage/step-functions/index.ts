@@ -248,7 +248,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
     );
   }
 
-  if (stepFunctionsRequirementsMap[props.stateMachineName].needsJobsConfigReadPermissions) {
+  if (sfnRequirements.needsJobsConfigReadPermissions) {
     props.stateMachineObj.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['s3:GetObject'],
