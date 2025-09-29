@@ -10,7 +10,9 @@ export type StepFunctionsName =
   | 'presigning'
   | 'pushIcav2Data'
   | 'pushS3Data'
-  | 'push';
+  | 'push'
+  | 'autoPackagePush'
+  | 'autoController';
 
 export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
@@ -18,6 +20,8 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'pushIcav2Data',
   'pushS3Data',
   'push',
+  'autoPackagePush',
+  'autoController',
 ];
 
 export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
@@ -47,6 +51,8 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'packageFileToJsonlData',
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
+  autoPackagePush: ['triggerPackaging', 'triggerPush', 'checkPackagePushStatus'],
+  autoController: [],
 };
 
 export interface StepFunctionRequirements {
@@ -57,6 +63,7 @@ export interface StepFunctionRequirements {
   needsNestedSfnPermissions?: boolean;
   needsDistributedMapPermissions?: boolean;
   isExpressSfn?: boolean;
+  needsJobsConfigReadPermissions?: boolean;
 }
 
 export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctionRequirements> = {
@@ -83,6 +90,15 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   push: {
     needsNestedSfnPermissions: true,
   },
+  autoPackagePush: {
+    needsEventPutPermissions: true,
+  },
+  autoController: {
+    needsNestedSfnPermissions: true,
+    needsEventPutPermissions: true,
+    needsDistributedMapPermissions: true,
+    needsJobsConfigReadPermissions: true,
+  },
 };
 
 export interface SfnProps {
@@ -98,13 +114,14 @@ export interface SfnProps {
   s3StepsCopyPrefix: string;
   s3StepsCopyMidfix: string;
   s3StepsUseJsonLCopyFormat: boolean;
-
   // Packaging Bucket
   packagingBucket: IBucket;
   // ECS Cluster
   dataReportingEcsObject: EcsFargateTaskConstruct;
   // EventBus
   eventBusObject: IEventBus;
+  // Data sharing S3 bucket
+  dataSharingBucketName: string;
 }
 
 export interface SfnPropsWithStateMachine extends SfnProps {

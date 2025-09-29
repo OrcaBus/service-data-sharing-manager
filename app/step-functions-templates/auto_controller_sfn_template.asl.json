@@ -1,0 +1,74 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "For each Job (from S3)",
+  "States": {
+    "For each Job (from S3)": {
+      "Type": "Map",
+      "MaxConcurrency": 5,
+      "ItemReader": {
+        "Resource": "arn:aws:states:::s3:getObject",
+        "ReaderConfig": {
+          "InputType": "JSON"
+        },
+        "Arguments": {
+          "Bucket": "${__jobs_config_bucket__}",
+          "Key": "${__jobs_config_key__}"
+        }
+      },
+      "ItemSelector": {
+        "enabled": "{% $states.context.Map.Item.Value.enabled %}",
+        "packageName": "{% 'autosharing-' & $states.context.Map.Item.Value.jobName & '-' & $states.input.detail.instrumentRunId %}",
+        "packageRequest": {
+          "instrumentRunIdList": "{% [$states.input.detail.instrumentRunId] %}",
+          "dataTypeList": "{% $states.context.Map.Item.Value.dataTypeList %}",
+          "projectIdList": "{% $states.context.Map.Item.Value.projectIdList %}"
+        },
+        "shareDestination": "{% $states.context.Map.Item.Value.shareDestination %}"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Check enabled",
+        "States": {
+          "Check enabled": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Condition": "{% $states.input.enabled = true %}",
+                "Next": "Run autoPackagePush"
+              }
+            ],
+            "Default": "Skip (disabled)"
+          },
+          "Run autoPackagePush": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::states:startExecution.sync:2",
+            "Arguments": {
+              "StateMachineArn": "${__auto_package_push_sfn_arn__}",
+              "Input": "{% $states.input %}"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": ["States.Timeout", "States.TaskFailed"],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+            "End": true
+          },
+          "Skip (disabled)": {
+            "Type": "Succeed"
+          }
+        }
+      },
+      "Output": {
+        "plans": "{% $states.result %}"
+      },
+      "End": true
+    }
+  }
+}

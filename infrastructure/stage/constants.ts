@@ -98,3 +98,6 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
   GAMMA: false,
   PROD: false,
 };
+
+// Auto Jobs Config (for AutoController SFN)
+export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
