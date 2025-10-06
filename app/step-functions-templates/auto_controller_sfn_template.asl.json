@@ -30,24 +30,51 @@
           "Mode": "DISTRIBUTED",
           "ExecutionType": "STANDARD"
         },
-        "StartAt": "Check enabled",
+        "StartAt": "Check projects in instrument run",
         "States": {
-          "Check enabled": {
+          "Check projects in instrument run": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "${__check_project_in_instrument_run_lambda_function_arn__}",
+              "Payload": {
+                "instrumentRunId": "{% $states.input.packageRequest.instrumentRunIdList[0] %}",
+                "projectIdList": "{% $states.input.packageRequest.projectIdList %}"
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+            "Output": "{% $merge([$states.input, $states.result.Payload]) %}",
+            "Next": "Job Enabled and Project Found in Run?"
+          },
+          "Job Enabled and Project Found in Run?": {
             "Type": "Choice",
             "Choices": [
               {
-                "Condition": "{% $states.input.enabled = true %}",
+                "Condition": "{% $states.input.enabled and $states.input.project_found %}",
                 "Next": "Run autoPackagePush"
               }
             ],
-            "Default": "Skip (disabled)"
+            "Default": "Skip"
           },
           "Run autoPackagePush": {
             "Type": "Task",
             "Resource": "arn:aws:states:::states:startExecution.sync:2",
             "Arguments": {
               "StateMachineArn": "${__auto_package_push_sfn_arn__}",
-              "Input": "{% $states.input %}"
+              "Input": "{% { 'packageName': $states.input.packageName, 'packageRequest': $states.input.packageRequest, 'shareDestination': $states.input.shareDestination } %}"
             },
             "Retry": [
               {
@@ -60,7 +87,7 @@
             ],
             "End": true
           },
-          "Skip (disabled)": {
+          "Skip": {
             "Type": "Succeed"
           }
         }
