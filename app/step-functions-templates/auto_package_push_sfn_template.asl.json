@@ -66,7 +66,7 @@
           "Next": "Trigger Push"
         },
         {
-          "Condition": "{% $states.input.status = 'FAILED' or $states.input.status = 'CANCELLED' %}",
+          "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
           "Next": "Auto Package-Push Failed"
         }
       ],
@@ -135,7 +135,7 @@
           "Next": "Auto Package-Push Complete"
         },
         {
-          "Condition": "{% $states.input.status = 'FAILED' or $states.input.status = 'CANCELLED' %}",
+          "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
           "Next": "Auto Package-Push Failed"
         }
       ],

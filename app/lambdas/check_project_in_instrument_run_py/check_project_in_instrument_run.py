@@ -24,7 +24,8 @@ def handler(event, context):
     instrument_run_id = event["instrumentRunId"]
     project_ids_in_run = get_all_project_ids_in_an_instrument_run(instrument_run_id)
 
-    project_found = bool(set(event["projectIdList"]) & set(project_ids_in_run))
+    intersection = set(project_id_list) & set(project_ids_in_run)
+    project_found = True if intersection else False
 
     return {
         "project_found": project_found
