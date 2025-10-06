@@ -64,6 +64,10 @@
         {
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
           "Next": "Trigger Push"
+        },
+        {
+          "Condition": "{% $states.input.status = 'FAILED' or $states.input.status = 'CANCELLED' %}",
+          "Next": "Auto Package-Push Failed"
         }
       ],
       "Default": "Wait For Package"
@@ -129,12 +133,19 @@
         {
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
           "Next": "Auto Package-Push Complete"
+        },
+        {
+          "Condition": "{% $states.input.status = 'FAILED' or $states.input.status = 'CANCELLED' %}",
+          "Next": "Auto Package-Push Failed"
         }
       ],
       "Default": "Wait For Push"
     },
     "Auto Package-Push Complete": {
       "Type": "Succeed"
+    },
+    "Auto Package-Push Failed": {
+      "Type": "Fail"
     }
   }
 }
