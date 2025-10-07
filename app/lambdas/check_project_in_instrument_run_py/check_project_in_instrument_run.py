@@ -21,8 +21,7 @@ def handler(event, context):
     Check if any requested projects are found in the specified instrument run.
     """
     project_ids_in_job = event["projectIdList"]
-    instrument_run_id = event["instrumentRunId"]
-    project_ids_in_run = get_all_project_ids_in_an_instrument_run(instrument_run_id)
+    project_ids_in_run = get_all_project_ids_in_an_instrument_run(event["instrumentRunId"])
 
     project_ids_in_run_filtered = set(project_ids_in_job).intersection(project_ids_in_run)
     project_found = len(project_ids_in_run_filtered) > 0
