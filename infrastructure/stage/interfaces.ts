@@ -30,6 +30,9 @@ export interface StatelessApplicationStackConfig {
   // S3 stuff
   dataSharingBucketName: string;
 
+  // Athena stuff
+  athenaQueryResultsBucketName: string;
+
   // Steps Copy stuff
   s3StepsCopyBucketName: string;
   s3StepsCopySfnArn: string;

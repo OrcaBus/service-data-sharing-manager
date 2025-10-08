@@ -19,6 +19,8 @@ import {
   CONTEXT_INDEX_NAME,
   LAMBDA_DIR,
   LAYERS_DIR,
+  MART_BUCKET_PREFIX,
+  MART_ENV_VARS,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
@@ -67,6 +69,19 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
   }
 
   if (lambdaRequirements.needsMartLayer) {
+    /* Add env vars and nag suppressions for mart access */
+    // Iterate over the MART_ENV_VARS key, value pairs and add them as environment variables to the lambda function
+    Object.entries(MART_ENV_VARS).forEach(([key, value]) => {
+      lambdaObject.addEnvironment(key, value);
+    });
+
+    // Add in the bucket permissions
+    props.athenaQueryResultsBucket.grantReadWrite(
+      lambdaObject.currentVersion,
+      path.join(MART_BUCKET_PREFIX, '*')
+    );
+
+    // Add nag suppressions
     NagSuppressions.addResourceSuppressions(
       lambdaObject,
       [

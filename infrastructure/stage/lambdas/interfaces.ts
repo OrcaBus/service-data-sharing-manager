@@ -169,6 +169,8 @@ export interface LambdaProps {
   // S3 Steps Copy Permissions
   s3StepsCopyBucket: IBucket;
   s3StepsCopyBucketPrefix: string;
+  // Athena
+  athenaQueryResultsBucket: IBucket;
 }
 
 export type BuildAllLambdaProps = Omit<LambdaProps, 'lambdaName'>;

@@ -101,3 +101,17 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
 
 // Auto Jobs Config (for AutoController SFN)
 export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
+
+// Get mart env vars
+export const MART_ENV_VARS: Record<string, string> = {
+  ATHENA_WORKGROUP_NAME: 'orcahouse',
+  ATHENA_DATASOURCE_NAME: 'orcavault',
+  ATHENA_DATABASE_NAME: 'mart',
+};
+
+export const MART_BUCKET_NAME: Record<StageName, string> = {
+  BETA: `orcahouse-staging-data-${ACCOUNT_ID_ALIAS['BETA']}`,
+  GAMMA: `orcahouse-staging-data-${ACCOUNT_ID_ALIAS['GAMMA']}`,
+  PROD: `orcahouse-staging-data-${ACCOUNT_ID_ALIAS['PROD']}`,
+};
+export const MART_BUCKET_PREFIX = 'athena-query-results/';
