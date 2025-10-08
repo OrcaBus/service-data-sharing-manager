@@ -50,7 +50,9 @@ def handler(event, context) -> Dict[str, List['FileObjectWithRelativePathTypeDef
     # Check at least one of 's3ObjectId' or 'ingestId' is in the event
     file_object_list: List['FileObject'] = list(map(
         lambda ingest_file_iter_: ingest_file_iter_.get('fileObject'),
-        get_s3_objs_from_ingest_ids_map(event.get('ingestIdList'), currentState="false")
+        get_s3_objs_from_ingest_ids_map(
+            ingest_ids=event.get('ingestIdList')
+        )
     ))
 
     # Get the data type
