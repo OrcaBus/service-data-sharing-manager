@@ -12,7 +12,8 @@ export type StepFunctionsName =
   | 'pushS3Data'
   | 'push'
   | 'autoPackagePush'
-  | 'autoController';
+  | 'autoController'
+  | 'autoPackage';
 
 export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
@@ -22,6 +23,7 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'push',
   'autoPackagePush',
   'autoController',
+  'autoPackage',
 ];
 
 export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
@@ -53,6 +55,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoPackagePush: ['triggerPackaging', 'triggerPush', 'checkPackagePushStatus'],
   autoController: ['checkProjectInInstrumentRun'],
+  autoPackage: ['triggerPackaging', 'checkPackagePushStatus', 'notifySlack'],
 };
 
 export interface StepFunctionRequirements {
@@ -98,6 +101,9 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
     needsEventPutPermissions: true,
     needsDistributedMapPermissions: true,
     needsJobsConfigReadPermissions: true,
+  },
+  autoPackage: {
+    needsEventPutPermissions: true,
   },
 };
 

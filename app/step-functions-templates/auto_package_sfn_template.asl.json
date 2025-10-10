@@ -1,0 +1,108 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "Trigger Package",
+  "TimeoutSeconds": 86400,
+  "States": {
+    "Trigger Package": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
+        "Payload": "{% $states.input %}"
+      },
+      "Output": "{% $merge([$states.result.Payload.packagingRequestObject, {'shareDestination': $states.input.shareDestination}]) %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Wait For Package"
+    },
+    "Wait For Package": {
+      "Type": "Wait",
+      "Seconds": 300,
+      "Next": "Check Package Status"
+    },
+    "Check Package Status": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
+        "Payload": {
+          "id": "{% $states.input.id %}"
+        }
+      },
+      "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Is Package Complete"
+    },
+    "Is Package Complete": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
+          "Next": "Notify Packaging Complete"
+        },
+        {
+          "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
+          "Next": "Auto Package Failed"
+        }
+      ],
+      "Default": "Wait For Package"
+    },
+    "Notify Packaging Complete": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "message": "Package readdy"
+        }
+      },
+      "Output": "{% $states.input %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Auto Package Complete"
+    },
+    "Auto Package Complete": {
+      "Type": "Succeed"
+    },
+    "Auto Package Failed": {
+      "Type": "Fail"
+    }
+  }
+}
