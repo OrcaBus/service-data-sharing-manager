@@ -158,7 +158,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   checkProjectInInstrumentRun: {
     needsOrcabusApiToolsLayer: true,
   },
-  notifySlack: {},
+  notifySlack: {
+    needsOrcabusApiToolsLayer: true,
+  },
 };
 
 export interface LambdaProps {

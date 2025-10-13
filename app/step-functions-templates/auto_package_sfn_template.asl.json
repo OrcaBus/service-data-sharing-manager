@@ -78,7 +78,9 @@
       "Arguments": {
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
-          "message": "Package readdy"
+          "id": "{% $states.input.id %}",
+          "packageName": "{% $states.input.packageName %}",
+          "shareDestination": "{% $states.input.shareDestination %}"
         }
       },
       "Output": "{% $states.input %}",
