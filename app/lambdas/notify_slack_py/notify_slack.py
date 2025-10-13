@@ -1,8 +1,16 @@
 import json, urllib.request
+import boto3
 
 
 from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
+
+
+# Should haddle this better in the future, defining it in constants and so on...
+def _get_webhook_url():
+    _sm = boto3.client("secretsmanager")
+    return _sm.get_secret_value(SecretId="auto-data-sharing-slack-webhook")["SecretString"] # pragma: allowlist secret
+
 
 
 
@@ -16,6 +24,7 @@ def get_package_report(package_id):
 
 
 def handler(event, context):
+    WEBHOOK_URL = _get_webhook_url()
     package_id = event["id"]
     package_name = event["packageName"]
     share_destination = event["shareDestination"]
@@ -25,7 +34,7 @@ def handler(event, context):
         f"*{package_name}* is ready.\n"
         f"*Package ID:* {package_id}\n"
         f"Review the packaging report <{package_report_presigned_url}|HERE>. \n\n"
-        f"To manually trigger the push to *{share_destination}*, run:\n"
+        f"To manually trigger the push to *{share_destination.replace("://", ":\u200B//")}*, run:\n"
         f"```"
         f"aws stepfunctions start-execution \\\n"
         f"  --state-machine-arn arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing-autoPush \\\n"

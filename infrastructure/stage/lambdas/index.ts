@@ -24,6 +24,7 @@ import {
 import { NagSuppressions } from 'cdk-nag';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cdk from 'aws-cdk-lib';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { PythonLayerVersion } from '@aws-cdk/aws-lambda-python-alpha';
 
 function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject {
@@ -109,6 +110,16 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
       ],
       true
     );
+  }
+
+  // Allow the notifier Lambda to read the Slack webhook secret at runtime
+  if (props.lambdaName === 'notifySlack') {
+    const slackWebhook = secretsmanager.Secret.fromSecretNameV2(
+      scope,
+      `${props.lambdaName}SlackWebhookSecret`,
+      'auto-data-sharing-slack-webhook'
+    );
+    slackWebhook.grantRead(lambdaObject.currentVersion);
   }
 
   return {
