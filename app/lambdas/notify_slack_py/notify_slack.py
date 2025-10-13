@@ -15,18 +15,23 @@ def get_package_report(package_id):
     )
 
 
-
-
-
 def handler(event, context):
     package_id = event["id"]
     package_name = event["packageName"]
+    share_destination = event["shareDestination"]
     package_report_presigned_url = get_package_report(package_id).strip('"')
 
     text = (
-        f"Package *{package_name}* is ready.\n"
-        f"Package ID: *{package_id}*\n"
-        f"Review the packaging report <{package_report_presigned_url}|HERE>."
+        f"*{package_name}* is ready.\n"
+        f"*Package ID:* {package_id}\n"
+        f"Review the packaging report <{package_report_presigned_url}|HERE>. \n\n"
+        f"To manually trigger the push to *{share_destination}*, run:\n"
+        f"```"
+        f"aws stepfunctions start-execution \\\n"
+        f"  --state-machine-arn arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing-autoPush \\\n"
+        f"  --input '{{\"id\": \"{package_id}\", \"packageName\": \"{package_name}\", \"shareDestination\": \"{share_destination}\"}}'\n"
+        f"```"
+
     )
     payload = json.dumps({"text": text}).encode("utf-8")
 

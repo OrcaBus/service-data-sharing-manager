@@ -13,7 +13,8 @@ export type StepFunctionsName =
   | 'push'
   | 'autoPackagePush'
   | 'autoController'
-  | 'autoPackage';
+  | 'autoPackage'
+  | 'autoPush';
 
 export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
@@ -24,6 +25,7 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'autoPackagePush',
   'autoController',
   'autoPackage',
+  'autoPush',
 ];
 
 export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
@@ -56,6 +58,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   autoPackagePush: ['triggerPackaging', 'triggerPush', 'checkPackagePushStatus'],
   autoController: ['checkProjectInInstrumentRun'],
   autoPackage: ['triggerPackaging', 'checkPackagePushStatus', 'notifySlack'],
+  autoPush: ['triggerPush', 'checkPackagePushStatus'],
 };
 
 export interface StepFunctionRequirements {
@@ -103,6 +106,9 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
     needsJobsConfigReadPermissions: true,
   },
   autoPackage: {
+    needsEventPutPermissions: true,
+  },
+  autoPush: {
     needsEventPutPermissions: true,
   },
 };

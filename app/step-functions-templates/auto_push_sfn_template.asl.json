@@ -1,20 +1,19 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Trigger Package",
+  "StartAt": "Trigger Push",
   "TimeoutSeconds": 86400,
   "States": {
-    "Trigger Package": {
+    "Trigger Push": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
+        "FunctionName": "${__trigger_push_lambda_function_arn__}",
         "Payload": {
-          "packageName": "{% $states.input.packageName %}",
-          "packageRequest": "{% $states.input.packageRequest %}",
+          "id": "{% $states.input.id %}",
           "shareDestination": "{% $states.input.shareDestination %}"
         }
       },
-      "Output": "{% $merge([$states.result.Payload.packagingRequestObject, {'shareDestination': $states.input.shareDestination}]) %}",
+      "Output": "{% $states.result.Payload.pushRequestObject %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -29,14 +28,14 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Wait For Package"
+      "Next": "Wait For Push"
     },
-    "Wait For Package": {
+    "Wait For Push": {
       "Type": "Wait",
       "Seconds": 300,
-      "Next": "Check Package Status"
+      "Next": "Check Push Status"
     },
-    "Check Package Status": {
+    "Check Push Status": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
@@ -60,56 +59,28 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Is Package Complete"
+      "Next": "Is Push Completed"
     },
-    "Is Package Complete": {
+    "Is Push Completed": {
       "Type": "Choice",
       "Choices": [
         {
-          "Comment": "Package Succeed",
+          "Comment": "Push Succeeded",
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Notify Packaging Complete"
+          "Next": "Auto Package-Push Complete"
         },
         {
-          "Comment": "Package Failed or Cancelled",
+          "Comment": "Push Failed or Cancelled",
           "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
-          "Next": "Auto Package Failed"
+          "Next": "Auto Package-Push Failed"
         }
       ],
-      "Default": "Wait For Package"
+      "Default": "Wait For Push"
     },
-    "Notify Packaging Complete": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Arguments": {
-        "FunctionName": "${__notify_slack_lambda_function_arn__}",
-        "Payload": {
-          "id": "{% $states.input.id %}",
-          "packageName": "{% $states.input.packageName %}",
-          "shareDestination": "{% $states.input.shareDestination %}"
-        }
-      },
-      "Output": "{% $states.input %}",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 1,
-          "MaxAttempts": 3,
-          "BackoffRate": 2,
-          "JitterStrategy": "FULL"
-        }
-      ],
-      "Next": "Auto Package Complete"
-    },
-    "Auto Package Complete": {
+    "Auto Package-Push Complete": {
       "Type": "Succeed"
     },
-    "Auto Package Failed": {
+    "Auto Package-Push Failed": {
       "Type": "Fail"
     }
   }
