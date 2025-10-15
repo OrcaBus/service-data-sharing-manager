@@ -79,7 +79,7 @@ export const s3CopyStepsBucket: Record<StageName, string> = {
 };
 
 export const S3_STEPS_COPY_PREFIX: Record<StageName, string> = {
-  BETA: 'a-working-folder/',
+  BETA: '',
   GAMMA: '',
   PROD: '',
 };
