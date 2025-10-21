@@ -34,7 +34,8 @@ def handler(event, context):
         package_report_presigned_url = get_package_report(id).strip('"')
 
         text = (
-            f" :package: *{package_name}* is ready.\n"
+            f" :package: *Auto Package*\n"
+            f" *{package_name}* is ready.\n"
             f"*Package ID:* {id}\n"
             f"Review the packaging report <{package_report_presigned_url}|HERE>. \n\n"
             f"To manually trigger the push to *{share_destination.replace("://", ":\u200B//")}*, run:\n"
@@ -48,14 +49,22 @@ def handler(event, context):
 
     # If it's a push
     if id.startswith('psh.'):
+
         status = event["status"]
+        package_id = event["packageId"]
+        share_destination = event["shareDestination"]
+
         if status == "SUCCEEDED":
             text = (
-                f":white_check_mark: Push *{id}* {status}"
+                f":white_check_mark: *Push Completed*\n"
+                f"*Push ID:* {id} {status}"
+                f"*Package ID*: {package_id}\n"
+                f"*Share Destination:* {share_destination}"
             )
         else:
             text = (
                 f":x: Push *{id}* {status}."
+                f"*Package ID*: {package_id}\n"
             )
 
     payload = json.dumps({"text": text}).encode("utf-8")

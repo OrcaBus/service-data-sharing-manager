@@ -79,7 +79,9 @@
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
           "id": "{% $states.input.id %}",
-          "status": "{% $states.input.status %}"
+          "status": "{% $states.input.status %}",
+          "packageId": "{% $states.input.packageId %}",
+          "shareDestination": "{% $states.input.shareDestination %}"
         }
       },
       "Output": "{% $states.input %}",
