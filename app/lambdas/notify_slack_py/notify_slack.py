@@ -51,11 +51,11 @@ def handler(event, context):
         status = event["status"]
         if status == "SUCCEEDED":
             text = (
-                f":white_check_mark: Push *{id}* {status}.\n"
+                f":white_check_mark: Push *{id}* {status}"
             )
         else:
             text = (
-                f":x: Push *{id}* {status}.\n"
+                f":x: Push *{id}* {status}."
             )
 
     payload = json.dumps({"text": text}).encode("utf-8")

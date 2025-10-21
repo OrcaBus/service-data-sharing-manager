@@ -97,10 +97,7 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Auto Push Complete"
-    },
-    "Auto Push Complete": {
-      "Type": "Succeed"
+      "End": true
     }
   }
 }

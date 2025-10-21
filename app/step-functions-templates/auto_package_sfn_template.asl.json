@@ -104,9 +104,9 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Auto Package Complete"
+      "Next": "Auto Package Succeed"
     },
-    "Auto Package Complete": {
+    "Auto Package Succeed": {
       "Type": "Succeed"
     },
     "Auto Package Failed": {
