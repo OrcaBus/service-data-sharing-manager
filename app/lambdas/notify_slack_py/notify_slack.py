@@ -57,13 +57,13 @@ def handler(event, context):
         if status == "SUCCEEDED":
             text = (
                 f":white_check_mark: *Push Completed*\n"
-                f"*Push ID:* {id} {status}"
+                f"*Push ID:* {id} *{status}*\n"
                 f"*Package ID*: {package_id}\n"
                 f"*Share Destination:* {share_destination}"
             )
         else:
             text = (
-                f":x: Push *{id}* {status}."
+                f":x: Push *{id}* {status}.\n"
                 f"*Package ID*: {package_id}\n"
             )
 
