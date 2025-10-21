@@ -14,7 +14,7 @@ Data Sharing Service
     - [Pushing Packages](#pushing-packages)
     - [Presigning packages](#presigning-packages)
 - [CLI Troubleshooting](#cli-troubleshooting)
-- [Automatic Data Sharing](#automatic-data-sharing)
+- [Automatic Data Sharing - 🚧 WIP 🚧 ](#automatic-data-sharing)
 - [Infrastructure \& Deployment](#infrastructure--deployment)
   - [Stateful](#stateful)
   - [Stateless](#stateless)
@@ -270,18 +270,18 @@ Navigate the failed AWS Step Function in the AWS UI to determine the source of t
 
 Automatic Data Sharing
 --------------------------------------------------------------------------------
+🚧 This section is a work in progress 🚧
 
-The **Automatic Data Sharing** extends the core service with the ability
-to automatically package and share data when new sequencing runs are ready.
+Automatic Data Sharing extends the core service by automatically packaging new sequencing runs and then requiring a human to trigger the push.
+<!--
+- Listens for OrcaBus events (e.g. FastqListRowsAdded) when a run completes.
 
+- On trigger, loads job definitions from S3 and checks them against the run to see if automatic packaging rules apply.
 
-The automation listens for specific events (e.g. `FastqListRowsAdded`) published
-by OrcaBus when a sequencing run completes. Once triggered, it evaluates a set of
-job definitions stored in S3 to determine whether the run matches automatic
-sharing rules.
+- If there’s a match, performs packaging fully unattended.
 
-If a match is found, the system automatically executes the same packaging and
-pushing logic used in manual workflows — fully unattended.
+- Posts a Slack notification with package details and a one-liner to manually start the push (human approval required).
+
 
 ### Job Definitions
 
@@ -314,14 +314,16 @@ enabled (bool) – set to true to activate the job; disabled jobs are ignored.
 ### Step Functions
 
 The automatic data sharing logic is orchestrated through AWS Step Functions.
-They coordinate multiple Lambda functions to plan, package, and push data automatically when new sequencing runs are detected.
+They coordinate different Lambda functions to plan, package data automatically when new sequencing runs are detected and set the push.
 
   - **autoController** – central orchestrator for event-driven execution.
-  - **autoPackagePush** – performs packaging and data push steps.
+  - **autoPackage** – performs the automatic packaging.
+  - **autoPush** – performs the automatic pushing.
+
   - **Support Lambdas** – includes utilities like:
     - `check_project_in_instrument_run`
     - `start_package_push`
-    - `push_package_job_monitor`
+    - `push_package_job_monitor` -->
 
 Infrastructure & Deployment
 --------------------------------------------------------------------------------
