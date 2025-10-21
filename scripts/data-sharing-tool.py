@@ -370,6 +370,17 @@ def generate_package(
 
     # Get the portal run ids from the workflow manifest
     if workflow_manifest is not None:
+        # Check if any library ids in the workflow manifest are not in the lims manifest
+        if any(map(
+            lambda library_id_iter_: library_id_iter_ not in library_ids,
+            workflow_manifest['library_id'].unique().tolist()
+        )):
+            missing_libraries = list(filter(
+                lambda library_id_iter_: library_id_iter_ not in library_ids,
+                workflow_manifest['library_id'].unique().tolist()
+            ))
+            logger.error(f"The following library ids are missing from the LIMS manifest: {', '.join(missing_libraries)}")
+            raise ValueError("Some library ids in the workflow manifest are not present in the LIMS manifest")
         portal_run_ids = workflow_manifest['portal_run_id'].unique().tolist()
     else:
         portal_run_ids = None
