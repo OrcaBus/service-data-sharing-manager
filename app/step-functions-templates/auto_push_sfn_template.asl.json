@@ -65,23 +65,42 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Comment": "Push Succeeded",
-          "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Auto Package-Push Complete"
-        },
-        {
           "Comment": "Push Failed or Cancelled",
-          "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
-          "Next": "Auto Package-Push Failed"
+          "Condition": "{% $states.input.status in [ 'SUCCEEDED', 'FAILED', 'CANCELLED' ] %}",
+          "Next": "Notify Push Result"
         }
       ],
       "Default": "Wait For Push"
     },
-    "Auto Package-Push Complete": {
-      "Type": "Succeed"
+    "Notify Push Result": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "id": "{% $states.input.id %}",
+          "status": "{% $states.input.status %}"
+        }
+      },
+      "Output": "{% $states.input %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Auto Push Complete"
     },
-    "Auto Package-Push Failed": {
-      "Type": "Fail"
+    "Auto Push Complete": {
+      "Type": "Succeed"
     }
   }
 }

@@ -25,23 +25,39 @@ def get_package_report(package_id):
 
 def handler(event, context):
     WEBHOOK_URL = _get_webhook_url()
-    package_id = event["id"]
-    package_name = event["packageName"]
-    share_destination = event["shareDestination"]
-    package_report_presigned_url = get_package_report(package_id).strip('"')
+    id = event["id"]
 
-    text = (
-        f"*{package_name}* is ready.\n"
-        f"*Package ID:* {package_id}\n"
-        f"Review the packaging report <{package_report_presigned_url}|HERE>. \n\n"
-        f"To manually trigger the push to *{share_destination.replace("://", ":\u200B//")}*, run:\n"
-        f"```"
-        f"aws stepfunctions start-execution \\\n"
-        f"  --state-machine-arn arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing-autoPush \\\n"
-        f"  --input '{{\"id\": \"{package_id}\", \"packageName\": \"{package_name}\", \"shareDestination\": \"{share_destination}\"}}'\n"
-        f"```"
+    # If it's a package
+    if id.startswith('pkg.'):
+        package_name = event["packageName"]
+        share_destination = event["shareDestination"]
+        package_report_presigned_url = get_package_report(id).strip('"')
 
-    )
+        text = (
+            f" :package: *{package_name}* is ready.\n"
+            f"*Package ID:* {id}\n"
+            f"Review the packaging report <{package_report_presigned_url}|HERE>. \n\n"
+            f"To manually trigger the push to *{share_destination.replace("://", ":\u200B//")}*, run:\n"
+            f"```"
+            f"aws stepfunctions start-execution \\\n"
+            f"  --state-machine-arn arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing-autoPush \\\n"
+            f"  --input '{{\"id\": \"{id}\", \"packageName\": \"{package_name}\", \"shareDestination\": \"{share_destination}\"}}'\n"
+            f"```"
+
+        )
+
+    # If it's a push
+    if id.startswith('psh.'):
+        status = event["status"]
+        if status == "SUCCEEDED":
+            text = (
+                f":white_check_mark: Push *{id}* {status}.\n"
+            )
+        else:
+            text = (
+                f":x: Push *{id}* {status}.\n"
+            )
+
     payload = json.dumps({"text": text}).encode("utf-8")
 
     req = urllib.request.Request(

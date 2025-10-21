@@ -36,8 +36,8 @@ import { NagSuppressions } from 'cdk-nag';
 import { LogLevel, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 
-// AutoPackagePush state machine name (typed constant for safer refactors)
-const autoPackagePushSfnName: StepFunctionsName = 'autoPackagePush';
+// AutoPackage state machine name (typed constant for safer refactors)
+const autoPackageSfnName: StepFunctionsName = 'autoPackage';
 
 /** Step Function stuff */
 function createStateMachineDefinitionSubstitutions(props: SfnProps): {
@@ -105,8 +105,8 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
-      case autoPackagePushSfnName: {
-        definitionSubstitutions['__auto_package_push_sfn_arn__'] =
+      case autoPackageSfnName: {
+        definitionSubstitutions['__auto_package_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
@@ -284,7 +284,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
         new iam.PolicyStatement({
           actions: ['states:StartExecution'],
           resources: [
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${autoPackagePushSfnName}`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${autoPackageSfnName}`,
           ],
         })
       );
@@ -292,7 +292,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
         new iam.PolicyStatement({
           actions: ['states:DescribeExecution'],
           resources: [
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${autoPackagePushSfnName}:*`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${autoPackageSfnName}:*`,
           ],
         })
       );
