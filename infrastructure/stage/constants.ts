@@ -99,5 +99,6 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
   PROD: false,
 };
 
-// Auto Jobs Config (for AutoController SFN)
-export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
+// Auto Data Sharing stuff
+export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json'; // Auto Jobs Config JASON (for AutoController SFN)
+export const SLACK_WEBHOOK_SECRET_NAME = 'auto-data-sharing-slack-webhook'; // pragma: allowlist secret

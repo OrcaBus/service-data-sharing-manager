@@ -7,6 +7,8 @@ import {
   buildPackagingLookUpTable,
   buildPushJobApiTable,
 } from './dynamodb';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import { SLACK_WEBHOOK_SECRET_NAME } from './constants';
 
 export type StatefulApplicationStackProps = cdk.StackProps & StatefulApplicationStackConfig;
 
@@ -40,6 +42,12 @@ export class StatefulApplicationStack extends cdk.Stack {
       partitionKey: 'id',
       sortKey: 'id_type',
       ttlAttribute: 'expire_at',
+    });
+    new secretsmanager.Secret(this, 'AutoDataSharingSlackWebhook', {
+      secretName: SLACK_WEBHOOK_SECRET_NAME,
+      description: 'Slack Incoming Webhook URL for auto-data-sharing notifications',
+      secretStringValue: cdk.SecretValue.unsafePlainText('SET_AFTER_DEPLOY'),
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
   }
 }

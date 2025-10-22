@@ -1,4 +1,5 @@
-import json, urllib.request
+import json
+import urllib.request
 import boto3
 
 
@@ -25,30 +26,30 @@ def get_package_report(package_id):
 
 def handler(event, context):
     WEBHOOK_URL = _get_webhook_url()
-    id = event["id"]
+    orcabus_id = event["id"]
 
     # If it's a package
-    if id.startswith('pkg.'):
+    if orcabus_id.startswith('pkg.'):
         package_name = event["packageName"]
         share_destination = event["shareDestination"]
-        package_report_presigned_url = get_package_report(id).strip('"')
+        package_report_presigned_url = get_package_report(orcabus_id).strip('"')
 
         text = (
             f" :package: *Auto Package*\n"
             f" *{package_name}* is ready.\n"
-            f"*Package ID:* {id}\n"
+            f"*Package ID:* {orcabus_id}\n"
             f"Review the packaging report <{package_report_presigned_url}|HERE>. \n\n"
             f"To manually trigger the push to *{share_destination.replace("://", ":\u200B//")}*, run:\n"
             f"```"
             f"aws stepfunctions start-execution \\\n"
             f"  --state-machine-arn arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing-autoPush \\\n"
-            f"  --input '{{\"id\": \"{id}\", \"packageName\": \"{package_name}\", \"shareDestination\": \"{share_destination}\"}}'\n"
+            f"  --input '{{\"id\": \"{orcabus_id}\", \"packageName\": \"{package_name}\", \"shareDestination\": \"{share_destination}\"}}'\n"
             f"```"
 
         )
 
     # If it's a push
-    if id.startswith('psh.'):
+    elif orcabus_id.startswith('psh.'):
 
         status = event["status"]
         package_id = event["packageId"]
@@ -57,15 +58,18 @@ def handler(event, context):
         if status == "SUCCEEDED":
             text = (
                 f":white_check_mark: *Push Completed*\n"
-                f"*Push ID:* {id} *{status}*\n"
+                f"*Push ID:* {orcabus_id} *{status}*\n"
                 f"*Package ID*: {package_id}\n"
                 f"*Share Destination:* {share_destination}"
             )
         else:
             text = (
-                f":x: Push *{id}* {status}.\n"
+                f":x: Push *{orcabus_id}* {status}.\n"
                 f"*Package ID*: {package_id}\n"
             )
+
+    else:
+        raise ValueError(f"Unexpected id format: {orcabus_id}")
 
     payload = json.dumps({"text": text}).encode("utf-8")
 

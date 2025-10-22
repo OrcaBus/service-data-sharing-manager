@@ -36,7 +36,7 @@ import { NagSuppressions } from 'cdk-nag';
 import { LogLevel, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 
-// AutoPackage state machine name (typed constant for safer refactors)
+// AutoPackagePush state machine name (typed constant for safer refactors)
 const autoPackageSfnName: StepFunctionsName = 'autoPackage';
 
 /** Step Function stuff */

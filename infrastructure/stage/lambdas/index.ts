@@ -20,6 +20,7 @@ import {
   LAMBDA_DIR,
   LAYERS_DIR,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
+  SLACK_WEBHOOK_SECRET_NAME,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -116,10 +117,10 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
   if (props.lambdaName === 'notifySlack') {
     const slackWebhook = secretsmanager.Secret.fromSecretNameV2(
       scope,
-      `${props.lambdaName}SlackWebhookSecret`,
-      'auto-data-sharing-slack-webhook'
+      'SlackWebhookSecret',
+      SLACK_WEBHOOK_SECRET_NAME
     );
-    slackWebhook.grantRead(lambdaObject.currentVersion);
+    slackWebhook.grantRead(lambdaObject);
   }
 
   return {

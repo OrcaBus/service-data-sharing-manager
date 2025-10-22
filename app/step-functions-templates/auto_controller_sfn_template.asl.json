@@ -17,7 +17,7 @@
       },
       "ItemSelector": {
         "enabled": "{% $states.context.Map.Item.Value.enabled %}",
-        "packageName": "{% & $states.context.Map.Item.Value.jobName & '-' & $states.input.detail.instrumentRunId %}",
+        "packageName": "{% 'autosharing-' & $states.context.Map.Item.Value.jobName & '-' & $states.input.detail.instrumentRunId %}",
         "packageRequest": {
           "instrumentRunIdList": "{% [$states.input.detail.instrumentRunId] %}",
           "dataTypeList": "{% $states.context.Map.Item.Value.dataTypeList %}",
