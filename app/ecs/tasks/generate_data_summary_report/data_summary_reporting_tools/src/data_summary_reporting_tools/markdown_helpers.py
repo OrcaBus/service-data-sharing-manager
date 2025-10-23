@@ -198,7 +198,7 @@ def add_summary_section(
         # is with column removal. We assume that the filename is the first column and the one we want to make red
         js_chunk = """
             function(row, data) {{
-              if (data[{__storage_class_column_index__}] == 'DEEP_ARCHIVE') {{
+              if (data[{__storage_class_column_index__}] === 'DeepArchive') {{
                 $(row).css('color', 'red');
               }}
             }}
@@ -210,13 +210,14 @@ def add_summary_section(
 
     # We split by Project ID if there are multiple projects in the dataframe
     has_multiple_projects = (
-        True if len(summary_df['Project ID'].unique()) > 1
+        True
+        if len(summary_df['Project ID'].replace("", pd.NA).dropna().unique()) > 1
         else False
     )
 
     # We also split by assay / type if there are multiple
     has_multiple_assay_type_combinations = (
-        True if summary_df[['Assay', 'Type']].drop_duplicates().shape[0] > 1
+        True if summary_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] > 1
         else False
     )
 
@@ -286,7 +287,9 @@ def add_summary_section(
     # Iterate over the projects
     for project_id, project_df in summary_df.groupby('Project ID'):
         has_multiple_assay_combinations = (
-            False if project_df[['Assay', 'Type']].drop_duplicates().shape[0] == 1 else True
+            False
+            if project_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] == 1
+            else True
         )
 
         # Write the metadata for 'all'
@@ -432,8 +435,8 @@ def add_secondary_file_summary_section(
         # is with column removal. We assume that the filename is the first column and the one we want to make red
         js_chunk = """
             function(row, data) {{
-              if (data[{__library_id_column_index__}] == '') {{
-                $(row).css('color', 'yellow');
+              if (data[{__library_id_column_index__}] === null) {{
+                $(row).css('color', 'orange');
               }}
             }}
         """.format(
@@ -448,13 +451,13 @@ def add_secondary_file_summary_section(
         # is with column removal. We assume that the filename is the first column and the one we want to make red
         js_chunk = """
             function(row, data) {{
-              if (data[{__storage_class_column_index__}] == 'DEEP_ARCHIVE') {{
+              if (data[{__storage_class_column_index__}] === 'DeepArchive') {{
                 $(row).css('color', 'red');
               }}
-              if (data[{__storage_class_column_index__}] == 'GLACIER') {{
+              if (data[{__storage_class_column_index__}] === 'Glacier') {{
                 $(row).css('color', 'red');
               }}
-              if (data[{__storage_class_column_index__}] == 'GLACIER_INSTANT_RETRIEVAL') {{
+              if (data[{__storage_class_column_index__}] === 'GlacierIr') {{
                 $(row).css('color', 'purple');
               }}
             }}
@@ -466,13 +469,15 @@ def add_secondary_file_summary_section(
 
     # We split by Project ID if there are multiple projects in the dataframe
     has_multiple_projects = (
-        True if len(summary_df['Project ID'].unique()) > 1
+        True
+        if len(summary_df['Project ID'].replace("", pd.NA).dropna().unique()) > 1
         else False
     )
 
     # We also split by assay / type if there are multiple
     has_multiple_assay_type_combinations = (
-        True if summary_df[['Assay', 'Type']].drop_duplicates().shape[0] > 1
+        True
+        if summary_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] > 1
         else False
     )
 
@@ -493,6 +498,7 @@ def add_secondary_file_summary_section(
             js_chunk=js_chunk,
         )
         return
+
 
     # Either multiple projects or multiple assay / type combinations
     # First thing to do regardless is to write the metadata for 'all'
@@ -544,7 +550,9 @@ def add_secondary_file_summary_section(
     # Iterate over the projects
     for project_id, project_df in summary_df.groupby('Project ID'):
         has_multiple_assay_combinations = (
-            False if project_df[['Assay', 'Type']].drop_duplicates().shape[0] == 1 else True
+            False
+            if project_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] == 1
+            else True
         )
 
         # Write the metadata for 'all'

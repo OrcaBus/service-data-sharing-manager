@@ -207,7 +207,7 @@ def get_fastq_summary_df(
             "Assay": series_iter_["assay"],
             "Type": series_iter_["type"],
             ## Workaround until the filemanager is synced for the archive bucket
-            'Storage Class': series_iter_['storageClass'] if not series_iter_['bucket'].startswith('archive-') else 'DEEP_ARCHIVE',
+            'Storage Class': series_iter_['storageClass'],
         }),
         axis="columns"
     )
