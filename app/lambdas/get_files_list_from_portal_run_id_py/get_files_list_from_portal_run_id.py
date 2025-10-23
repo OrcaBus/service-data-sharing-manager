@@ -83,6 +83,10 @@ REGEX_FILES_BY_WORKFLOW_NAME = {
     ]
 }
 
+# Add in legacy workflow names that are equivalent to current ones
+REGEX_FILES_BY_WORKFLOW_NAME["wgs_tumor_normal"] = REGEX_FILES_BY_WORKFLOW_NAME["tumor-normal"]
+REGEX_FILES_BY_WORKFLOW_NAME["wts_tumor_only"] = REGEX_FILES_BY_WORKFLOW_NAME["wts"]
+
 
 def handler(event: Dict, context: Any) -> Dict[str, List[str]]:
     """

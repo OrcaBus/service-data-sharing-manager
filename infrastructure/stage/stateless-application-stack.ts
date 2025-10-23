@@ -97,6 +97,13 @@ export class StatelessApplicationStack extends cdk.Stack {
       props.s3StepsCopySfnArn
     );
 
+    // Get the athena bucket
+    const athenaQueryResultsBucket = s3.Bucket.fromBucketName(
+      this,
+      'athenaQueryResultsBucketName',
+      props.athenaQueryResultsBucketName
+    );
+
     // Also build the datasharing tools layer
     const dataSharingToolsLayer = buildDataSharingToolsLayer(this);
 
@@ -117,6 +124,7 @@ export class StatelessApplicationStack extends cdk.Stack {
       packagingLookUpBucket: dataSharingBucket,
       s3StepsCopyBucket: s3StepsCopyBucket,
       s3StepsCopyBucketPrefix: props.s3StepsCopyPrefix,
+      athenaQueryResultsBucket: athenaQueryResultsBucket,
     });
 
     /*

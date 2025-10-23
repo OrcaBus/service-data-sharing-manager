@@ -189,8 +189,8 @@ def handler(event, context) -> Dict[str, 'WorkflowRunModelSlim']:
             "orcabusId": workflow_run["orcabusId"],
             "timestamp": workflow_run['currentState']['timestamp'],
             "portalRunId": workflow_run["portalRunId"],
-            "workflowName": workflow_run['workflow']['workflowName'],
-            "workflowVersion": workflow_run['workflow']['workflowVersion'],
+            "workflowName": workflow_run['workflow']['name'],
+            "workflowVersion": workflow_run['workflow']['version'],
             "libraries": workflow_run['libraries'],
         }
     except WorkflowRunNotFoundError:

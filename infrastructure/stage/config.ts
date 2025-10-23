@@ -7,6 +7,7 @@ import {
   DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
   DYNAMODB_PUSH_API_TABLE_NAME,
   EVENT_BUS_NAME,
+  MART_BUCKET_NAME,
   S3_STEPS_COPY_MIDFIX,
   S3_STEPS_COPY_PREFIX,
   s3CopyStepsBucket,
@@ -63,6 +64,9 @@ export const getStatelessApplicationStackProps = (
     s3StepsCopyPrefix: S3_STEPS_COPY_PREFIX[stage],
     s3StepsCopyMidfix: S3_STEPS_COPY_MIDFIX,
     s3StepsUseJsonLCopyFormat: USE_JSONL_COPY_FORMAT[stage],
+
+    // Athena stuff
+    athenaQueryResultsBucketName: MART_BUCKET_NAME[stage],
 
     /* API Stuff */
     apiGatewayCognitoProps: {
