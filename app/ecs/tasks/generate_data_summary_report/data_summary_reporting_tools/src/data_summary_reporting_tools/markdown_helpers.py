@@ -19,8 +19,10 @@ from .dataframe_makers import (
 from .dataframe_summary_makers import (
     get_analyses_summary_df, get_secondary_files_summary_df
 )
-from .globals import SECTION_LEVEL, TABLE_COUNT
+from .globals import SECTION_LEVEL
 from .models import FastqSummaryModel, SecondaryFileSummaryModel, AnalysisSummaryModel, MetadataSummaryModel
+
+TABLE_COUNT = 0
 
 
 def convert_underscored_list(string: str) -> str:
@@ -423,7 +425,23 @@ def add_secondary_file_summary_section(
     # Add in our javascript chunk if 'Storage Class' is in the dataframe
     # Storage class is a hidden column, however we can use it to show if a file is in archive
     js_chunk = None
-    if 'Storage Class' in summary_df.columns.tolist():
+    if not 'Storage Class' in summary_df.columns.tolist():
+        # We need to add a javascript chunk to the table to show if the file is in archive
+        # But we also use R 1-based indexing despite the fact were writing JS... in python... anyway
+        # To add complications here the data attribute is prior to column removal, but the js update
+        # is with column removal. We assume that the filename is the first column and the one we want to make red
+        js_chunk = """
+            function(row, data) {{
+              if (data[{__library_id_column_index__}] == '') {{
+                $(row).css('color', 'yellow');
+              }}
+            }}
+        """.format(
+            **{
+                "__library_id_column_index__": summary_df.columns.get_loc('Library ID') + 1,
+            }
+        )
+    else:
         # We need to add a javascript chunk to the table to show if the file is in archive
         # But we also use R 1-based indexing despite the fact were writing JS... in python... anyway
         # To add complications here the data attribute is prior to column removal, but the js update

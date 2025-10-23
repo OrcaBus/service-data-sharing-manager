@@ -246,8 +246,6 @@ def get_analyses_df(
     Then transform the analyses table into a pandas dataframe.
     :return:
     """
-    secondaryAnalysisDataType: DataType = 'secondaryAnalysis2'
-
     workflow_df = get_data_from_dynamodb(
         job_id,
         context="workflow"
@@ -269,6 +267,7 @@ def get_analyses_df(
                 }
             ),
             on="library_orcabus_id",
+            how='outer'
         ).merge(
             files_df.query(
                 f"dataType == 'secondaryAnalysis'"
