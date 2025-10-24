@@ -1,10 +1,12 @@
 # Imports
 from pathlib import Path
+from typing import Dict
+
 import pandas as pd
 from pandera.typing import DataFrame
 
 from .miscell import get_portal_run_id_path_from_relative_path
-from .models import SecondaryFileModel, AnalysisSummaryModel, SecondaryFileSummaryModel
+from .models import SecondaryFileModel, AnalysisSummaryModel, SecondaryFileSummaryModel, Sample
 
 
 def get_analyses_summary_df(
@@ -19,12 +21,54 @@ def get_analyses_summary_df(
         pd.DataFrame(
             analyses_df.apply(
                 lambda series_iter_: pd.Series({
-                    "library_id": series_iter_["libraryId"],
-                    "sample_id": series_iter_["sample"]['sampleId'],
-                    "external_sample_id": series_iter_["sample"]['externalSampleId'],
-                    "subject_id": series_iter_["subject"]['subjectId'],
-                    "individual_id": series_iter_['subject']['individualSet'][0]['individualId'],
-                    "project_id": series_iter_['projectSet'][0]['projectId'],
+                    "library_id": (
+                        series_iter_["libraryId"]
+                        if (
+                            series_iter_["libraryId"] and
+                            not pd.isna(series_iter_["libraryId"])
+                        )
+                        else ""
+                    ),
+                    "sample_id": (
+                        series_iter_["sample"]['sampleId']
+                        if (
+                            series_iter_["sample"] and
+                            not pd.isna(series_iter_["sample"])
+                        )
+                        else ""
+                    ),
+                    "external_sample_id": (
+                        series_iter_["sample"]['externalSampleId']
+                        if (
+                            series_iter_["sample"] and
+                            not pd.isna(series_iter_["sample"])
+                        )
+                        else ""
+                    ),
+                    "subject_id": (
+                        series_iter_["subject"]['subjectId']
+                        if (
+                            series_iter_["subject"] and
+                            not pd.isna(series_iter_["subject"])
+                        )
+                        else ""
+                    ),
+                    "individual_id": (
+                        series_iter_['subject']['individualSet'][0]['individualId']
+                        if (
+                            series_iter_["subject"] and
+                            not pd.isna(series_iter_["subject"])
+                        )
+                        else ""
+                    ),
+                    "project_id": (
+                        series_iter_['projectSet'][0]['projectId']
+                        if (
+                            series_iter_['projectSet'] and
+                            not pd.isna(series_iter_["projectSet"])
+                        )
+                        else "None"
+                    ),
                     "Workflow Name": series_iter_["workflowName"],
                     "Workflow Version": series_iter_["workflowVersion"],
                     "Portal Run ID": series_iter_["portalRunId"],
@@ -32,8 +76,22 @@ def get_analyses_summary_df(
                         Path(series_iter_["relativePath"]),
                         series_iter_["portalRunId"]
                     )) + "/",
-                    "Assay": series_iter_["assay"],
-                    "Type": series_iter_["type"],
+                    "Assay": (
+                        series_iter_["assay"]
+                        if (
+                            series_iter_["assay"] and
+                            not pd.isna(series_iter_["assay"])
+                        )
+                        else ""
+                    ),
+                    "Type": (
+                        series_iter_["type"]
+                        if (
+                            series_iter_["type"] and
+                            not pd.isna(series_iter_["type"])
+                        )
+                        else ""
+                    ),
                 }),
                 axis="columns"
             )
@@ -82,18 +140,74 @@ def get_secondary_files_summary_df(
         pd.DataFrame(
             analyses_df.apply(
                 lambda series_iter_: pd.Series({
-                    "library_id": series_iter_["libraryId"],
-                    "sample_id": series_iter_["sample"]['sampleId'],
-                    "external_sample_id": series_iter_["sample"]['externalSampleId'],
-                    "subject_id": series_iter_["subject"]['subjectId'],
-                    "individual_id": series_iter_['subject']['individualSet'][0]['individualId'],
-                    "project_id": series_iter_['projectSet'][0]['projectId'],
+                    "library_id": (
+                        series_iter_["libraryId"]
+                        if (
+                            series_iter_["libraryId"] and
+                            not pd.isna(series_iter_["libraryId"])
+                        )
+                        else ""
+                    ),
+                    "sample_id": (
+                        series_iter_["sample"]['sampleId']
+                        if (
+                            series_iter_["sample"] and
+                            not pd.isna(series_iter_["sample"])
+                        )
+                        else ""
+                    ),
+                    "external_sample_id": (
+                        series_iter_["sample"]['externalSampleId']
+                        if (
+                            series_iter_["sample"] and
+                            not pd.isna(series_iter_["sample"])
+                        )
+                        else ""
+                    ),
+                    "subject_id": (
+                        series_iter_["subject"]['subjectId']
+                        if (
+                            series_iter_["subject"] and
+                            not pd.isna(series_iter_["subject"])
+                        )
+                        else ""
+                    ),
+                    "individual_id": (
+                        series_iter_['subject']['individualSet'][0]['individualId']
+                        if (
+                            series_iter_['subject']['individualSet'][0]['individualId'] and
+                            not pd.isna(series_iter_["subject"])
+                        )
+                        else ""
+                    ),
+                    "project_id": (
+                        series_iter_['projectSet'][0]['projectId']
+                        if (
+                            series_iter_['projectSet'] and
+                            not pd.isna(series_iter_["projectSet"])
+                        )
+                        else "None"
+                    ),
                     "Workflow Name": series_iter_["workflowName"],
                     "Workflow Version": series_iter_["workflowVersion"],
                     "Portal Run ID": series_iter_["portalRunId"],
                     "Relative Output Path": series_iter_["relativePath"],
-                    "Assay": series_iter_["assay"],
-                    "Type": series_iter_["type"],
+                    "Assay": (
+                        series_iter_["assay"]
+                        if (
+                            series_iter_["assay"] and
+                            not pd.isna(series_iter_["assay"])
+                        )
+                        else ""
+                    ),
+                    "Type": (
+                        series_iter_["type"]
+                        if (
+                            series_iter_["type"] and
+                            not pd.isna(series_iter_["type"])
+                        )
+                        else ""
+                    ),
                     ## Workaround until the filemanager is synced for the archive bucket
                     "Storage Class": series_iter_['storageClass'],
                 }),

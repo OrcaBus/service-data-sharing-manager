@@ -19,8 +19,10 @@ from .dataframe_makers import (
 from .dataframe_summary_makers import (
     get_analyses_summary_df, get_secondary_files_summary_df
 )
-from .globals import SECTION_LEVEL, TABLE_COUNT
+from .globals import SECTION_LEVEL
 from .models import FastqSummaryModel, SecondaryFileSummaryModel, AnalysisSummaryModel, MetadataSummaryModel
+
+TABLE_COUNT = 0
 
 
 def convert_underscored_list(string: str) -> str:
@@ -196,7 +198,7 @@ def add_summary_section(
         # is with column removal. We assume that the filename is the first column and the one we want to make red
         js_chunk = """
             function(row, data) {{
-              if (data[{__storage_class_column_index__}] == 'DEEP_ARCHIVE') {{
+              if (data[{__storage_class_column_index__}] === 'DeepArchive') {{
                 $(row).css('color', 'red');
               }}
             }}
@@ -208,13 +210,14 @@ def add_summary_section(
 
     # We split by Project ID if there are multiple projects in the dataframe
     has_multiple_projects = (
-        True if len(summary_df['Project ID'].unique()) > 1
+        True
+        if len(summary_df['Project ID'].replace("", pd.NA).dropna().unique()) > 1
         else False
     )
 
     # We also split by assay / type if there are multiple
     has_multiple_assay_type_combinations = (
-        True if summary_df[['Assay', 'Type']].drop_duplicates().shape[0] > 1
+        True if summary_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] > 1
         else False
     )
 
@@ -284,7 +287,9 @@ def add_summary_section(
     # Iterate over the projects
     for project_id, project_df in summary_df.groupby('Project ID'):
         has_multiple_assay_combinations = (
-            False if project_df[['Assay', 'Type']].drop_duplicates().shape[0] == 1 else True
+            False
+            if project_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] == 1
+            else True
         )
 
         # Write the metadata for 'all'
@@ -423,20 +428,36 @@ def add_secondary_file_summary_section(
     # Add in our javascript chunk if 'Storage Class' is in the dataframe
     # Storage class is a hidden column, however we can use it to show if a file is in archive
     js_chunk = None
-    if 'Storage Class' in summary_df.columns.tolist():
+    if not 'Storage Class' in summary_df.columns.tolist():
         # We need to add a javascript chunk to the table to show if the file is in archive
         # But we also use R 1-based indexing despite the fact were writing JS... in python... anyway
         # To add complications here the data attribute is prior to column removal, but the js update
         # is with column removal. We assume that the filename is the first column and the one we want to make red
         js_chunk = """
             function(row, data) {{
-              if (data[{__storage_class_column_index__}] == 'DEEP_ARCHIVE') {{
+              if (data[{__library_id_column_index__}] === null) {{
+                $(row).css('color', 'orange');
+              }}
+            }}
+        """.format(
+            **{
+                "__library_id_column_index__": summary_df.columns.get_loc('Library ID') + 1,
+            }
+        )
+    else:
+        # We need to add a javascript chunk to the table to show if the file is in archive
+        # But we also use R 1-based indexing despite the fact were writing JS... in python... anyway
+        # To add complications here the data attribute is prior to column removal, but the js update
+        # is with column removal. We assume that the filename is the first column and the one we want to make red
+        js_chunk = """
+            function(row, data) {{
+              if (data[{__storage_class_column_index__}] === 'DeepArchive') {{
                 $(row).css('color', 'red');
               }}
-              if (data[{__storage_class_column_index__}] == 'GLACIER') {{
+              if (data[{__storage_class_column_index__}] === 'Glacier') {{
                 $(row).css('color', 'red');
               }}
-              if (data[{__storage_class_column_index__}] == 'GLACIER_INSTANT_RETRIEVAL') {{
+              if (data[{__storage_class_column_index__}] === 'GlacierIr') {{
                 $(row).css('color', 'purple');
               }}
             }}
@@ -448,13 +469,15 @@ def add_secondary_file_summary_section(
 
     # We split by Project ID if there are multiple projects in the dataframe
     has_multiple_projects = (
-        True if len(summary_df['Project ID'].unique()) > 1
+        True
+        if len(summary_df['Project ID'].replace("", pd.NA).dropna().unique()) > 1
         else False
     )
 
     # We also split by assay / type if there are multiple
     has_multiple_assay_type_combinations = (
-        True if summary_df[['Assay', 'Type']].drop_duplicates().shape[0] > 1
+        True
+        if summary_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] > 1
         else False
     )
 
@@ -475,6 +498,7 @@ def add_secondary_file_summary_section(
             js_chunk=js_chunk,
         )
         return
+
 
     # Either multiple projects or multiple assay / type combinations
     # First thing to do regardless is to write the metadata for 'all'
@@ -526,7 +550,9 @@ def add_secondary_file_summary_section(
     # Iterate over the projects
     for project_id, project_df in summary_df.groupby('Project ID'):
         has_multiple_assay_combinations = (
-            False if project_df[['Assay', 'Type']].drop_duplicates().shape[0] == 1 else True
+            False
+            if project_df[['Assay', 'Type']].replace("", pd.NA).dropna().drop_duplicates().shape[0] == 1
+            else True
         )
 
         # Write the metadata for 'all'

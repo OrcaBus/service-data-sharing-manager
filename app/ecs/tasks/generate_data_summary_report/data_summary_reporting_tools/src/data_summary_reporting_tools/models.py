@@ -171,7 +171,12 @@ class FastqFileModel(FastqModel, FileWithRelativePathModel):
 
 
 class SecondaryFileModel(WorkflowRunSlimModel, FileWithRelativePathModel):
-    pass
+    libraryId: str = pa.Field(str_startswith="L", nullable=True)
+    type: str = pa.Field(nullable=True)
+    assay: str = pa.Field(nullable=True)
+    sample: Sample = pa.Field(nullable=True, default={})
+    projectSet: List[Project] = pa.Field(nullable=True, default=[])
+    subject: Subject = pa.Field(nullable=True, default={})
 
 
 # Output tables
