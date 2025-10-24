@@ -14,6 +14,7 @@ Data Sharing Service
     - [Pushing Packages](#pushing-packages)
     - [Presigning packages](#presigning-packages)
 - [CLI Troubleshooting](#cli-troubleshooting)
+- [Automatic Data Sharing - 🚧 WIP 🚧 ](#automatic-data-sharing)
 - [Infrastructure \& Deployment](#infrastructure--deployment)
   - [Stateful](#stateful)
   - [Stateless](#stateless)
@@ -266,6 +267,63 @@ The package generation runs through an AWS Step Function, if that step function 
 a message will be put to the alerts-prod Slack channel.
 
 Navigate the failed AWS Step Function in the AWS UI to determine the source of the failure.
+
+Automatic Data Sharing
+--------------------------------------------------------------------------------
+🚧 This section is a work in progress 🚧
+
+Automatic Data Sharing extends the core service by automatically packaging new sequencing runs and then requiring a human to trigger the push.
+<!--
+- Listens for OrcaBus events (e.g. FastqListRowsAdded) when a run completes.
+
+- On trigger, loads job definitions from S3 and checks them against the run to see if automatic packaging rules apply.
+
+- If there’s a match, performs packaging fully unattended.
+
+- Posts a Slack notification with package details and a one-liner to manually start the push (human approval required).
+
+
+### Job Definitions
+
+Each automatic sharing job is defined as a JSON object and stored in the `auto_package_push_jobs/jobs.json` file in S3.
+Multiple jobs can be defined within a single JSON array.
+
+Below is a template for one job definition:
+
+```json
+{
+  "jobName": "project-shortname",
+  "enabled": true,
+  "projectIdList": ["PROJECT1"],
+  "dataTypeList": ["fastq"],
+  "shareDestination": "s3://target-bucket/path/"
+}
+```
+
+
+`jobName` (str) – short, unique name for the job. Used in logs and Step Functions.
+enabled (bool) – set to true to activate the job; disabled jobs are ignored.
+
+`projectIdList` (list[str]) – list of project IDs; run must match at least one.
+
+`dataTypeList` (list[str]) – which data types to include (e.g. `fastq`).
+
+`shareDestination` (str) – destination S3 path where the data will be pushed.
+
+
+### Step Functions
+
+The automatic data sharing logic is orchestrated through AWS Step Functions.
+They coordinate different Lambda functions to plan, package data automatically when new sequencing runs are detected and set the push.
+
+  - **autoController** – central orchestrator for event-driven execution.
+  - **autoPackage** – performs the automatic packaging.
+  - **autoPush** – performs the automatic pushing.
+
+  - **Support Lambdas** – includes utilities like:
+    - `check_project_in_instrument_run`
+    - `start_package_push`
+    - `push_package_job_monitor` -->
 
 Infrastructure & Deployment
 --------------------------------------------------------------------------------

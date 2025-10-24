@@ -1,0 +1,105 @@
+{
+  "QueryLanguage": "JSONata",
+  "StartAt": "Trigger Push",
+  "TimeoutSeconds": 86400,
+  "States": {
+    "Trigger Push": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__trigger_push_lambda_function_arn__}",
+        "Payload": {
+          "id": "{% $states.input.id %}",
+          "shareDestination": "{% $states.input.shareDestination %}"
+        }
+      },
+      "Output": "{% $states.result.Payload.pushRequestObject %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Wait For Push"
+    },
+    "Wait For Push": {
+      "Type": "Wait",
+      "Seconds": 300,
+      "Next": "Check Push Status"
+    },
+    "Check Push Status": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
+        "Payload": {
+          "id": "{% $states.input.id %}"
+        }
+      },
+      "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Is Push Completed"
+    },
+    "Is Push Completed": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Comment": "Push Failed or Cancelled",
+          "Condition": "{% $states.input.status in [ 'SUCCEEDED', 'FAILED', 'CANCELLED' ] %}",
+          "Next": "Notify Push Result"
+        }
+      ],
+      "Default": "Wait For Push"
+    },
+    "Notify Push Result": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "id": "{% $states.input.id %}",
+          "status": "{% $states.input.status %}",
+          "packageId": "{% $states.input.packageId %}",
+          "shareDestination": "{% $states.input.shareDestination %}"
+        }
+      },
+      "Output": "{% $states.input %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    }
+  }
+}

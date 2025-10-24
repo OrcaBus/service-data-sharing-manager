@@ -37,7 +37,7 @@ import { LogLevel, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 // AutoPackagePush state machine name (typed constant for safer refactors)
-const autoPackagePushSfnName: StepFunctionsName = 'autoPackagePush';
+const autoPackageSfnName: StepFunctionsName = 'autoPackage';
 
 /** Step Function stuff */
 function createStateMachineDefinitionSubstitutions(props: SfnProps): {
@@ -105,8 +105,8 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
-      case autoPackagePushSfnName: {
-        definitionSubstitutions['__auto_package_push_sfn_arn__'] =
+      case autoPackageSfnName: {
+        definitionSubstitutions['__auto_package_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
         break;
       }
@@ -260,6 +260,7 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
   // Nested SFN Permissions
   if (sfnRequirements.needsNestedSfnPermissions) {
     // For push data case
+    // Needs access to the nested push SFNs pushS3Data and pushIcav2Data
     if (props.stateMachineName === 'push') {
       for (const nestedSfnName of stepFunctionsNameList) {
         switch (nestedSfnName) {
@@ -267,9 +268,10 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
           case 'pushIcav2Data': {
             props.stateMachineObj.addToRolePolicy(
               new iam.PolicyStatement({
-                actions: ['states:StartExecution'],
+                actions: ['states:StartExecution', 'states:DescribeExecution'],
                 resources: [
                   `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`,
+                  `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${nestedSfnName}:*`,
                 ],
               })
             );
@@ -279,34 +281,16 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
       }
     }
 
+    // The auto controller SFN needs access to the auto package state machine
     if (props.stateMachineName === 'autoController') {
       props.stateMachineObj.addToRolePolicy(
         new iam.PolicyStatement({
-          actions: ['states:StartExecution'],
+          actions: ['states:StartExecution', 'states:DescribeExecution'],
           resources: [
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${autoPackagePushSfnName}`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${autoPackageSfnName}`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${autoPackageSfnName}:*`,
           ],
         })
-      );
-      props.stateMachineObj.addToRolePolicy(
-        new iam.PolicyStatement({
-          actions: ['states:DescribeExecution'],
-          resources: [
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${autoPackagePushSfnName}:*`,
-          ],
-        })
-      );
-      // Suppress IAM5: wildcard needed because execution ARNs include dynamic IDs
-      NagSuppressions.addResourceSuppressions(
-        props.stateMachineObj,
-        [
-          {
-            id: 'AwsSolutions-IAM5',
-            reason:
-              'autoController must DescribeExecution on autoPackagePush executions. ARNs are dynamic so a wildcard is required.',
-          },
-        ],
-        true
       );
     }
 
@@ -324,6 +308,19 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
         ],
         actions: ['events:PutTargets', 'events:PutRule', 'events:DescribeRule'],
       })
+    );
+
+    // Suppress IAM5: Wildcard needed because execution ARNs include dynamic IDs
+    NagSuppressions.addResourceSuppressions(
+      props.stateMachineObj,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'Describe execution requires wildcard in resource ARN because execution IDs are dynamic',
+        },
+      ],
+      true
     );
   }
 }

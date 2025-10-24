@@ -22,10 +22,12 @@ import {
   MART_BUCKET_PREFIX,
   MART_ENV_VARS,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
+  SLACK_WEBHOOK_SECRET_NAME,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cdk from 'aws-cdk-lib';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { PythonLayerVersion } from '@aws-cdk/aws-lambda-python-alpha';
 
 function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject {
@@ -126,26 +128,14 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
-  // Allow reading auto-package-push job configs from SSM (scoped prefix)
-  if (lambdaRequirements.needsAutoJobsSsmAccess) {
-    // Hardcoded for now
-    const ssmPrefix = '/umccr/data-sharing/auto-package-push';
-
-    // Let the lambda know where to look
-    lambdaObject.addEnvironment('SSM_JOBS_PREFIX', ssmPrefix);
-
-    // IAM to read parameters under that prefix
-    lambdaObject.currentVersion.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ssm:GetParametersByPath'],
-        resources: [
-          // the prefix itself
-          `arn:aws:ssm:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:parameter${ssmPrefix}`,
-          // all children (the actual per-job params)
-          `arn:aws:ssm:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:parameter${ssmPrefix}/*`,
-        ],
-      })
+  // Allow the notifier Lambda to read the Slack webhook secret at runtime
+  if (props.lambdaName === 'notifySlack') {
+    const slackWebhook = secretsmanager.Secret.fromSecretNameV2(
+      scope,
+      'SlackWebhookSecret',
+      SLACK_WEBHOOK_SECRET_NAME
     );
+    slackWebhook.grantRead(lambdaObject);
   }
 
   return {

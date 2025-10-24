@@ -11,8 +11,9 @@ export type StepFunctionsName =
   | 'pushIcav2Data'
   | 'pushS3Data'
   | 'push'
-  | 'autoPackagePush'
-  | 'autoController';
+  | 'autoController'
+  | 'autoPackage'
+  | 'autoPush';
 
 export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
@@ -20,8 +21,9 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'pushIcav2Data',
   'pushS3Data',
   'push',
-  'autoPackagePush',
   'autoController',
+  'autoPackage',
+  'autoPush',
 ];
 
 export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
@@ -51,8 +53,9 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'packageFileToJsonlData',
   ],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
-  autoPackagePush: ['triggerPackaging', 'triggerPush', 'checkPackagePushStatus'],
   autoController: ['checkProjectInInstrumentRun'],
+  autoPackage: ['triggerPackaging', 'checkPackagePushStatus', 'notifySlack'],
+  autoPush: ['triggerPush', 'checkPackagePushStatus', 'notifySlack'],
 };
 
 export interface StepFunctionRequirements {
@@ -90,14 +93,17 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   push: {
     needsNestedSfnPermissions: true,
   },
-  autoPackagePush: {
-    needsEventPutPermissions: true,
-  },
   autoController: {
     needsNestedSfnPermissions: true,
     needsEventPutPermissions: true,
     needsDistributedMapPermissions: true,
     needsJobsConfigReadPermissions: true,
+  },
+  autoPackage: {
+    needsEventPutPermissions: true,
+  },
+  autoPush: {
+    needsEventPutPermissions: true,
   },
 };
 

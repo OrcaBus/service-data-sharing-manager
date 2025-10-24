@@ -65,16 +65,16 @@
             "Choices": [
               {
                 "Condition": "{% $states.input.enabled and $states.input.project_found %}",
-                "Next": "Run autoPackagePush"
+                "Next": "Run autoPackage"
               }
             ],
             "Default": "Skip"
           },
-          "Run autoPackagePush": {
+          "Run autoPackage": {
             "Type": "Task",
             "Resource": "arn:aws:states:::states:startExecution.sync:2",
             "Arguments": {
-              "StateMachineArn": "${__auto_package_push_sfn_arn__}",
+              "StateMachineArn": "${__auto_package_sfn_arn__}",
               "Input": {
                 "packageName": "{% $states.input.packageName %}",
                 "packageRequest": "{% $states.input.packageRequest %}",

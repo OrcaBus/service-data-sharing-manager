@@ -8,7 +8,11 @@
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
-        "Payload": "{% $states.input %}"
+        "Payload": {
+          "packageName": "{% $states.input.packageName %}",
+          "packageRequest": "{% $states.input.packageRequest %}",
+          "shareDestination": "{% $states.input.shareDestination %}"
+        }
       },
       "Output": "{% $merge([$states.result.Payload.packagingRequestObject, {'shareDestination': $states.input.shareDestination}]) %}",
       "Retry": [
@@ -62,55 +66,30 @@
       "Type": "Choice",
       "Choices": [
         {
+          "Comment": "Package Succeeded",
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Trigger Push"
+          "Next": "Notify Packaging Complete"
         },
         {
+          "Comment": "Package Failed or Cancelled",
           "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
-          "Next": "Auto Package-Push Failed"
+          "Next": "Auto Package Failed"
         }
       ],
       "Default": "Wait For Package"
     },
-    "Trigger Push": {
+    "Notify Packaging Complete": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__trigger_push_lambda_function_arn__}",
-        "Payload": "{% {'id': $states.input.id, 'shareDestination': $states.input.shareDestination} %}"
-      },
-      "Output": "{% $states.result.Payload.pushRequestObject %}",
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 1,
-          "MaxAttempts": 3,
-          "BackoffRate": 2,
-          "JitterStrategy": "FULL"
-        }
-      ],
-      "Next": "Wait For Push"
-    },
-    "Wait For Push": {
-      "Type": "Wait",
-      "Seconds": 300,
-      "Next": "Check Push Status"
-    },
-    "Check Push Status": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Arguments": {
-        "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
-          "id": "{% $states.input.id %}"
+          "id": "{% $states.input.id %}",
+          "packageName": "{% $states.input.packageName %}",
+          "shareDestination": "{% $states.input.shareDestination %}"
         }
       },
-      "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
+      "Output": "{% $states.input %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -125,26 +104,12 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Is Push Completed"
+      "Next": "Auto Package Succeeded"
     },
-    "Is Push Completed": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Auto Package-Push Complete"
-        },
-        {
-          "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
-          "Next": "Auto Package-Push Failed"
-        }
-      ],
-      "Default": "Wait For Push"
-    },
-    "Auto Package-Push Complete": {
+    "Auto Package Succeeded": {
       "Type": "Succeed"
     },
-    "Auto Package-Push Failed": {
+    "Auto Package Failed": {
       "Type": "Fail"
     }
   }

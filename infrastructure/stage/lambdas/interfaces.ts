@@ -27,7 +27,8 @@ export type LambdaName =
   | 'triggerPackaging'
   | 'checkPackagePushStatus'
   | 'triggerPush'
-  | 'checkProjectInInstrumentRun';
+  | 'checkProjectInInstrumentRun'
+  | 'notifySlack';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -54,6 +55,7 @@ export const lambdaNameList: LambdaName[] = [
   'checkPackagePushStatus',
   'triggerPush',
   'checkProjectInInstrumentRun',
+  'notifySlack',
 ];
 
 export interface Requirements {
@@ -63,7 +65,6 @@ export interface Requirements {
   needsDbPermissions?: boolean;
   needsStepsS3UploadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
-  needsAutoJobsSsmAccess?: boolean;
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
@@ -154,6 +155,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsOrcabusApiToolsLayer: true,
   },
   checkProjectInInstrumentRun: {
+    needsOrcabusApiToolsLayer: true,
+  },
+  notifySlack: {
     needsOrcabusApiToolsLayer: true,
   },
 };
