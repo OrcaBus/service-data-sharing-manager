@@ -3,7 +3,6 @@ import * as events from 'aws-cdk-lib/aws-events';
 import { EventBridgeRuleObject } from '../event-rules/interfaces';
 import { SfnObject } from '../step-functions/interfaces';
 
-/** EventBridge Target Interfaces */
 export type EventBridgeTargetName = 'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget';
 
 export const eventBridgeTargetsNameList: EventBridgeTargetName[] = [

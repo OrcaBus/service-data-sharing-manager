@@ -1,4 +1,3 @@
-/* Event Bridge Rules */
 import {
   EventBridgeRuleObject,
   EventBridgeRuleProps,
@@ -11,7 +10,6 @@ import * as events from 'aws-cdk-lib/aws-events';
 import { Construct } from 'constructs';
 import { AUTOCONTROLLER_RULE_NAME } from '../constants';
 
-/* Pattern builder for orcabus.fastqglue → FastqListRowsAdded */
 function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
   return {
     detailType: ['FastqListRowsAdded'],
@@ -74,7 +72,6 @@ export function buildAllEventRules(
         });
         break;
       }
-      // future rules: add new cases here
     }
   }
 
