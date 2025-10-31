@@ -102,6 +102,8 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
 // Auto Data Sharing stuff
 export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
 export const SLACK_WEBHOOK_SECRET_NAME = 'auto-data-sharing-slack-webhook'; // pragma: allowlist secret
+// EventBridge rule names for auto data sharing
+export const AUTOCONTROLLER_RULE_NAME = 'autocontroller-fastqglue-rowsadded';
 
 // Get mart env vars
 export const MART_ENV_VARS: Record<string, string> = {

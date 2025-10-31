@@ -38,7 +38,7 @@
             "Arguments": {
               "FunctionName": "${__check_project_in_instrument_run_lambda_function_arn__}",
               "Payload": {
-                "instrumentRunId": "{% $states.input.packageRequest.instrumentRunIdList[0] %}",
+                "instrumentRunId": "{% $states.input.packageRequest.instrumentRunIdList %}",
                 "projectIdList": "{% $states.input.packageRequest.projectIdList %}"
               }
             },
