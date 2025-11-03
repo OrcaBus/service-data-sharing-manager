@@ -21,13 +21,20 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
   for (const targetName of eventBridgeTargetsNameList) {
     switch (targetName) {
       case 'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'ReadSetsAdded'
+        )?.ruleObject;
+        const stateMachine = props.stepFunctionObjects.find(
+          (sfnIter) => sfnIter.stateMachineName === 'autoController'
+        )?.stateMachineObj;
+
+        if (!rule || !stateMachine) {
+          throw new Error('Required rule or state machine not found');
+        }
+
         buildAutocontrollerFastqGlueToAutoControllerSfnTarget({
-          eventBridgeRuleObj: props.eventBridgeRuleObjects.find(
-            (eventRuleIter) => eventRuleIter.ruleName === 'ReadSetsAdded'
-          )!.ruleObject,
-          stateMachineObj: props.stepFunctionObjects.find(
-            (sfnIter) => sfnIter.stateMachineName === 'autoController'
-          )!.stateMachineObj,
+          eventBridgeRuleObj: rule,
+          stateMachineObj: stateMachine,
         });
         break;
       }
