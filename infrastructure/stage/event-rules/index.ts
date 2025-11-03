@@ -1,77 +1,72 @@
+/* Event Bridge Rules */
+import { Construct } from 'constructs';
+import * as events from 'aws-cdk-lib/aws-events';
+import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
+import {
+  AUTOCONTROLLER_RULE_DESCRIPTION,
+  FASTQ_GLUE_EVENT_SOURCE,
+  FASTQ_LIST_ROWS_ADDED_DETAIL_TYPE,
+} from '../constants';
 import {
   EventBridgeRuleObject,
   EventBridgeRuleProps,
   EventBridgeRulesProps,
-  eventBridgeRuleNameList,
   BuildAutocontrollerFastqGlueRuleProps,
+  eventBridgeRuleNameList,
 } from './interfaces';
-import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
-import * as events from 'aws-cdk-lib/aws-events';
-import { Construct } from 'constructs';
-import { AUTOCONTROLLER_RULE_NAME } from '../constants';
 
+/* Pattern builder */
 function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
   return {
-    detailType: ['FastqListRowsAdded'],
-    source: ['orcabus.fastqglue'],
+    detailType: [FASTQ_LIST_ROWS_ADDED_DETAIL_TYPE],
+    source: [FASTQ_GLUE_EVENT_SOURCE],
     detail: {
       instrumentRunId: [{ exists: true }],
     },
   };
 }
 
-function buildEventRule(
-  scope: Construct,
-  props: EventBridgeRuleProps,
-  physicalRuleName: string
-): Rule {
+/* Generic rule builder */
+function buildEventRule(scope: Construct, props: EventBridgeRuleProps): Rule {
   return new events.Rule(scope, props.ruleName, {
-    ruleName: physicalRuleName,
     eventPattern: props.eventPattern,
+    eventBus: props.eventBus,
+    description: AUTOCONTROLLER_RULE_DESCRIPTION,
+  });
+}
+
+/* Specific builder for the autocontroller FastqGlue rule */
+function buildAutocontrollerFastqGlueRule(
+  scope: Construct,
+  props: BuildAutocontrollerFastqGlueRuleProps
+): Rule {
+  return buildEventRule(scope, {
+    ruleName: props.ruleName,
+    eventPattern: buildAutocontrollerFastqGlueRowsAddedPattern(),
     eventBus: props.eventBus,
   });
 }
 
-function buildAutocontrollerFastqGlueRule(
-  scope: Construct,
-  props: BuildAutocontrollerFastqGlueRuleProps,
-  physicalRuleName: string
-): Rule {
-  return buildEventRule(
-    scope,
-    {
-      ruleName: props.ruleName,
-      eventPattern: buildAutocontrollerFastqGlueRowsAddedPattern(),
-      eventBus: props.eventBus,
-    },
-    physicalRuleName
-  );
-}
-
+/* Build all declared rules from interfaces.ts */
 export function buildAllEventRules(
   scope: Construct,
   props: EventBridgeRulesProps
 ): EventBridgeRuleObject[] {
   const out: EventBridgeRuleObject[] = [];
 
-  const physicalName = AUTOCONTROLLER_RULE_NAME;
-
   for (const ruleName of eventBridgeRuleNameList) {
     switch (ruleName) {
       case 'autocontrollerFastqGlueRowsAdded': {
         out.push({
           ruleName,
-          ruleObject: buildAutocontrollerFastqGlueRule(
-            scope,
-            {
-              ruleName,
-              eventBus: props.eventBus,
-            },
-            physicalName
-          ),
+          ruleObject: buildAutocontrollerFastqGlueRule(scope, {
+            ruleName,
+            eventBus: props.eventBus,
+          }),
         });
         break;
       }
+      // Future rules add HERE
     }
   }
 

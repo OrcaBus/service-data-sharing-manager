@@ -166,12 +166,11 @@ export class StatelessApplicationStack extends cdk.Stack {
         Part 4: Build the EventBridge rules and targets
          */
 
-    // Build EventBridge rules
+    // Build rules
     const eventBridgeRuleObjects = buildAllEventRules(this, {
       eventBus: eventBusObj,
-      stage: this.stageName, // carried for naming if you ever need it
     });
-    // Build EventBridge targets
+    // Build targets
     buildAllEventBridgeTargets(this, {
       eventBridgeRuleObjects,
       stepFunctionObjects: stepFunctions,

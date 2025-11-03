@@ -12,7 +12,6 @@ export interface EventBridgeRuleProps {
 
 export interface EventBridgeRulesProps {
   eventBus: IEventBus;
-  stage: string;
 }
 
 export interface EventBridgeRuleObject {

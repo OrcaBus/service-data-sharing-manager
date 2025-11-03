@@ -103,7 +103,15 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
 export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
 export const SLACK_WEBHOOK_SECRET_NAME = 'auto-data-sharing-slack-webhook'; // pragma: allowlist secret
 // EventBridge rule names for auto data sharing
-export const AUTOCONTROLLER_RULE_NAME = 'autocontroller-fastqglue-rowsadded';
+export const AUTOCONTROLLER_RULE_NAME = 'autocontroller--listenFastqGlueFastqListRowsAddedRule';
+export const AUTOCONTROLLER_RULE_DESCRIPTION =
+  'Rule to listen to FastqGlue FastqListRowsAdded events for AutoController.';
+
+// EventBridge pattern pieces for the Autocontroller rule that listens to FastqGlue:
+// - source: emitted by the FastqGlue service
+// - detailType: specific event fired when new FASTQ list rows are added
+export const FASTQ_GLUE_EVENT_SOURCE = 'orcabus.fastqglue';
+export const FASTQ_LIST_ROWS_ADDED_DETAIL_TYPE = 'FastqListRowsAdded';
 
 // Get mart env vars
 export const MART_ENV_VARS: Record<string, string> = {
