@@ -2,12 +2,12 @@
 import { Construct } from 'constructs';
 import * as events from 'aws-cdk-lib/aws-events';
 import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
-import * as cdk from 'aws-cdk-lib';
 
 import {
   AUTOCONTROLLER_RULE_DESCRIPTION,
   FASTQ_GLUE_EVENT_SOURCE,
   READSETS_ADDED_DETAIL_TYPE,
+  STACK_PREFIX,
 } from '../constants';
 import {
   EventBridgeRuleObject,
@@ -30,12 +30,10 @@ function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
 
 /* Generic rule builder */
 function buildEventRule(scope: Construct, props: EventBridgeRuleProps): Rule {
-  const stackPrefix = cdk.Stack.of(scope).stackName;
-
   return new events.Rule(scope, props.ruleName, {
     eventPattern: props.eventPattern,
     eventBus: props.eventBus,
-    ruleName: `${stackPrefix}--${props.ruleName}`,
+    ruleName: `${STACK_PREFIX}--${props.ruleName}`,
     description: AUTOCONTROLLER_RULE_DESCRIPTION,
   });
 }

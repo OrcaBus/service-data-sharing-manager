@@ -27,7 +27,7 @@ import {
   FASTQ_SYNC_DETAIL_TYPE,
   ICAV2_DATA_COPY_SYNC_DETAIL_TYPE,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
-  SFN_PREFIX,
+  STACK_PREFIX,
   STACK_SOURCE,
   STEP_FUNCTIONS_DIR,
   AUTO_PACKAGE_PUSH_JOBS_KEY,
@@ -97,17 +97,17 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
     switch (nestedSfnName) {
       case 'pushS3Data': {
         definitionSubstitutions['__push_s3_data_sfn_arn__'] =
-          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
+          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${nestedSfnName}`;
         break;
       }
       case 'pushIcav2Data': {
         definitionSubstitutions['__icav2_data_push_sfn_arn__'] =
-          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
+          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${nestedSfnName}`;
         break;
       }
       case autoPackageSfnName: {
         definitionSubstitutions['__auto_package_sfn_arn__'] =
-          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`;
+          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${nestedSfnName}`;
         break;
       }
     }
@@ -270,8 +270,8 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
               new iam.PolicyStatement({
                 actions: ['states:StartExecution', 'states:DescribeExecution'],
                 resources: [
-                  `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${nestedSfnName}`,
-                  `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${nestedSfnName}:*`,
+                  `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${nestedSfnName}`,
+                  `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${STACK_PREFIX}-${nestedSfnName}:*`,
                 ],
               })
             );
@@ -287,8 +287,8 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
         new iam.PolicyStatement({
           actions: ['states:StartExecution', 'states:DescribeExecution'],
           resources: [
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${SFN_PREFIX}-${autoPackageSfnName}`,
-            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${SFN_PREFIX}-${autoPackageSfnName}:*`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${autoPackageSfnName}`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${STACK_PREFIX}-${autoPackageSfnName}:*`,
           ],
         })
       );
@@ -331,7 +331,7 @@ function buildStepFunction(scope: Construct, props: SfnProps): SfnObject {
 
   /* Create the state machine definition substitutions */
   const stateMachine = new sfn.StateMachine(scope, props.stateMachineName, {
-    stateMachineName: `${SFN_PREFIX}-${props.stateMachineName}`,
+    stateMachineName: `${STACK_PREFIX}-${props.stateMachineName}`,
     definitionBody: sfn.DefinitionBody.fromFile(
       path.join(STEP_FUNCTIONS_DIR, sfnNameToSnakeCase + `_sfn_template.asl.json`)
     ),

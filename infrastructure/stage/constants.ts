@@ -62,7 +62,7 @@ export const API_NAME = 'DataSharingAPI';
 export const API_SUBDOMAIN_NAME = 'data-sharing';
 
 // Step functions
-export const SFN_PREFIX = 'data-sharing';
+export const STACK_PREFIX = 'data-sharing';
 
 // S3 Stuff
 export const DATA_SHARING_BUCKET_NAME = 'data-sharing-artifacts-__ACCOUNT_ID__-__REGION__';
