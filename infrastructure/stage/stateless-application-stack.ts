@@ -18,6 +18,8 @@ import {
 } from './api';
 import { HOSTED_ZONE_DOMAIN_PARAMETER_NAME } from '@orcabus/platform-cdk-constructs/api-gateway';
 import { StageName } from '@orcabus/platform-cdk-constructs/shared-config/accounts';
+import { buildAllEventRules } from './event-rules';
+import { buildAllEventBridgeTargets } from './event-targets';
 
 export type StatelessApplicationStackProps = cdk.StackProps & StatelessApplicationStackConfig;
 
@@ -161,7 +163,21 @@ export class StatelessApplicationStack extends cdk.Stack {
     });
 
     /*
-        Part 4: API Gateway for the stateless application
+        Part 4: Build the EventBridge rules and targets
+         */
+
+    // Build rules
+    const eventBridgeRuleObjects = buildAllEventRules(this, {
+      eventBus: eventBusObj,
+    });
+    // Build targets
+    buildAllEventBridgeTargets(this, {
+      eventBridgeRuleObjects,
+      stepFunctionObjects: stepFunctions,
+    });
+
+    /*
+        Part 5: API Gateway for the stateless application
         */
     // Build the API Gateway
     const lambdaApi = buildApiInterfaceLambda(this, {

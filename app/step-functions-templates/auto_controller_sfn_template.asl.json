@@ -17,13 +17,14 @@
       },
       "ItemSelector": {
         "enabled": "{% $states.context.Map.Item.Value.enabled %}",
-        "packageName": "{% 'autosharing-' & $states.context.Map.Item.Value.jobName & '-' & $states.input.detail.instrumentRunId %}",
+        "packageName": "{% 'autosharing-' & $states.context.Map.Item.Value.jobName & '-' & $states.input.instrumentRunId %}",
         "packageRequest": {
-          "instrumentRunIdList": "{% [$states.input.detail.instrumentRunId] %}",
+          "instrumentRunIdList": "{% [$states.input.instrumentRunId] %}",
           "dataTypeList": "{% $states.context.Map.Item.Value.dataTypeList %}",
           "projectIdList": "{% $states.context.Map.Item.Value.projectIdList %}"
         },
-        "shareDestination": "{% $states.context.Map.Item.Value.shareDestination %}"
+        "shareDestination": "{% $states.context.Map.Item.Value.shareDestination %}",
+        "instrumentRunId": "{% $states.input.instrumentRunId %}"
       },
       "ItemProcessor": {
         "ProcessorConfig": {
@@ -38,7 +39,7 @@
             "Arguments": {
               "FunctionName": "${__check_project_in_instrument_run_lambda_function_arn__}",
               "Payload": {
-                "instrumentRunId": "{% $states.input.packageRequest.instrumentRunIdList[0] %}",
+                "instrumentRunId": "{% $states.input.instrumentRunId %}",
                 "projectIdList": "{% $states.input.packageRequest.projectIdList %}"
               }
             },
