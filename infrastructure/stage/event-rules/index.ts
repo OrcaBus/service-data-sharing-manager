@@ -7,7 +7,7 @@ import * as cdk from 'aws-cdk-lib';
 import {
   AUTOCONTROLLER_RULE_DESCRIPTION,
   FASTQ_GLUE_EVENT_SOURCE,
-  FASTQ_READSETS_ADDED_DETAIL_TYPE,
+  READSETS_ADDED_DETAIL_TYPE,
 } from '../constants';
 import {
   EventBridgeRuleObject,
@@ -20,7 +20,7 @@ import {
 /* Pattern builder */
 function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
   return {
-    detailType: [FASTQ_READSETS_ADDED_DETAIL_TYPE],
+    detailType: [READSETS_ADDED_DETAIL_TYPE],
     source: [FASTQ_GLUE_EVENT_SOURCE],
     detail: {
       instrumentRunId: [{ exists: true }],

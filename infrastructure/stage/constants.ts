@@ -109,7 +109,7 @@ export const AUTOCONTROLLER_RULE_DESCRIPTION =
 // - source: emitted by the FastqGlue service
 // - detailType: specific event fired when new FASTQ list rows are added
 export const FASTQ_GLUE_EVENT_SOURCE = 'orcabus.fastqglue';
-export const FASTQ_READSETS_ADDED_DETAIL_TYPE = 'FastqGlueReadSetsAdded';
+export const READSETS_ADDED_DETAIL_TYPE = 'ReadSetsAdded';
 
 // Get mart env vars
 export const MART_ENV_VARS: Record<string, string> = {
