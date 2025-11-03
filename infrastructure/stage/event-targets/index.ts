@@ -23,10 +23,10 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
       case 'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget': {
         buildAutocontrollerFastqGlueToAutoControllerSfnTarget({
           eventBridgeRuleObj: props.eventBridgeRuleObjects.find(
-            (o) => o.ruleName === 'autocontrollerFastqGlueRowsAdded'
+            (eventRuleIter) => eventRuleIter.ruleName === 'ReadSetsAdded'
           )!.ruleObject,
           stateMachineObj: props.stepFunctionObjects.find(
-            (o) => o.stateMachineName === 'autoController'
+            (sfnIter) => sfnIter.stateMachineName === 'autoController'
           )!.stateMachineObj,
         });
         break;

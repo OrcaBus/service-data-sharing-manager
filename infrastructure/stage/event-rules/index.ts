@@ -2,10 +2,12 @@
 import { Construct } from 'constructs';
 import * as events from 'aws-cdk-lib/aws-events';
 import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
+import * as cdk from 'aws-cdk-lib';
+
 import {
   AUTOCONTROLLER_RULE_DESCRIPTION,
   FASTQ_GLUE_EVENT_SOURCE,
-  FASTQ_LIST_ROWS_ADDED_DETAIL_TYPE,
+  FASTQ_READSETS_ADDED_DETAIL_TYPE,
 } from '../constants';
 import {
   EventBridgeRuleObject,
@@ -18,7 +20,7 @@ import {
 /* Pattern builder */
 function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
   return {
-    detailType: [FASTQ_LIST_ROWS_ADDED_DETAIL_TYPE],
+    detailType: [FASTQ_READSETS_ADDED_DETAIL_TYPE],
     source: [FASTQ_GLUE_EVENT_SOURCE],
     detail: {
       instrumentRunId: [{ exists: true }],
@@ -28,9 +30,12 @@ function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
 
 /* Generic rule builder */
 function buildEventRule(scope: Construct, props: EventBridgeRuleProps): Rule {
+  const stackPrefix = cdk.Stack.of(scope).stackName;
+
   return new events.Rule(scope, props.ruleName, {
     eventPattern: props.eventPattern,
     eventBus: props.eventBus,
+    ruleName: `${stackPrefix}--${props.ruleName}`,
     description: AUTOCONTROLLER_RULE_DESCRIPTION,
   });
 }
@@ -56,7 +61,7 @@ export function buildAllEventRules(
 
   for (const ruleName of eventBridgeRuleNameList) {
     switch (ruleName) {
-      case 'autocontrollerFastqGlueRowsAdded': {
+      case 'ReadSetsAdded': {
         out.push({
           ruleName,
           ruleObject: buildAutocontrollerFastqGlueRule(scope, {

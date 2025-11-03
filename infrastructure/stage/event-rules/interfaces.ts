@@ -1,8 +1,8 @@
 import { EventPattern, IEventBus, Rule } from 'aws-cdk-lib/aws-events';
 
-export type EventBridgeRuleName = 'autocontrollerFastqGlueRowsAdded';
+export type EventBridgeRuleName = 'ReadSetsAdded';
 
-export const eventBridgeRuleNameList: EventBridgeRuleName[] = ['autocontrollerFastqGlueRowsAdded'];
+export const eventBridgeRuleNameList: EventBridgeRuleName[] = ['ReadSetsAdded'];
 
 export interface EventBridgeRuleProps {
   ruleName: EventBridgeRuleName;
