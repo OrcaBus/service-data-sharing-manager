@@ -8,6 +8,7 @@ import {
   buildPushJobApiTable,
 } from './dynamodb';
 import { createSlackSecret } from './secrets';
+import { buildSsmParameters } from './ssm';
 
 export type StatefulApplicationStackProps = cdk.StackProps & StatefulApplicationStackConfig;
 
@@ -42,6 +43,9 @@ export class StatefulApplicationStack extends cdk.Stack {
       sortKey: 'id_type',
       ttlAttribute: 'expire_at',
     });
+
+    // Set SSM Parameters
+    buildSsmParameters(this, props.ssmParameters);
 
     // Create the slack webhook secret
     createSlackSecret(this);

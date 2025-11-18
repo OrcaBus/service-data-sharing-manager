@@ -12,6 +12,7 @@ import {
   S3_STEPS_COPY_PREFIX,
   s3CopyStepsBucket,
   s3CopyStepsFunctionArn,
+  SSM_ROOT_PREFIX,
   USE_JSONL_COPY_FORMAT,
 } from './constants';
 import {
@@ -20,6 +21,21 @@ import {
   StageName,
 } from '@orcabus/platform-cdk-constructs/shared-config/accounts';
 import { StatefulApplicationStackConfig, StatelessApplicationStackConfig } from './interfaces';
+import { SsmParameterPaths, SsmParameterValues } from './ssm/interfaces';
+import { FILE_MANAGER_BUCKETS } from '@orcabus/platform-cdk-constructs/shared-config/file-manager';
+import * as path from 'path';
+
+export const getSsmParameterValues = (stage: StageName): SsmParameterValues => {
+  return {
+    fileManagerBucketsList: FILE_MANAGER_BUCKETS[stage],
+  };
+};
+
+export const getSsmParameterPaths = (): SsmParameterPaths => {
+  return {
+    fileManagerBucketsList: path.join(SSM_ROOT_PREFIX, 'filemanager-buckets-list'),
+  };
+};
 
 export const getStatefulApplicationStackProps = (
   stage: StageName
@@ -35,6 +51,12 @@ export const getStatefulApplicationStackProps = (
       '__ACCOUNT_ID__',
       ACCOUNT_ID_ALIAS[stage]
     ).replace('__REGION__', REGION),
+
+    // Event stuff
+    ssmParameters: {
+      ssmParameterPaths: getSsmParameterPaths(),
+      ssmParameterValues: getSsmParameterValues(stage),
+    },
   };
 };
 
@@ -74,5 +96,8 @@ export const getStatelessApplicationStackProps = (
       apiName: API_NAME,
       customDomainNamePrefix: API_SUBDOMAIN_NAME,
     },
+
+    /* SSM Stuff */
+    ssmParameterPaths: getSsmParameterPaths(),
   };
 };

@@ -31,6 +31,7 @@ import {
   STACK_SOURCE,
   STEP_FUNCTIONS_DIR,
   AUTO_PACKAGE_PUSH_JOBS_KEY,
+  SSM_ROOT_PREFIX,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import { LogLevel, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
@@ -38,6 +39,7 @@ import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 // AutoPackagePush state machine name (typed constant for safer refactors)
 const autoPackageSfnName: StepFunctionsName = 'autoPackage';
+const updateFastqIngestIdsSfnName: StepFunctionsName = 'updateFastqIngestIds';
 
 /** Step Function stuff */
 function createStateMachineDefinitionSubstitutions(props: SfnProps): {
@@ -92,6 +94,10 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   definitionSubstitutions['__jobs_config_bucket__'] = props.dataSharingBucketName;
   definitionSubstitutions['__jobs_config_key__'] = AUTO_PACKAGE_PUSH_JOBS_KEY;
 
+  // SSM Stuff
+  definitionSubstitutions['__filemanager_buckets_ssm_parameter_name__'] =
+    props.ssmParameterPaths.fileManagerBucketsList;
+
   // Nested state machines
   for (const nestedSfnName of stepFunctionsNameList) {
     switch (nestedSfnName) {
@@ -107,6 +113,11 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
       }
       case autoPackageSfnName: {
         definitionSubstitutions['__auto_package_sfn_arn__'] =
+          `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${nestedSfnName}`;
+        break;
+      }
+      case updateFastqIngestIdsSfnName: {
+        definitionSubstitutions['__update_fastq_ingest_ids_sfn_arn__'] =
           `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${nestedSfnName}`;
         break;
       }
@@ -295,8 +306,18 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
     }
 
     // The s3 data push SFN needs access to the s3 steps copy state machine
+    // And also access to the update fastq ingest ids sfn state machine
     if (props.stateMachineName === 'pushS3Data') {
       props.s3StepsCopySfn.grantStartExecution(props.stateMachineObj);
+      props.stateMachineObj.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['states:StartExecution', 'states:DescribeExecution'],
+          resources: [
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-${updateFastqIngestIdsSfnName}`,
+            `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:${STACK_PREFIX}-${updateFastqIngestIdsSfnName}:*`,
+          ],
+        })
+      );
     }
 
     // Because we run a nested state machine, we need to add the permissions to the state machine role
@@ -307,6 +328,32 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
           `arn:aws:events:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:rule/StepFunctionsGetEventsForStepFunctionsExecutionRule`,
         ],
         actions: ['events:PutTargets', 'events:PutRule', 'events:DescribeRule'],
+      })
+    );
+
+    // Suppress IAM5: Wildcard needed because execution ARNs include dynamic IDs
+    NagSuppressions.addResourceSuppressions(
+      props.stateMachineObj,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'Describe execution requires wildcard in resource ARN because execution IDs are dynamic',
+        },
+      ],
+      true
+    );
+  }
+
+  // SSM Permissions
+  if (sfnRequirements.needsSsmPermissions) {
+    // Add SSM parameter read permissions
+    props.stateMachineObj.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['ssm:GetParameter', 'ssm:GetParameters'],
+        resources: [
+          `arn:aws:ssm:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:parameter${SSM_ROOT_PREFIX}*`,
+        ],
       })
     );
 
