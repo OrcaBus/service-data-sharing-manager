@@ -11,7 +11,6 @@ export function buildSsmParameters(scope: Construct, props: SsmParameterProps) {
   /**
    * FileManager Buckets
    */
-  // Workflow name
   new ssm.StringParameter(scope, 'filemanager-buckets', {
     parameterName: props.ssmParameterPaths.fileManagerBucketsList,
     stringValue: JSON.stringify(props.ssmParameterValues.fileManagerBucketsList),

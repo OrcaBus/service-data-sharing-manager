@@ -8,7 +8,6 @@ We assume that fastqs are stored in filemanager monitored location.
 # Standard imports
 from pathlib import Path
 import pandas as pd
-from typing import List, Dict
 from urllib.parse import urlparse, urlunparse
 
 # Layered imports

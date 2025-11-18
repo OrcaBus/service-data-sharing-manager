@@ -28,7 +28,7 @@
         {
           "Next": "Get number of fastqs",
           "Condition": "{% (\n  /* Collect the bucket from the pushLocation s3 uri */\n  $pushBucket := ([$pushLocation ~> $split(\"/\", 3)][2]);\n  /* Return the boolean if pushBucket is in the filemanager buckets */\n  $pushBucket in $fileManagerBuckets\n) %}",
-          "Comment": "Is in filemanager buckets - internal move"
+          "Comment": "Push location is in filemanager buckets - proceed with ingest ID update"
         }
       ],
       "Default": "Pass"
