@@ -1,0 +1,187 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Set env vars",
+  "States": {
+    "Set env vars": {
+      "Type": "Pass",
+      "Next": "Get Filemanager buckets",
+      "Assign": {
+        "pushJobId": "{% $states.input.pushJobId %}",
+        "packagingJobId": "{% $states.input.packagingJobId %}",
+        "pushLocation": "{% $states.input.pushLocation %}"
+      }
+    },
+    "Get Filemanager buckets": {
+      "Type": "Task",
+      "Arguments": {
+        "Name": "${__filemanager_buckets_ssm_parameter_name__}"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
+      "Next": "Push Location in filemanager buckets",
+      "Assign": {
+        "fileManagerBuckets": "{% $parse($states.result.Parameter.Value) %}"
+      }
+    },
+    "Push Location in filemanager buckets": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "Get number of fastqs",
+          "Condition": "{% (\n  /* Collect the bucket from the pushLocation s3 uri */\n  $pushBucket := ([$pushLocation ~> $split(\"/\", 3)][2]);\n  /* Return the boolean if pushBucket is in the filemanager buckets */\n  $pushBucket in $fileManagerBuckets\n) %}",
+          "Comment": "Push location is in filemanager buckets - proceed with ingest ID update"
+        }
+      ],
+      "Default": "Pass"
+    },
+    "Pass": {
+      "Type": "Pass",
+      "End": true
+    },
+    "Get number of fastqs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__get_fastqs_in_packaging_job_lambda_function_arn__}",
+        "Payload": {
+          "packagingJobId": "{% $packagingJobId %}",
+          "pushLocation": "{% $pushLocation %}",
+          "countOnly": true
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "For each fastq (batched / index)",
+      "Output": {},
+      "Assign": {
+        "listCount": "{% $states.result.Payload.listCount %}"
+      }
+    },
+    "For each fastq (batched / index)": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "Set vars in distributed map",
+        "States": {
+          "Set vars in distributed map": {
+            "Type": "Pass",
+            "Next": "Get fastqs in range",
+            "Assign": {
+              "packagingJobIdMapIter": "{% $states.input.BatchInput.packagingJobIdMapIter %}",
+              "pushLocationMapIter": "{% $states.input.BatchInput.pushLocationMapIter %}",
+              "itemRangeMin": "{% $states.input.Items[0] %}",
+              "itemRangeMax": "{% $states.input.Items[-1] %}"
+            }
+          },
+          "Get fastqs in range": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "${__get_fastqs_in_packaging_job_lambda_function_arn__}",
+              "Payload": {
+                "packagingJobId": "{% $packagingJobIdMapIter %}",
+                "pushLocation": "{% $pushLocationMapIter %}",
+                "paginationIndex": ["{% $itemRangeMin %}", "{% $itemRangeMax %}"]
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2,
+                "JitterStrategy": "FULL"
+              }
+            ],
+            "Next": "For each fastq",
+            "Output": {
+              "destinationUriAndIngestIdMappingsList": "{% $states.result.Payload.destinationUriAndIngestIdMappingsList %}"
+            }
+          },
+          "For each fastq": {
+            "Type": "Map",
+            "ItemProcessor": {
+              "ProcessorConfig": {
+                "Mode": "INLINE"
+              },
+              "StartAt": "Update fastq ingest id",
+              "States": {
+                "Update fastq ingest id": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke",
+                  "Output": "{% $states.result.Payload %}",
+                  "Arguments": {
+                    "FunctionName": "${__update_ingest_id_lambda_function_arn__}",
+                    "Payload": {
+                      "s3Uri": "{% $states.input.destinationUriMapIterX %}",
+                      "ingestId": "{% $states.input.ingestIdMapIterX %}"
+                    }
+                  },
+                  "Retry": [
+                    {
+                      "ErrorEquals": [
+                        "Lambda.ServiceException",
+                        "Lambda.AWSLambdaException",
+                        "Lambda.SdkClientException",
+                        "Lambda.TooManyRequestsException"
+                      ],
+                      "IntervalSeconds": 1,
+                      "MaxAttempts": 3,
+                      "BackoffRate": 2,
+                      "JitterStrategy": "FULL"
+                    }
+                  ],
+                  "End": true
+                }
+              }
+            },
+            "End": true,
+            "Items": "{% $states.input.destinationUriAndIngestIdMappingsList %}",
+            "ItemSelector": {
+              "destinationUriMapIterX": "{% $states.context.Map.Item.Value.destinationUri %}",
+              "ingestIdMapIterX": "{% $states.context.Map.Item.Value.ingestId %}"
+            }
+          }
+        }
+      },
+      "Label": "Foreachfastqbatchedindex",
+      "MaxConcurrency": 1000,
+      "ItemBatcher": {
+        "BatchInput": {
+          "pushJobIdMapIter": "{% $pushJobId %}",
+          "packagingJobIdMapIter": "{% $packagingJobId %}",
+          "pushLocationMapIter": "{% $pushLocation %}"
+        },
+        "MaxItemsPerBatch": 10
+      },
+      "Items": "{% [$map([0..$listCount-1], function($v, $i, $a) { $i })] %}",
+      "Next": "Wait 15 mins"
+    },
+    "Wait 15 mins": {
+      "Type": "Wait",
+      "Seconds": 900,
+      "End": true,
+      "Comment": "To handle fastq manager caching\n"
+    }
+  },
+  "QueryLanguage": "JSONata"
+}

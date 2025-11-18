@@ -160,6 +160,8 @@ export class StatelessApplicationStack extends cdk.Stack {
       eventBusObject: eventBusObj,
       // Data sharing S3 bucket
       dataSharingBucketName: props.dataSharingBucketName,
+      // SSM Stuff
+      ssmParameterPaths: props.ssmParameterPaths,
     });
 
     /*

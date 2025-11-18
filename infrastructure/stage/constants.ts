@@ -124,3 +124,6 @@ export const MART_BUCKET_NAME: Record<StageName, string> = {
   PROD: `orcahouse-staging-data-${ACCOUNT_ID_ALIAS['PROD']}`,
 };
 export const MART_BUCKET_PREFIX = 'athena-query-results/';
+
+// SSM Stuff
+export const SSM_ROOT_PREFIX = '/orcabus/data-sharing/';

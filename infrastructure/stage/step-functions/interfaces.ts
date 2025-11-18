@@ -4,12 +4,14 @@ import { ITableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { EcsFargateTaskConstruct } from '@orcabus/platform-cdk-constructs/ecs';
 import { IEventBus } from 'aws-cdk-lib/aws-events';
+import { SsmParameterPaths } from '../ssm/interfaces';
 
 export type StepFunctionsName =
   | 'packaging'
   | 'presigning'
   | 'pushIcav2Data'
   | 'pushS3Data'
+  | 'updateFastqIngestIds'
   | 'push'
   | 'autoController'
   | 'autoPackage'
@@ -20,6 +22,7 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'presigning',
   'pushIcav2Data',
   'pushS3Data',
+  'updateFastqIngestIds',
   'push',
   'autoController',
   'autoPackage',
@@ -52,6 +55,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'updatePushJobApi',
     'packageFileToJsonlData',
   ],
+  updateFastqIngestIds: ['updateIngestId', 'getFastqsInPackagingJob'],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoController: ['checkProjectInInstrumentRun'],
   autoPackage: ['triggerPackaging', 'checkPackagePushStatus', 'notifySlack'],
@@ -67,6 +71,7 @@ export interface StepFunctionRequirements {
   needsDistributedMapPermissions?: boolean;
   isExpressSfn?: boolean;
   needsJobsConfigReadPermissions?: boolean;
+  needsSsmPermissions?: boolean;
 }
 
 export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctionRequirements> = {
@@ -89,6 +94,10 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   pushS3Data: {
     needsNestedSfnPermissions: true,
     needsDistributedMapPermissions: true,
+  },
+  updateFastqIngestIds: {
+    needsDistributedMapPermissions: true,
+    needsSsmPermissions: true,
   },
   push: {
     needsNestedSfnPermissions: true,
@@ -128,6 +137,8 @@ export interface SfnProps {
   eventBusObject: IEventBus;
   // Data sharing S3 bucket
   dataSharingBucketName: string;
+  // SSM Stuff
+  ssmParameterPaths: SsmParameterPaths;
 }
 
 export interface SfnPropsWithStateMachine extends SfnProps {

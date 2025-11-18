@@ -15,12 +15,14 @@ export type LambdaName =
   | 'getWorkflowFromPortalRunId'
   | 'handleWorkflowInputs'
   | 'getFastqsFromLibraryIdAndInstrumentRunIdList'
+  | 'getFastqsInPackagingJob'
   | 'getFilesListFromPortalRunId'
   | 'listPortalRunIdsInLibrary'
   | 'packageFileToJsonlData'
   | 'queryAndCollectIcav2Prefixes'
   | 'updatePackagingJobApi'
   | 'updatePushJobApi'
+  | 'updateIngestId'
   | 'uploadArchiveFileListAsCsv'
   | 'uploadPushJobToS3'
   | 'getDynamodbEvaluatedKeyList'
@@ -42,12 +44,14 @@ export const lambdaNameList: LambdaName[] = [
   'getWorkflowFromPortalRunId',
   'handleWorkflowInputs',
   'getFastqsFromLibraryIdAndInstrumentRunIdList',
+  'getFastqsInPackagingJob',
   'getFilesListFromPortalRunId',
   'listPortalRunIdsInLibrary',
   'packageFileToJsonlData',
   'queryAndCollectIcav2Prefixes',
   'updatePackagingJobApi',
   'updatePushJobApi',
+  'updateIngestId',
   'uploadArchiveFileListAsCsv',
   'uploadPushJobToS3',
   'getDynamodbEvaluatedKeyList',
@@ -159,6 +163,14 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   notifySlack: {
     needsOrcabusApiToolsLayer: true,
+  },
+  updateIngestId: {
+    needsOrcabusApiToolsLayer: true,
+  },
+  getFastqsInPackagingJob: {
+    needsDataSharingToolsLayer: true,
+    needsOrcabusApiToolsLayer: true,
+    needsDbPermissions: true,
   },
 };
 
