@@ -176,20 +176,7 @@
           }
         }
       },
-      "Next": "Update Fastq Ingest Ids"
-    },
-    "Update Fastq Ingest Ids": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::states:startExecution.sync:2",
-      "Arguments": {
-        "StateMachineArn": "${__update_fastq_ingest_ids_sfn_arn__}",
-        "Input": {
-          "pushJobId": "{% $pushJobId %}",
-          "packagingJobId": "{% $packagingJobId %}",
-          "pushLocation": "{% $pushLocation %}"
-        }
-      },
-      "Next": "Update job database"
+      "Next": "No errors"
     },
     "Query and collect prefixes Count": {
       "Type": "Task",
@@ -366,12 +353,36 @@
           }
         }
       },
-      "Next": "Update Fastq Ingest Ids",
+      "Next": "No errors",
       "Output": {
         "hasError": "{% /* Check if any iterable of hasError is set to true  -  https://try.jsonata.org/9IqHtAIc0 */\n$sum(\n  [\n    $map($states.result, function($resultIter){$resultIter.hasError = true ? 1 : 0})\n  ]\n) > 0 ? true : false %}",
         "errorMessages": "{% /* Check if any iterable of errorMessages exist  -  https://try.jsonata.org/rXO5p_8bH */\n(\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    $filter(\n      [\n        $map($states.result, function($resultIter){\n            $resultIter.errorMessage ? $resultIter.errorMessage : null\n        })\n      ],\n      function($errorMessageIter){\n        $errorMessageIter ? $errorMessageIter : null\n      }\n    )\n  ];\n  $reduce(\n    $errorMessages,\n    $appendMessages\n  ) ? $errorMessages : null\n)\n\n %}"
       },
       "MaxConcurrency": 1
+    },
+    "No errors": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Next": "Update Fastq Ingest Ids",
+          "Condition": "{% $states.input.hasError = false %}",
+          "Comment": "No errors"
+        }
+      ],
+      "Default": "Update job database"
+    },
+    "Update Fastq Ingest Ids": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::states:startExecution.sync:2",
+      "Arguments": {
+        "StateMachineArn": "${__update_fastq_ingest_ids_sfn_arn__}",
+        "Input": {
+          "pushJobId": "{% $pushJobId %}",
+          "packagingJobId": "{% $packagingJobId %}",
+          "pushLocation": "{% $pushLocation %}"
+        }
+      },
+      "Next": "Update job database"
     },
     "Update job database": {
       "Type": "Task",
@@ -382,7 +393,7 @@
         "Payload": {
           "pushJobId": "{% $pushJobId %}",
           "packagingJobId": "{% $packagingJobId %}",
-          "hasError": "{% $states.input.hasError %}",
+          "hasError": "{% $states.input.hasError ? $states.input.hasError : null %}",
           "errorMessages": "{% $states.input.errorMessages ? $states.input.errorMessages : null %}",
           "status": "{% $states.input.hasError ? 'FAILED' : 'SUCCEEDED' %}"
         }
