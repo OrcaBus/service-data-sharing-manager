@@ -1,12 +1,11 @@
 # Imports
 from pathlib import Path
-from typing import Dict
 
 import pandas as pd
 from pandera.typing import DataFrame
 
 from .miscell import get_portal_run_id_path_from_relative_path
-from .models import SecondaryFileModel, AnalysisSummaryModel, SecondaryFileSummaryModel, Sample
+from .models import SecondaryFileModel, AnalysisSummaryModel, SecondaryFileSummaryModel
 
 
 def get_analyses_summary_df(

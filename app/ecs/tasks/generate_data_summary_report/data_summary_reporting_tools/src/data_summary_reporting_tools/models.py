@@ -9,11 +9,6 @@ DataType = Literal[
     "secondaryAnalysis",
 ]
 
-class LibraryBase(TypedDict):
-    orcabusId: str
-    libraryId: str
-
-
 StorageType = Literal[
     "Standard",
     "StandardIa",
@@ -22,6 +17,12 @@ StorageType = Literal[
     "Glacier",
     "DeepArchive",
 ]
+
+
+class LibraryBase(TypedDict):
+    orcabusId: str
+    libraryId: str
+
 
 class FileStorageObject(TypedDict):
     ingestId: str
@@ -78,13 +79,13 @@ class Subject(TypedDict):
 class LibraryModel(pa.DataFrameModel):
     libraryId: str = pa.Field(str_startswith="L")
     orcabusId: str = pa.Field(str_startswith="lib.")
-    phenotype: str = pa.Field(nullable=True)
-    workflow: str = pa.Field(nullable=True)
+    phenotype: Optional[str] = pa.Field(nullable=True)
+    workflow: Optional[str] = pa.Field(nullable=True)
     quality: Optional[str] = pa.Field(nullable=True)
     type: str = pa.Field()
-    assay: str = pa.Field()
-    coverage: float = pa.Field(ge=0, coerce=True, nullable=True)
-    overrideCycles: str = pa.Field(nullable=True)
+    assay: Optional[str] = pa.Field(nullable=True)
+    coverage: Optional[float] = pa.Field(ge=0, coerce=True, nullable=True)
+    overrideCycles: Optional[str] = pa.Field(nullable=True)
     sample: Sample = pa.Field()
     projectSet: List[Project] = pa.Field()
     subject: Subject = pa.Field()
@@ -173,7 +174,7 @@ class FastqFileModel(FastqModel, FileWithRelativePathModel):
 class SecondaryFileModel(WorkflowRunSlimModel, FileWithRelativePathModel):
     libraryId: str = pa.Field(str_startswith="L", nullable=True)
     type: str = pa.Field(nullable=True)
-    assay: str = pa.Field(nullable=True)
+    assay: Optional[str] = pa.Field(nullable=True)
     sample: Sample = pa.Field(nullable=True, default={})
     projectSet: List[Project] = pa.Field(nullable=True, default=[])
     subject: Subject = pa.Field(nullable=True, default={})
@@ -187,8 +188,8 @@ class MetadataSummaryModel(pa.DataFrameModel):
     subject_id: str = pa.Field(alias='Subject ID')
     individual_id: Optional[str] = pa.Field(alias='Individual ID', nullable=True)
     project_id: Optional[str] = pa.Field(alias='Project ID', nullable=True)
-    phenotype: str = pa.Field(alias='Phenotype', nullable=True)
-    assay: str = pa.Field(alias='Assay')
+    phenotype: Optional[str] = pa.Field(alias='Phenotype', nullable=True)
+    assay: Optional[str] = pa.Field(alias='Assay', nullable=True)
     type_: str = pa.Field(alias='Type')
 
 
@@ -206,7 +207,7 @@ class FastqSummaryModel(pa.DataFrameModel):
     file_size: str = pa.Field(alias='File Size')
     relative_output_path: str = pa.Field(alias='Relative Output Path')
     # Additional fields for splitting data frames
-    assay: str = pa.Field(alias='Assay')  # Hidden column
+    assay: Optional[str] = pa.Field(alias='Assay', nullable=True)  # Hidden column
     type_: str = pa.Field(alias='Type')  # Hidden column
     # Additional fields for formatting purposes
     storage_class: str = pa.Field(alias='Storage Class')  # Hidden column
@@ -224,7 +225,7 @@ class AnalysisSummaryModel(pa.DataFrameModel):
     portal_run_id: str = pa.Field(alias='Portal Run ID')
     relative_path: str = pa.Field(alias='Relative Output Path')
     # Additional fields for splitting data frames
-    assay: str = pa.Field(alias='Assay')  # Hidden column
+    assay: Optional[str] = pa.Field(alias='Assay')  # Hidden column
     type_: str = pa.Field(alias='Type')  # Hidden column
 
 
@@ -240,7 +241,7 @@ class SecondaryFileSummaryModel(pa.DataFrameModel):
     portal_run_id: str = pa.Field(alias='Portal Run ID')
     relative_path: str = pa.Field(alias='Relative Output Path')
     # Additional fields for splitting data frames
-    assay: str = pa.Field(alias='Assay')  # Hidden column
+    assay: Optional[str] = pa.Field(alias='Assay')  # Hidden column
     type_: str = pa.Field(alias='Type')  # Hidden column
     # Additional fields for formatting purposes
     storage_class: str = pa.Field(alias='Storage Class')  # Hidden column
