@@ -365,7 +365,7 @@
       "Choices": [
         {
           "Next": "Update Fastq Ingest Ids",
-          "Condition": "{% $states.input.hasError ? false : true %}",
+          "Condition": "{% $states.input.hasError = false %}",
           "Comment": "No errors"
         }
       ],
