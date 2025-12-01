@@ -86,7 +86,8 @@
         "Payload": {
           "id": "{% $states.input.id %}",
           "packageName": "{% $states.input.packageName %}",
-          "shareDestination": "{% $states.input.shareDestination %}"
+          "shareDestination": "{% $states.input.shareDestination %}",
+          "autoPushStateMachineArn": "${__auto_push_sfn_arn__}"
         }
       },
       "Output": "{% $states.input %}",

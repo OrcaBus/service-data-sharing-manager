@@ -33,6 +33,9 @@ def handler(event, context):
         package_name = event["packageName"]
         share_destination = event["shareDestination"]
         package_report_presigned_url = get_package_report(orcabus_id).strip('"')
+        auto_push_state_machine_arn = event["autoPushStateMachineArn"]
+
+
 
         text = (
             f" :package: *Auto Package*\n"
@@ -42,7 +45,7 @@ def handler(event, context):
             f"To manually trigger the push to *{share_destination.replace("://", ":\u200B//")}*, run:\n"
             f"```"
             f"aws stepfunctions start-execution \\\n"
-            f"  --state-machine-arn arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing-autoPush \\\n"
+            f"  --state-machine-arn {auto_push_state_machine_arn} \\\n"
             f"  --input '{{\"id\": \"{orcabus_id}\", \"packageName\": \"{package_name}\", \"shareDestination\": \"{share_destination}\"}}'\n"
             f"```"
 
