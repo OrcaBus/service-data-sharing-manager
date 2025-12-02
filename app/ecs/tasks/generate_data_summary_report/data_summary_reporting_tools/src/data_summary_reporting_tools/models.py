@@ -95,7 +95,7 @@ class FastqModel(LibraryModel):
     id: str = pa.Field(str_startswith="fqr.")
     fastqSetId: Optional[str] = pa.Field(str_startswith="fqs.")
     index: str = pa.Field()
-    lane: int = pa.Field(in_range={"min_value": 1})
+    lane: int = pa.Field(ge=1)
     instrumentRunId: str = pa.Field()
     library: LibraryBase = pa.Field()
     platform: Optional[str] = pa.Field(nullable=True)
