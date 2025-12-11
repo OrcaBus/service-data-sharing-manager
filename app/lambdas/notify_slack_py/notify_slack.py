@@ -47,59 +47,57 @@ def handler(event, context):
         auto_push_state_machine_arn = event["autoPushStateMachineArn"]
 
 
-        pretty_dest = share_destination.replace("://", ":\u200b//")  # zero-width space
 
         button_value = json.dumps(
             {
                 "id": orcabus_id,
                 "packageName": package_name,
                 "shareDestination": share_destination,
-                # Include anything else you might need (env, account, etc.)
             }
         )
 
         slack_payload = {
-                "text": f"Auto Package for {package_name} is ready.",  # fallback
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
+            "text": f"Auto Package for {package_name} is ready.",  # fallback
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": (
+                            f":package: *Auto Package*\n"
+                            f"*{package_name}* is ready.\n"
+                            f"*Package ID:* `{orcabus_id}`\n"
+                            f"Review the packaging report <{package_report_presigned_url}|here>."
+                        ),
+                    },
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
                             "type": "mrkdwn",
-                            "text": (
-                                f":package: *Auto Package*\n"
-                                f"*{package_name}* is ready.\n"
-                                f"*Package ID:* `{orcabus_id}`\n"
-                                f"Review the packaging report <{package_report_presigned_url}|here>."
-                            ),
-                        },
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": f"Destination: `{pretty_dest}`",
-                            }
-                        ],
-                    },
-                    {
-                        "type": "actions",
-                        "elements": [
-                            {
-                                "type": "button",
-                                "text": {
-                                    "type": "plain_text",
-                                    "text": f"Push to {pretty_dest}",
-                                    "emoji": True,
-                                },
-                                "style": "primary",
-                                "action_id": "auto_push_package",  # you’ll match on this
-                                "value": button_value,
-                            }
-                        ],
-                    },
-                ],
-            }
+                            "text": f"Destination: `{share_destination}`",
+                        }
+                    ],
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": f"Push",
+                                "emoji": True,
+                            },
+                            "style": "primary",
+                            "action_id": "auto_push_package", # action identifier
+                            "value": button_value,
+                        }
+                    ],
+                },
+            ],
+        }
 
         _post_to_slack(WEBHOOK_URL, slack_payload)
 

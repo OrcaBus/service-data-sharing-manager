@@ -9,8 +9,7 @@
       "Arguments": {
         "FunctionName": "${__trigger_push_lambda_function_arn__}",
         "Payload": {
-          "id": "{% $states.input.id %}",
-          "shareDestination": "{% $states.input.shareDestination %}"
+          "slackBody": "{% $states.input.slackBody %}"
         }
       },
       "Output": "{% $states.result.Payload.pushRequestObject %}",
