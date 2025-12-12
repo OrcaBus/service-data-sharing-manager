@@ -220,7 +220,8 @@
           "pushLocationMapIter": "{% $pushLocation %}",
           "s3StepsCopyBucketMapIter": "{% $s3StepsCopyBucket %}",
           "s3StepsCopyCsvKeyMapIter": "{% $s3StepsCopyCsvKey %}",
-          "s3StepsCopyKeyMapIter": "{% $s3StepsCopyCsvKey %}"
+          "s3StepsCopyKeyMapIter": "{% $s3StepsCopyCsvKey %}",
+          "totalItemCountMapIter": "{% $listCount %}"
         }
       },
       "ItemProcessor": {
@@ -239,7 +240,8 @@
               "s3StepsCopyBucketMapIter": "{% $states.input.BatchInput.s3StepsCopyBucketMapIter %}",
               "s3StepsCopyCsvKeyMapIter": "{% $states.input.BatchInput.s3StepsCopyCsvKeyMapIter %}",
               "itemRangeMin": "{% $states.input.Items[0] %}",
-              "itemRangeMax": "{% $states.input.Items[-1] %}"
+              "itemRangeMax": "{% $states.input.Items[-1] %}",
+              "totalItemCountMapIter": "{% $states.input.BatchInput.totalItemCountMapIter %}"
             }
           },
           "Query and collect prefixes from Pagination": {
@@ -296,6 +298,11 @@
                     "s3StepsCopyBucketMapIterX": "{% $states.input.s3StepsCopyBucketMapIterX %}",
                     "s3StepsCopyKeyMapIterX": "{% $states.input.s3StepsCopyKeyMapIterX %}"
                   },
+                  "Next": "Stagger executions"
+                },
+                "Stagger executions": {
+                  "Type": "Wait",
+                  "Seconds": "{% ($random() * $totalItemCountMapIter) ~> $round %}",
                   "Next": "Generate steps function csv and upload to s3"
                 },
                 "Generate steps function csv and upload to s3": {
@@ -362,8 +369,7 @@
       "Output": {
         "hasError": "{% /* Check if any iterable of hasError is set to true - https://try.jsonata.org/2rVu9vmPA */\n(\n  [\n    $states.result ~>\n    $map(function($resultIter){$resultIter.hasError = true ? 1 : 0})\n  ] ~>\n  $sum\n) > 0 ? true : false %}",
         "errorMessages": "{% /* Check if any iterable of errorMessages exist  -  https://try.jsonata.org/SfgXQTQVr */\n(\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    [ $states.result.(errorMessage) ] ~>\n    $filter(function($v, $k){$v != null})\n  ];\n  $errorMessages ? $reduce(\n    $errorMessages,\n    $appendMessages\n  ) : null\n)\n\n\n\n %}"
-      },
-      "MaxConcurrency": 1
+      }
     },
     "No errors": {
       "Type": "Choice",
