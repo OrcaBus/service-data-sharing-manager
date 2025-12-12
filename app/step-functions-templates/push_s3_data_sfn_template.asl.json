@@ -349,14 +349,19 @@
                 }
               }
             },
-            "End": true
+            "End": true,
+            "Output": {
+              "error": "{% (\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    [ $states.result.(error) ] ~>\n    $filter(function($v, $k){$v != null})\n  ];\n  $errorMessages ? $reduce(\n    $errorMessages,\n    $appendMessages\n  ) : null\n)\n %}",
+              "hasError": "{% (\n  [ $states.result.(hasError ? 1 : 0) ] ~>\n  $sum\n) > 0 ? true : false\n %}",
+              "errorMessage": "{% (\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    [ $states.result.(errorMessage) ] ~>\n    $filter(function($v, $k){$v != null})\n  ];\n  $errorMessages ? $reduce(\n    $errorMessages,\n    $appendMessages\n  ) : null\n)\n %}"
+            }
           }
         }
       },
       "Next": "No errors",
       "Output": {
-        "hasError": "{% /* Check if any iterable of hasError is set to true  -  https://try.jsonata.org/9IqHtAIc0 */\n$sum(\n  [\n    $map($states.result, function($resultIter){$resultIter.hasError = true ? 1 : 0})\n  ]\n) > 0 ? true : false %}",
-        "errorMessages": "{% /* Check if any iterable of errorMessages exist  -  https://try.jsonata.org/rXO5p_8bH */\n(\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    $filter(\n      [\n        $map($states.result, function($resultIter){\n            $resultIter.errorMessage ? $resultIter.errorMessage : null\n        })\n      ],\n      function($errorMessageIter){\n        $errorMessageIter ? $errorMessageIter : null\n      }\n    )\n  ];\n  $reduce(\n    $errorMessages,\n    $appendMessages\n  ) ? $errorMessages : null\n)\n\n %}"
+        "hasError": "{% /* Check if any iterable of hasError is set to true - https://try.jsonata.org/2rVu9vmPA */\n(\n  [\n    $states.result ~>\n    $map(function($resultIter){$resultIter.hasError = true ? 1 : 0})\n  ] ~>\n  $sum\n) > 0 ? true : false %}",
+        "errorMessages": "{% /* Check if any iterable of errorMessages exist  -  https://try.jsonata.org/SfgXQTQVr */\n(\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    [ $states.result.(errorMessage) ] ~>\n    $filter(function($v, $k){$v != null})\n  ];\n  $errorMessages ? $reduce(\n    $errorMessages,\n    $appendMessages\n  ) : null\n)\n\n\n\n %}"
       },
       "MaxConcurrency": 1
     },
