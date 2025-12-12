@@ -352,7 +352,7 @@
             "End": true,
             "Output": {
               "error": "{% (\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    [ $states.result.(error) ] ~>\n    $filter(function($v, $k){$v != null})\n  ];\n  $errorMessages ? $reduce(\n    $errorMessages,\n    $appendMessages\n  ) : null\n)\n %}",
-              "hasError": "{% (\n  [ $states.result.(hasError ? 1 : 0) ] ~>\n  $sum\n) > 0 : true ? false\n %}",
+              "hasError": "{% (\n  [ $states.result.(hasError ? 1 : 0) ] ~>\n  $sum\n) > 0 ? true : false\n %}",
               "errorMessage": "{% (\n  $appendMessages := function($i, $j){$i & \" \" & $j};\n  $errorMessages := [\n    [ $states.result.(errorMessage) ] ~>\n    $filter(function($v, $k){$v != null})\n  ];\n  $errorMessages ? $reduce(\n    $errorMessages,\n    $appendMessages\n  ) : null\n)\n %}"
             }
           }
