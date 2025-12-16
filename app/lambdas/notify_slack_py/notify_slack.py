@@ -109,21 +109,22 @@ def _get_package_report(package_id):
 def handler(event, context):
     bot_token = _get_slack_bot_token()
     slack_notification_type = event.get("slackNotificationType")
+    package_id = event.get("packageId")
+    package_name = event.get("packageName")
+    share_destination = event.get("shareDestination")
+
+    package_report_presigned_url = _get_package_report(package_id).strip('"')
 
     # ----------------------------------------------------
     # Package notifications
     # ----------------------------------------------------
     if slack_notification_type == "PACKAGE_READY":
+        channel_id = "C09KQ32MXAS" # Should live in a better places....
 
-        # This need to live in another place...
-        channel_id = "C09KQ32MXAS"
 
-        package_name = event.get("packageName")
-        share_destination = event.get("shareDestination")
-        package_id = event.get("packageId")
 
-        package_report_presigned_url = _get_package_report(package_id).strip('"')
 
+        text = f"Auto Package for {package_name} is ready."
 
         button_value = json.dumps(
             {
@@ -133,8 +134,6 @@ def handler(event, context):
             }
         )
 
-
-
         body_text = (
             f":package: *Auto Package*\n"
             f"*{package_name}* is ready.\n"
@@ -143,42 +142,40 @@ def handler(event, context):
             f"Review the packaging report <{package_report_presigned_url}|here>."
         )
 
-        slack_payload = {
-            "text": f"Auto Package for {package_name} is ready.",
-            "blocks": [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": body_text,
-                    },
+
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": body_text,
                 },
-                {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": f"Push",
-                                "emoji": True,
-                            },
-                            "style": "primary",
-                            "action_id": "auto_push_package",
-                            "value": button_value,
-                        }
-                    ],
-                },
-            ],
-        }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": f"Push",
+                            "emoji": True,
+                        },
+                        "style": "primary",
+                        "action_id": "auto_push_package",
+                        "value": button_value,
+                    }
+                ],
+            },
+        ]
 
 
 
         _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            text=slack_payload["text"],
-            blocks=slack_payload["blocks"],
+            text= text,
+            blocks=blocks,
         )
 
         return {"status": "ok"}
@@ -192,12 +189,13 @@ def handler(event, context):
     elif slack_notification_type == "PUSH_NOT_AUTHORISED":
         channel_id = event.get("channelId")
         user_id = event.get("userId")
+        text = ":warning: You’re not authorised to trigger push."
 
         _post_message(
             bot_token=bot_token,
             channel=channel_id,
             user=user_id,
-            text=":warning: You’re not authorised to trigger push.",
+            text=text,
             ephemeral=True
         )
 
@@ -206,35 +204,28 @@ def handler(event, context):
     elif slack_notification_type == "PUSH_TRIGGERED":
         channel_id = event.get("channelId")
         user_id = event.get("userId")
-        package_name = event.get("packageName")
-        package_id = event.get("packageId")
-        share_destination = event.get("shareDestination")
         message_ts = event.get("messageTs")
 
+
+        body_text = (
+            f":package: *Auto Package*\n"
+            f"*{package_name}* is ready.\n"
+            f"*Package ID:* `{package_id}`\n"
+            f"Destination: `{share_destination}`\n"
+            f"Review the packaging report <{package_report_presigned_url}|here>.\n"
+            f":outbox_tray: Push in progress… triggered by <@{user_id}>."
+        )
 
         updated_blocks = [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": (
-                        f":package: *Auto Package*\n"
-                        f"*{package_name}* is ready.\n"
-                        f"*Package ID:* `{package_id}`\n"
-                        f"_Push has already been triggered by <@{user_id}>._"
-                    ),
+                    "text": body_text,
                 },
             },
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": f"Destination: `{share_destination}`",
-                    }
-                ],
-            },
         ]
+
 
         # Remove button for everyone by updating only the blocks
         _update_slack_message(
@@ -247,31 +238,61 @@ def handler(event, context):
 
     elif slack_notification_type == "PUSH_COMPLETED":
         status = event["status"]
-        package_id = event["packageId"]
-        share_destination = event.get("shareDestination")
         push_id = event.get("pushId")
         user_id = event.get("userId")
         channel_id = event.get("channelId")
         message_ts = event.get("messageTs")
 
+
+        # Push succeded
         if status == "SUCCEEDED":
-            text = (
+
+            body_text = (
+                f":package: *Auto Package*\n"
+                f"      *{package_name}* is ready.\n"
+                f"      *Package ID:* `{package_id}`\n"
+                f"      Destination: `{share_destination}`\n"
+                f"      Review the packaging report <{package_report_presigned_url}|here>.\n"
+                f"      Pushed by <@{user_id}>.\n"
+                f"\n"
+                f"\n"
                 f":white_check_mark: *Push Completed*\n"
-                f"*Push ID:* {push_id} *{status}*\n"
-                f"*Package ID*: {push_id}\n"
-                f"*Share Destination:* {share_destination}"
+                f"      *Push ID:* {push_id} *{status}*\n"
+                f"      *Package ID*: {push_id}\n"
+                f"      *Share Destination:* {share_destination}"
             )
 
+        # Push NOT succeded; catch and show the issue
         else:
-            text = (
-                f":x: Push *{orcabus_id}* {status}.\n"
-                f"*Package ID*: {package_id}\n"
+            body_text = (
+                f":package: *Auto Package*\n"
+                f"*     {package_name}* is ready.\n"
+                f"      *Package ID:* `{package_id}`\n"
+                f"      Destination: `{share_destination}`\n"
+                f"      Review the packaging report <{package_report_presigned_url}|here>.\n"
+                f"      Pushed by <@{user_id}>.\n"
+                f"\n"
+                f"\n"
+                f":x: Push *{push_id}* {status}.\n"
+                f"      *Package ID*: {push_id}\n"
             )
 
-        _post_message(
-                    bot_token=bot_token,
-                    channel=channel_id,
-                    text=text,
-        )
+        # Update
+        updated_blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": body_text,
+                },
+            },
+        ]
 
+        # Post updated message
+        _update_slack_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=message_ts,
+            blocks=updated_blocks,
+        )
         return {"ok": True}
