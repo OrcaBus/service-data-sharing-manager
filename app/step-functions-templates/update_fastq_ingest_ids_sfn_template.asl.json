@@ -79,13 +79,19 @@
         "States": {
           "Set vars in distributed map": {
             "Type": "Pass",
-            "Next": "Get fastqs in range",
+            "Next": "Stagger Wait",
             "Assign": {
               "packagingJobIdMapIter": "{% $states.input.BatchInput.packagingJobIdMapIter %}",
               "pushLocationMapIter": "{% $states.input.BatchInput.pushLocationMapIter %}",
+              "listCountMapIter": "{% $states.input.BatchInput.listCountMapIter %}",
               "itemRangeMin": "{% $states.input.Items[0] %}",
               "itemRangeMax": "{% $states.input.Items[-1] %}"
             }
+          },
+          "Stagger Wait": {
+            "Type": "Wait",
+            "Seconds": "{% $round($random() * $listCountMapIter / 10) + 1 %}",
+            "Next": "Get fastqs in range"
           },
           "Get fastqs in range": {
             "Type": "Task",
@@ -169,7 +175,8 @@
         "BatchInput": {
           "pushJobIdMapIter": "{% $pushJobId %}",
           "packagingJobIdMapIter": "{% $packagingJobId %}",
-          "pushLocationMapIter": "{% $pushLocation %}"
+          "pushLocationMapIter": "{% $pushLocation %}",
+          "listCountMapIter": "{% $listCount %}"
         },
         "MaxItemsPerBatch": 10
       },
