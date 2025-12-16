@@ -1,6 +1,5 @@
 # Imports
 from datetime import datetime
-from enum import Enum
 from typing import Optional, TypedDict, List, Dict, Literal, Any
 import pandera as pa
 
