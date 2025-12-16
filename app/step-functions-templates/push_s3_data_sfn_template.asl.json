@@ -302,7 +302,7 @@
                 },
                 "Stagger executions": {
                   "Type": "Wait",
-                  "Seconds": "{% ($random() * $totalItemCountMapIter) ~> $round %}",
+                  "Seconds": "{% $round($random() * $totalItemCountMapIter) + 1 %}",
                   "Next": "Generate steps function csv and upload to s3"
                 },
                 "Generate steps function csv and upload to s3": {
