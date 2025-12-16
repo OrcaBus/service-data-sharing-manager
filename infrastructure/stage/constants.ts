@@ -101,7 +101,9 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
 
 // Auto Data Sharing stuff
 export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
-export const SLACK_WEBHOOK_SECRET_NAME = 'auto-data-sharing-slack-webhook'; // pragma: allowlist secret
+export const SLACK_BOT_TOKEN_SECRET_NAME = 'auto-data-sharing-slack-bot-token'; // pragma: allowlist secret
+export const SLACK_ALLOWED_USERS_SECRET_NAME = 'auto-data-sharing-slack-allowed-users'; // pragma: allowlist secret
+
 // EventBridge rule names for auto data sharing
 export const AUTOCONTROLLER_RULE_DESCRIPTION =
   'Rule to listen to FastqGlue ReadSetsAdded events for AutoController.';

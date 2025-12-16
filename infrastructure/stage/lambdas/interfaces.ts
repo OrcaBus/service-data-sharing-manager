@@ -30,7 +30,8 @@ export type LambdaName =
   | 'checkPackagePushStatus'
   | 'triggerPush'
   | 'checkProjectInInstrumentRun'
-  | 'notifySlack';
+  | 'notifySlack'
+  | 'checkSlackPush';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -60,6 +61,7 @@ export const lambdaNameList: LambdaName[] = [
   'triggerPush',
   'checkProjectInInstrumentRun',
   'notifySlack',
+  'checkSlackPush',
 ];
 
 export interface Requirements {
@@ -171,6 +173,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsDataSharingToolsLayer: true,
     needsOrcabusApiToolsLayer: true,
     needsDbPermissions: true,
+  },
+  checkSlackPush: {
+    needsDataSharingToolsLayer: true,
   },
 };
 

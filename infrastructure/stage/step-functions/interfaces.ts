@@ -59,7 +59,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoController: ['checkProjectInInstrumentRun'],
   autoPackage: ['triggerPackaging', 'checkPackagePushStatus', 'notifySlack'],
-  autoPush: ['triggerPush', 'checkPackagePushStatus', 'notifySlack'],
+  autoPush: ['triggerPush', 'checkPackagePushStatus', 'notifySlack', 'checkSlackPush'],
 };
 
 export interface StepFunctionRequirements {
