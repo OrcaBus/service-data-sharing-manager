@@ -12,9 +12,54 @@ def _get_slack_bot_token():
     return _sm.get_secret_value(SecretId="auto-data-sharing-slack-bot-token")["SecretString"] # pragma: allowlist secret
 
 
-def _post_message(bot_token: str, channel: str, text: str, blocks = None, ephemeral = False, user = None):
+def _slack_api_post(url: str, bot_token: str, payload: dict) -> dict:
+    """
+    Helper to POST JSON payloads to the Slack Web API.
 
-    if ephemeral:
+    - Encodes the payload as JSON
+    - Adds the Authorization header
+    - Returns the parsed JSON response as a dict
+    """
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": f"Bearer {bot_token}",
+        },
+        method="POST",
+    )
+
+    with urllib.request.urlopen(req) as resp:
+        body = resp.read().decode("utf-8")
+
+    data = json.loads(body)
+
+    return data
+
+
+def _post_message(bot_token: str,
+                  channel: str,
+                  text= None,
+                  blocks = None,
+                  update = False,
+                  ts=None,
+                  ephemeral = False,
+                  user = None
+):
+
+    if update:
+        url = "https://slack.com/api/chat.update"
+
+        payload = {
+            "channel": channel,
+            "ts": ts,
+            "blocks": blocks,
+        }
+
+
+
+    elif ephemeral:
         url = "https://slack.com/api/chat.postEphemeral"
 
         payload = {
@@ -22,21 +67,6 @@ def _post_message(bot_token: str, channel: str, text: str, blocks = None, epheme
             "user": user,
             "text": text,
         }
-
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json; charset=utf-8",
-                "Authorization": f"Bearer {bot_token}",
-            },
-            method="POST",
-        )
-
-        with urllib.request.urlopen(req) as resp:
-            body = resp.read().decode()
-            print("Ephemeral response raw:", body)
-            data = json.loads(body)
 
 
     else:
@@ -49,50 +79,18 @@ def _post_message(bot_token: str, channel: str, text: str, blocks = None, epheme
         if blocks is not None:
             payload["blocks"] = blocks
 
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json; charset=utf-8",
-                "Authorization": f"Bearer {bot_token}",
-            },
-            method="POST",
-        )
 
-        with urllib.request.urlopen(req) as resp:
-            body = resp.read().decode()
-            print("chat.postMessage response:", body)
-
-
-
-
-
-def _update_slack_message(bot_token: str, channel: str, ts: str, blocks: list):
-    """
-    Update the original Slack message, replacing only the blocks.
-    We do NOT change the 'text' field, so Slack won't show 'edited'.
-    """
-    url = "https://slack.com/api/chat.update"
-
-    payload = {
-        "channel": channel,
-        "ts": ts,
-        "blocks": blocks,
-    }
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": f"Bearer {bot_token}",
-        },
-        method="POST",
+    response_data = _slack_api_post(
+        url=url,
+        bot_token=bot_token,
+        payload=payload
     )
 
-    with urllib.request.urlopen(req) as resp:
-        body = resp.read().decode()
-        print("chat.update response:", body)
+    return {
+        "ok": response_data.get('ok'),
+        "error": response_data.get('error')
+    }
+
 
 
 def _get_package_report(package_id):
@@ -115,16 +113,29 @@ def handler(event, context):
 
     package_report_presigned_url = _get_package_report(package_id).strip('"')
 
+
+
+    text = f"Auto Package for {package_name} is ready."
+    body_text = (
+        f":package: *Auto Package*\n"
+        f"*{package_name}* is ready.\n"
+        f"*Package ID:* `{package_id}`\n"
+        f"Destination: `{share_destination}`\n"
+        f"Review the packaging report <{package_report_presigned_url}|here>.\n"
+    )
+
+
+
+
     # ----------------------------------------------------
     # Package notifications
     # ----------------------------------------------------
     if slack_notification_type == "PACKAGE_READY":
+        # auto-data-sharing
         channel_id = "C09KQ32MXAS" # Should live in a better places....
 
-
-
-
-        text = f"Auto Package for {package_name} is ready."
+        # alert-dev
+        channel_id = "C06T9S6DZKK"
 
         button_value = json.dumps(
             {
@@ -132,14 +143,6 @@ def handler(event, context):
                 "packageName": package_name,
                 "shareDestination": share_destination,
             }
-        )
-
-        body_text = (
-            f":package: *Auto Package*\n"
-            f"*{package_name}* is ready.\n"
-            f"*Package ID:* `{package_id}`\n"
-            f"Destination: `{share_destination}`\n"
-            f"Review the packaging report <{package_report_presigned_url}|here>."
         )
 
 
@@ -171,14 +174,14 @@ def handler(event, context):
 
 
 
-        _post_message(
+        result = _post_message(
             bot_token=bot_token,
             channel=channel_id,
             text= text,
             blocks=blocks,
         )
 
-        return {"status": "ok"}
+        return result
 
 
 
@@ -191,7 +194,7 @@ def handler(event, context):
         user_id = event.get("userId")
         text = ":warning: You’re not authorised to trigger push."
 
-        _post_message(
+        result = _post_message(
             bot_token=bot_token,
             channel=channel_id,
             user=user_id,
@@ -199,7 +202,7 @@ def handler(event, context):
             ephemeral=True
         )
 
-        return {"ok": True}
+        return result
 
     elif slack_notification_type == "PUSH_TRIGGERED":
         channel_id = event.get("channelId")
@@ -207,34 +210,32 @@ def handler(event, context):
         message_ts = event.get("messageTs")
 
 
-        body_text = (
-            f":package: *Auto Package*\n"
-            f"*{package_name}* is ready.\n"
-            f"*Package ID:* `{package_id}`\n"
-            f"Destination: `{share_destination}`\n"
-            f"Review the packaging report <{package_report_presigned_url}|here>.\n"
+        push_in_progress_update = (
             f":outbox_tray: Push in progress… triggered by <@{user_id}>."
         )
+
+        block_text = body_text + push_in_progress_update
 
         updated_blocks = [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": body_text,
+                    "text": block_text,
                 },
             },
         ]
 
 
         # Remove button for everyone by updating only the blocks
-        _update_slack_message(
+        result = _post_message(
             bot_token=bot_token,
             channel=channel_id,
             ts=message_ts,
             blocks=updated_blocks,
+            update=True,
         )
-        return {"ok": True}
+        return result
 
     elif slack_notification_type == "PUSH_COMPLETED":
         status = event["status"]
@@ -247,35 +248,30 @@ def handler(event, context):
         # Push succeded
         if status == "SUCCEEDED":
 
-            body_text = (
-                f":package: *Auto Package*\n"
-                f"      *{package_name}* is ready.\n"
-                f"      *Package ID:* `{package_id}`\n"
-                f"      Destination: `{share_destination}`\n"
-                f"      Review the packaging report <{package_report_presigned_url}|here>.\n"
-                f"      Pushed by <@{user_id}>.\n"
+            push_succeeded_update = (
+                f"Pushed by <@{user_id}>.\n"
                 f"\n"
                 f"\n"
                 f":white_check_mark: *Push Completed*\n"
-                f"      *Push ID:* {push_id} *{status}*\n"
-                f"      *Package ID*: {push_id}\n"
-                f"      *Share Destination:* {share_destination}"
+                f"*Push ID:* {push_id} *{status}*\n"
+                f"*Package ID*: {push_id}\n"
+                f"*Share Destination:* {share_destination}"
             )
+
+            block_text = body_text + push_succeeded_update
+
 
         # Push NOT succeded; catch and show the issue
         else:
-            body_text = (
-                f":package: *Auto Package*\n"
-                f"*     {package_name}* is ready.\n"
-                f"      *Package ID:* `{package_id}`\n"
-                f"      Destination: `{share_destination}`\n"
-                f"      Review the packaging report <{package_report_presigned_url}|here>.\n"
-                f"      Pushed by <@{user_id}>.\n"
+            push_failed_update = (
+                f"Pushed by <@{user_id}>.\n"
                 f"\n"
                 f"\n"
                 f":x: Push *{push_id}* {status}.\n"
-                f"      *Package ID*: {push_id}\n"
+                f"*Package ID*: {push_id}\n"
             )
+
+            block_text = body_text + push_failed_update
 
         # Update
         updated_blocks = [
@@ -283,16 +279,17 @@ def handler(event, context):
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": body_text,
+                    "text": block_text,
                 },
             },
         ]
 
         # Post updated message
-        _update_slack_message(
+        result = _post_message(
             bot_token=bot_token,
             channel=channel_id,
             ts=message_ts,
             blocks=updated_blocks,
+            update=True,
         )
-        return {"ok": True}
+        return result
