@@ -20,6 +20,8 @@ import { HOSTED_ZONE_DOMAIN_PARAMETER_NAME } from '@orcabus/platform-cdk-constru
 import { StageName } from '@orcabus/platform-cdk-constructs/shared-config/accounts';
 import { buildAllEventRules } from './event-rules';
 import { buildAllEventBridgeTargets } from './event-targets';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export type StatelessApplicationStackProps = cdk.StackProps & StatelessApplicationStackConfig;
 
@@ -198,6 +200,63 @@ export class StatelessApplicationStack extends cdk.Stack {
     addHttpRoutes(this, {
       apiGateway: apiGateway,
       apiIntegration: apiIntegration,
+    });
+
+    /*
+        Part 6: Slack REST API
+        */
+    // Create the API Gateway REST API
+    const slackApi = new apigateway.RestApi(this, 'AutoPushSlackApi', {
+      restApiName: 'AutoPushSlackApi',
+      description: 'Slack actions endpoint for Auto Push feature.',
+      endpointConfiguration: {
+        types: [apigateway.EndpointType.REGIONAL],
+      },
+    });
+
+    // /slack/actions
+    const slack = slackApi.root.addResource('slack');
+    const actions = slack.addResource('actions');
+
+    // Import the exact execution role used by the manual API
+    const slackApiAutoPushRole = iam.Role.fromRoleArn(
+      this,
+      'SlackApiAutoPushRoleImported',
+      'arn:aws:iam::843407916570:role/SlackAPIautoPushRole',
+      { mutable: false }
+    );
+
+    // AWS Service integration: Step Functions StartExecution
+    const startExecutionIntegration = new apigateway.AwsIntegration({
+      service: 'states',
+      action: 'StartExecution',
+      integrationHttpMethod: 'POST',
+      options: {
+        credentialsRole: slackApiAutoPushRole,
+        passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
+        timeout: cdk.Duration.millis(29000),
+        requestTemplates: {
+          'application/x-www-form-urlencoded': `{
+      "stateMachineArn": "arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing--autoPush",
+      "name": "$context.requestId",
+      "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\"}"
+    }`,
+        },
+        // minimal “200 OK” response wiring
+        integrationResponses: [
+          {
+            statusCode: '200',
+            responseTemplates: {
+              'application/json': '',
+            },
+          },
+        ],
+      },
+    });
+
+    actions.addMethod('POST', startExecutionIntegration, {
+      authorizationType: apigateway.AuthorizationType.NONE,
+      methodResponses: [{ statusCode: '200' }],
     });
   }
 }
