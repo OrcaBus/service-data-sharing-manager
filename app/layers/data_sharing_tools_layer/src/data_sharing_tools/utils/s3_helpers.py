@@ -25,6 +25,12 @@ import logging
 logger = logging.getLogger()
 logger.setLevel("INFO")
 
+# Orcabus API tools
+from orcabus_api_tools.filemanager import (
+    get_presigned_url,
+    get_s3_object_id_from_s3_uri
+)
+
 
 def get_s3_client() -> 'S3Client':
     return boto3.client('s3')
@@ -103,11 +109,26 @@ def delete_s3_obj(bucket: str, key: str, s3_client: Optional['S3Client'] = None)
     s3_client.delete_object(Bucket=bucket, Key=key)
 
 
-def generate_presigned_url(bucket: str, key: str, expiration: Optional[int] = 604800, s3_client: Optional['S3Client'] = None):
-    if s3_client is None:
-        s3_client = get_s3_client()
-    return s3_client.generate_presigned_url(
-        'get_object',
-        Params={'Bucket': bucket, 'Key': key},
-        ExpiresIn=expiration
+def generate_presigned_url(
+        bucket: str,
+        key: str,
+        expiration: Optional[int] = 604800,
+) -> str:
+    """
+    Generate a presigned URL for an S3 object using the Orcabus filemanager.
+    :param bucket: The name of the S3 bucket that contains the object.
+    :type bucket: str
+    :param key: The object key (path) within the S3 bucket.
+    :type key: str
+    :param expiration: The desired validity duration of the presigned URL in seconds.
+        This parameter is currently not forwarded to the underlying implementation,
+        but is reserved for future use. Defaults to 604800 (7 days).
+    :type expiration: Optional[int]
+    :return: The generated presigned URL for the specified S3 object.
+    :rtype: str
+    """
+    return get_presigned_url(
+        s3_object_id=get_s3_object_id_from_s3_uri(
+            s3_uri=f"s3://{bucket}/{key}",
+        )
     )
