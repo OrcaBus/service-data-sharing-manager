@@ -115,11 +115,17 @@ def generate_presigned_url(
         expiration: Optional[int] = 604800,
 ) -> str:
     """
-    Generate the presigned url using the orcabus filemanager
-    :param bucket:
-    :param key:
-    :param expiration:
-    :return:
+    Generate a presigned URL for an S3 object using the Orcabus filemanager.
+    :param bucket: The name of the S3 bucket that contains the object.
+    :type bucket: str
+    :param key: The object key (path) within the S3 bucket.
+    :type key: str
+    :param expiration: The desired validity duration of the presigned URL in seconds.
+        This parameter is currently not forwarded to the underlying implementation,
+        but is reserved for future use. Defaults to 604800 (7 days).
+    :type expiration: Optional[int]
+    :return: The generated presigned URL for the specified S3 object.
+    :rtype: str
     """
     return get_presigned_url(
         s3_object_id=get_s3_object_id_from_s3_uri(
