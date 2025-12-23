@@ -7,7 +7,7 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { buildAllLambdas, buildDataSharingToolsLayer } from './lambdas';
-import { DATA_SHARING_BUCKET_PREFIX, STACK_PREFIX } from './constants';
+import { DATA_SHARING_BUCKET_PREFIX } from './constants';
 import { buildRMarkdownFargateTask } from './ecs';
 import { buildAllStepFunctions } from './step-functions';
 import {
@@ -21,8 +21,6 @@ import { HOSTED_ZONE_DOMAIN_PARAMETER_NAME } from '@orcabus/platform-cdk-constru
 import { StageName } from '@orcabus/platform-cdk-constructs/shared-config/accounts';
 import { buildAllEventRules } from './event-rules';
 import { buildAllEventBridgeTargets } from './event-targets';
-
-const autoPushStateMachineArn = `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}--autoPush`;
 
 export type StatelessApplicationStackProps = cdk.StackProps & StatelessApplicationStackConfig;
 
@@ -208,14 +206,15 @@ export class StatelessApplicationStack extends cdk.Stack {
         Part 6: Build Slack API GAteway for AutoPush feature
         */
 
-    const autoPushStateMachine = sfn.StateMachine.fromStateMachineArn(
+    // Import the autoPush Step Function
+    const autoPushSfn = sfn.StateMachine.fromStateMachineArn(
       this,
-      'AutoPushStateMachine',
-      autoPushStateMachineArn
+      'AutoPushSfn',
+      props.autoPushSfnArn
     );
 
     buildSlackAutoPushApi(this, {
-      autoPushStateMachine: autoPushStateMachine,
+      autoPushSfn: autoPushSfn,
     });
   }
 }

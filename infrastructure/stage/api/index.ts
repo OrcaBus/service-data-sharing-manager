@@ -227,7 +227,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
     description: 'Role assumed by Slack REST API Gateway to start autoPush executions',
   });
 
-  props.autoPushStateMachine.grantStartExecution(slackApiAutoPushRole);
+  props.autoPushSfn.grantStartExecution(slackApiAutoPushRole);
 
   const startExecutionIntegration = new apigateway.AwsIntegration({
     service: 'states',
@@ -239,7 +239,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
       timeout: cdk.Duration.millis(29000),
       requestTemplates: {
         'application/x-www-form-urlencoded': `{
-        "stateMachineArn": "${props.autoPushStateMachine.stateMachineArn}",
+        "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
         "name": "$context.requestId",
         "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\"}"
       }`,

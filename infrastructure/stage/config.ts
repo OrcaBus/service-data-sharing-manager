@@ -14,6 +14,7 @@ import {
   s3CopyStepsFunctionArn,
   SSM_ROOT_PREFIX,
   USE_JSONL_COPY_FORMAT,
+  autoPushSfnArn,
 } from './constants';
 import {
   ACCOUNT_ID_ALIAS,
@@ -99,5 +100,8 @@ export const getStatelessApplicationStackProps = (
 
     /* SSM Stuff */
     ssmParameterPaths: getSsmParameterPaths(),
+
+    /* Auto Data Sharing Stuff */
+    autoPushSfnArn: autoPushSfnArn[stage],
   };
 };

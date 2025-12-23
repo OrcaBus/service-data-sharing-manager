@@ -36,5 +36,5 @@ export interface BuildHttpRoutesProps {
 }
 
 export interface BuildSlackAutoPushApiProps {
-  autoPushStateMachine: IStateMachine;
+  autoPushSfn: IStateMachine;
 }

@@ -103,6 +103,11 @@ export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
 export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
 export const SLACK_BOT_TOKEN_SECRET_NAME = 'auto-data-sharing-slack-bot-token'; // pragma: allowlist secret
 export const SLACK_ALLOWED_USERS_SECRET_NAME = 'auto-data-sharing-slack-allowed-users'; // pragma: allowlist secret
+export const autoPushSfnArn: Record<StageName, string> = {
+  BETA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['BETA']}:stateMachine:${STACK_PREFIX}--autoPush`, // pragma: allowlist secret
+  GAMMA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['GAMMA']}:stateMachine:${STACK_PREFIX}--autoPush`, // pragma: allowlist secret
+  PROD: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['PROD']}:stateMachine:${STACK_PREFIX}--autoPush`, // pragma: allowlist secret
+};
 
 // EventBridge rule names for auto data sharing
 export const AUTOCONTROLLER_RULE_DESCRIPTION =
