@@ -146,8 +146,8 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     slackConfig.grantRead(lambdaObject);
   }
 
-  // Allow the checkSlackPush Lambda to read the allowed-users secret at runtime
-  if (props.lambdaName === 'checkSlackPush') {
+  // Allow the extractSlackActionContext Lambda to read the allowed-users secret at runtime
+  if (props.lambdaName === 'extractSlackActionContext') {
     const slackAllowedUsers = secretsmanager.Secret.fromSecretNameV2(
       scope,
       'AutoDataSharingSlackConfigForCheckPush',

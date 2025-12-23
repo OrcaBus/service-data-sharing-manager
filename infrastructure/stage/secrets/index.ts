@@ -28,7 +28,7 @@ export function createSlackSecret(scope: Construct) {
     {
       secretName: SLACK_CONFIG_SECRET_NAME,
       description: 'Slack config: auto-data-sharing channel_id and push allowed users.',
-      // Initialise with an empty JSON array; you’ll edit this in the console
+      // Initialise with a dump JSON array. Need to be updated after deployment.
       secretStringValue: cdk.SecretValue.unsafePlainText(initialAllowedUsers),
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     }

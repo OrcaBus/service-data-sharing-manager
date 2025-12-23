@@ -1,13 +1,13 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Check Slack Push",
+  "StartAt": "Extract Slack Action Context",
   "TimeoutSeconds": 86400,
   "States": {
-    "Check Slack Push": {
+    "Extract Slack Action Context": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__check_slack_push_lambda_function_arn__}",
+        "FunctionName": "${__extract_slack_action_context_lambda_function_arn__}",
         "Payload": {
           "slackBody": "{% $states.input.slackBody %}"
         }
