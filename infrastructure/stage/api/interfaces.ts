@@ -6,6 +6,7 @@ import { IBucket } from 'aws-cdk-lib/aws-s3';
 import { IStringParameter } from 'aws-cdk-lib/aws-ssm';
 import { OrcaBusApiGateway } from '@orcabus/platform-cdk-constructs/api-gateway';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import { IStateMachine } from 'aws-cdk-lib/aws-stepfunctions';
 
 export interface LambdaApiFunctionProps {
   // Layers
@@ -32,4 +33,8 @@ export interface BuildApiIntegrationProps {
 export interface BuildHttpRoutesProps {
   apiGateway: OrcaBusApiGateway;
   apiIntegration: HttpLambdaIntegration;
+}
+
+export interface BuildSlackAutoPushApiProps {
+  autoPushStateMachine: IStateMachine;
 }

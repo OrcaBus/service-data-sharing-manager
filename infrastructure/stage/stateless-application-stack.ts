@@ -7,7 +7,7 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { buildAllLambdas, buildDataSharingToolsLayer } from './lambdas';
-import { DATA_SHARING_BUCKET_PREFIX } from './constants';
+import { DATA_SHARING_BUCKET_PREFIX, STACK_PREFIX } from './constants';
 import { buildRMarkdownFargateTask } from './ecs';
 import { buildAllStepFunctions } from './step-functions';
 import {
@@ -15,13 +15,14 @@ import {
   buildApiGateway,
   buildApiIntegration,
   buildApiInterfaceLambda,
+  buildSlackAutoPushApi,
 } from './api';
 import { HOSTED_ZONE_DOMAIN_PARAMETER_NAME } from '@orcabus/platform-cdk-constructs/api-gateway';
 import { StageName } from '@orcabus/platform-cdk-constructs/shared-config/accounts';
 import { buildAllEventRules } from './event-rules';
 import { buildAllEventBridgeTargets } from './event-targets';
-import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import * as iam from 'aws-cdk-lib/aws-iam';
+
+const autoPushStateMachineArn = `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}--autoPush`;
 
 export type StatelessApplicationStackProps = cdk.StackProps & StatelessApplicationStackConfig;
 
@@ -37,6 +38,7 @@ export class StatelessApplicationStack extends cdk.Stack {
      *  * Build the ECS cluster for building the RMarkdown report
      *  * Build the AWS Step functions for orchestrating the workflows
      *  * Build the API Gateway for the stateless application
+     *  * Build Slack REST API for Auto Push feature
      */
 
     // Set the stage name
@@ -203,60 +205,17 @@ export class StatelessApplicationStack extends cdk.Stack {
     });
 
     /*
-        Part 6: Slack REST API
+        Part 6: Build Slack API GAteway for AutoPush feature
         */
-    // Create the API Gateway REST API
-    const slackApi = new apigateway.RestApi(this, 'AutoPushSlackApi', {
-      restApiName: 'AutoPushSlackApi',
-      description: 'Slack actions endpoint for Auto Push feature.',
-      endpointConfiguration: {
-        types: [apigateway.EndpointType.REGIONAL],
-      },
-    });
 
-    // /slack/actions
-    const slack = slackApi.root.addResource('slack');
-    const actions = slack.addResource('actions');
-
-    // Import the exact execution role used by the manual API
-    const slackApiAutoPushRole = iam.Role.fromRoleArn(
+    const autoPushStateMachine = sfn.StateMachine.fromStateMachineArn(
       this,
-      'SlackApiAutoPushRoleImported',
-      'arn:aws:iam::843407916570:role/SlackAPIautoPushRole',
-      { mutable: false }
+      'AutoPushStateMachine',
+      autoPushStateMachineArn
     );
 
-    // AWS Service integration: Step Functions StartExecution
-    const startExecutionIntegration = new apigateway.AwsIntegration({
-      service: 'states',
-      action: 'StartExecution',
-      integrationHttpMethod: 'POST',
-      options: {
-        credentialsRole: slackApiAutoPushRole,
-        passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
-        timeout: cdk.Duration.millis(29000),
-        requestTemplates: {
-          'application/x-www-form-urlencoded': `{
-      "stateMachineArn": "arn:aws:states:ap-southeast-2:843407916570:stateMachine:data-sharing--autoPush",
-      "name": "$context.requestId",
-      "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\"}"
-    }`,
-        },
-        // minimal “200 OK” response wiring
-        integrationResponses: [
-          {
-            statusCode: '200',
-            responseTemplates: {
-              'application/json': '',
-            },
-          },
-        ],
-      },
-    });
-
-    actions.addMethod('POST', startExecutionIntegration, {
-      authorizationType: apigateway.AuthorizationType.NONE,
-      methodResponses: [{ statusCode: '200' }],
+    buildSlackAutoPushApi(this, {
+      autoPushStateMachine: autoPushStateMachine,
     });
   }
 }

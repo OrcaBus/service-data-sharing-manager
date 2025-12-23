@@ -33,7 +33,9 @@ import {
   BuildApiIntegrationProps,
   BuildHttpRoutesProps,
   LambdaApiFunctionProps,
+  BuildSlackAutoPushApiProps,
 } from './interfaces';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 
 export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFunctionProps) {
   const lambdaApiFunction = new PythonUvFunction(scope, 'DataSharingApi', {
@@ -206,4 +208,55 @@ export function addHttpRoutes(scope: Construct, props: BuildHttpRoutesProps) {
     authorizer: props.apiGateway.authStackHttpLambdaAuthorizer,
     routeKey: HttpRouteKey.with(`/api/${API_VERSION}/{PROXY+}`, HttpMethod.DELETE),
   });
+}
+
+// Build Slack API Gateway for AutoPush feature
+export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPushApiProps) {
+  const slackApi = new apigateway.RestApi(scope, 'AutoPushSlackApi', {
+    restApiName: 'AutoPushSlackApi',
+    description: 'Slack actions endpoint for Auto Push feature.',
+    endpointConfiguration: {
+      types: [apigateway.EndpointType.REGIONAL],
+    },
+  });
+
+  const actions = slackApi.root.addResource('slack').addResource('actions');
+
+  const slackApiAutoPushRole = new iam.Role(scope, 'SlackApiAutoPushRole', {
+    assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+    description: 'Role assumed by Slack REST API Gateway to start autoPush executions',
+  });
+
+  props.autoPushStateMachine.grantStartExecution(slackApiAutoPushRole);
+
+  const startExecutionIntegration = new apigateway.AwsIntegration({
+    service: 'states',
+    action: 'StartExecution',
+    integrationHttpMethod: 'POST',
+    options: {
+      credentialsRole: slackApiAutoPushRole,
+      passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
+      timeout: cdk.Duration.millis(29000),
+      requestTemplates: {
+        'application/x-www-form-urlencoded': `{
+        "stateMachineArn": "${props.autoPushStateMachine.stateMachineArn}",
+        "name": "$context.requestId",
+        "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\"}"
+      }`,
+      },
+      integrationResponses: [
+        {
+          statusCode: '200',
+          responseTemplates: { 'application/json': '' },
+        },
+      ],
+    },
+  });
+
+  actions.addMethod('POST', startExecutionIntegration, {
+    authorizationType: apigateway.AuthorizationType.NONE,
+    methodResponses: [{ statusCode: '200' }],
+  });
+
+  return slackApi;
 }
