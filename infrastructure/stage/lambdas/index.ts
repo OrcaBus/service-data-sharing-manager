@@ -23,7 +23,7 @@ import {
   MART_ENV_VARS,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
   SLACK_BOT_TOKEN_SECRET_NAME,
-  SLACK_ALLOWED_USERS_SECRET_NAME,
+  SLACK_CONFIG_SECRET_NAME,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -129,7 +129,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
-  // Allow the notifier Lambda to read the Slack bot token secret at runtime
+  // Allow the notifier Lambda to read the Slack bot token and config secrets at runtime
   if (props.lambdaName === 'notifySlack') {
     const slackBotToken = secretsmanager.Secret.fromSecretNameV2(
       scope,
@@ -137,14 +137,21 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
       SLACK_BOT_TOKEN_SECRET_NAME
     );
     slackBotToken.grantRead(lambdaObject);
+
+    const slackConfig = secretsmanager.Secret.fromSecretNameV2(
+      scope,
+      'AutoDataSharingSlackConfigForNotify',
+      SLACK_CONFIG_SECRET_NAME
+    );
+    slackConfig.grantRead(lambdaObject);
   }
 
   // Allow the checkSlackPush Lambda to read the allowed-users secret at runtime
   if (props.lambdaName === 'checkSlackPush') {
     const slackAllowedUsers = secretsmanager.Secret.fromSecretNameV2(
       scope,
-      'SlackAllowedUsersSecret',
-      SLACK_ALLOWED_USERS_SECRET_NAME
+      'AutoDataSharingSlackConfigForCheckPush',
+      SLACK_CONFIG_SECRET_NAME
     );
     slackAllowedUsers.grantRead(lambdaObject);
   }

@@ -1,13 +1,16 @@
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cdk from 'aws-cdk-lib';
-import { SLACK_BOT_TOKEN_SECRET_NAME, SLACK_ALLOWED_USERS_SECRET_NAME } from '../constants';
+import { SLACK_BOT_TOKEN_SECRET_NAME, SLACK_CONFIG_SECRET_NAME } from '../constants';
 import { Construct } from 'constructs';
 import { NagSuppressions } from 'cdk-nag';
 
-const initialAllowedUsers = JSON.stringify([
-  { username: 'user1.name', id: 'U111111' },
-  { username: 'user2.name', id: 'U222222' },
-]);
+const initialAllowedUsers = JSON.stringify({
+  channel_id: 'C1234567890',
+  allowed_users: [
+    { username: 'user1.name', id: 'U111111' },
+    { username: 'user2.name', id: 'U222222' },
+  ],
+});
 
 export function createSlackSecret(scope: Construct) {
   // Slack bot token secret
@@ -18,13 +21,13 @@ export function createSlackSecret(scope: Construct) {
     removalPolicy: cdk.RemovalPolicy.RETAIN,
   });
 
-  // Slack allowed users secret (list of Slack user IDs allowed to trigger push)
-  const slackAllowedUsersSecret = new secretsmanager.Secret(
+  // Slack config secret (channel_id + allowed users)
+  const AutoDataSharingSlackConfig = new secretsmanager.Secret(
     scope,
-    'AutoDataSharingSlackAllowedUsers',
+    'AutoDataSharingSlackConfig',
     {
-      secretName: SLACK_ALLOWED_USERS_SECRET_NAME,
-      description: 'Slack user IDs allowed to trigger auto push from Slack',
+      secretName: SLACK_CONFIG_SECRET_NAME,
+      description: 'Slack config: auto-data-sharing channel_id and push allowed users.',
       // Initialise with an empty JSON array; you’ll edit this in the console
       secretStringValue: cdk.SecretValue.unsafePlainText(initialAllowedUsers),
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -44,7 +47,7 @@ export function createSlackSecret(scope: Construct) {
   );
 
   NagSuppressions.addResourceSuppressions(
-    slackAllowedUsersSecret,
+    AutoDataSharingSlackConfig,
     [
       {
         id: 'AwsSolutions-SMG4',

@@ -11,6 +11,15 @@ def _get_slack_bot_token():
     _sm = boto3.client("secretsmanager")
     return _sm.get_secret_value(SecretId="auto-data-sharing-slack-bot-token")["SecretString"] # pragma: allowlist secret
 
+def _get_slack_channel_id() -> str:
+    resp = boto3.client("secretsmanager").get_secret_value(
+        SecretId="auto-data-sharing-slack-config"  # pragma: allowlist secret
+    )
+    secret_str = resp["SecretString"]
+
+    data = json.loads(secret_str)
+    return data["channel_id"]
+
 
 def _get_package_report(package_id):
 
@@ -105,7 +114,7 @@ def handler(event, context):
     bot_token = _get_slack_bot_token()
     slack_notification_type = event.get("slackNotificationType")
 
-  # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # All fields pulled from the event up front
     # ------------------------------------------------------------------
     package_id = event.get("packageId")                  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
@@ -135,12 +144,9 @@ def handler(event, context):
     # Package notifications
     # ----------------------------------------------------
     if slack_notification_type == "PACKAGE_READY":
-
-        # TODO: Channel IDs Should be storage in a better place ....
-
-        # channel_id = "C09KQ32MXAS" # auto-data-sharing
-        channel_id = "C06T9S6DZKK" # alert-dev
-
+        # When a package is ready, the channel ID is pulled from the secret
+        #  as is empty in the event
+        channel_id = _get_slack_channel_id()
 
         button_value = json.dumps(
             {

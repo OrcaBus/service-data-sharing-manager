@@ -47,31 +47,36 @@ def _event_from_slack_body(slack_body: str) -> dict:
     }
 
 
-
 def _get_allowed_users() -> list[str]:
     """
-    Read the Slack allowed users secret and return a list of user IDs.
+    Read the Slack config secret and return a list of allowed Slack user IDs.
 
     Secret format (JSON string):
-      [
-        {"username": "<some-username>", "id": "<SLACK_USER_ID>"},
-        ...
-      ]
+      {
+        "channel_id": "<SLACK_CHANNEL_ID>",
+        "allowed_users": [
+          {"username": "<some-username>", "id": "<SLACK_USER_ID>"},
+          ...
+        ]
+      }
     """
-    resp = boto3.client("secretsmanager").get_secret_value(SecretId="auto-data-sharing-slack-allowed-users") # pragma: allowlist secret
+    resp = boto3.client("secretsmanager").get_secret_value(
+        SecretId="auto-data-sharing-slack-config"  # pragma: allowlist secret
+    )
     secret_str = resp["SecretString"]
 
     data = json.loads(secret_str)
 
     # Extract just the IDs from any dict entries that have an "id" string
     ids: list[str] = []
-    for entry in data:
+    for entry in data.get("allowed_users", []):
         if isinstance(entry, dict):
             user_id = entry.get("id")
             if isinstance(user_id, str):
                 ids.append(user_id)
 
     return ids
+
 
 
 
