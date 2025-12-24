@@ -243,7 +243,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
     {
       restApi: slackApi,
       validateRequestBody: true,
-      validateRequestParameters: false,
+      validateRequestParameters: true,
     }
   );
 
@@ -286,6 +286,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
       'method.request.header.X-Slack-Request-Timestamp': true,
       'method.request.header.X-Slack-Signature': true,
     },
+
     methodResponses: [{ statusCode: '200' }],
   });
 
