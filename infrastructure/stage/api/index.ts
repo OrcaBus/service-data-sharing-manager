@@ -233,7 +233,19 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
     },
   });
 
+  // Create the /slack/actions resource
   const actions = slackApi.root.addResource('slack').addResource('actions');
+
+  // Create request validator
+  const requestValidator = new apigateway.RequestValidator(
+    scope,
+    'AutoPushSlackApiRequestValidator',
+    {
+      restApi: slackApi,
+      validateRequestBody: true,
+      validateRequestParameters: false,
+    }
+  );
 
   const slackApiAutoPushRole = new iam.Role(scope, 'SlackApiAutoPushRole', {
     assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
@@ -269,6 +281,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
   // Capture the method so we can add suppressions
   const postMethod = actions.addMethod('POST', startExecutionIntegration, {
     authorizationType: apigateway.AuthorizationType.NONE,
+    requestValidator: requestValidator,
     methodResponses: [{ statusCode: '200' }],
   });
 
@@ -283,6 +296,18 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
       {
         id: 'AwsSolutions-COG4',
         reason: 'Slack cannot use a Cognito authorizer.',
+      },
+    ],
+    true
+  );
+  // Suppress IAM4 on the API Gateway since it uses a managed policy for CloudWatch logging
+  NagSuppressions.addResourceSuppressions(
+    slackApi,
+    [
+      {
+        id: 'AwsSolutions-IAM4',
+        reason:
+          'API Gateway uses an AWS-managed policy (AmazonAPIGatewayPushToCloudWatchLogs) for its CloudWatchRole.',
       },
     ],
     true
