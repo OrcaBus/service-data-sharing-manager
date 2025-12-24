@@ -68,7 +68,7 @@
         {
           "Comment": "Package Succeeded",
           "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
-          "Next": "Notify Packaging Complete"
+          "Next": "Notify Slack: Packaging Complete"
         },
         {
           "Comment": "Package Failed or Cancelled",
@@ -78,15 +78,16 @@
       ],
       "Default": "Wait For Package"
     },
-    "Notify Packaging Complete": {
+    "Notify Slack: Packaging Complete": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
-          "id": "{% $states.input.id %}",
+          "packageId": "{% $states.input.id %}",
           "packageName": "{% $states.input.packageName %}",
-          "shareDestination": "{% $states.input.shareDestination %}"
+          "shareDestination": "{% $states.input.shareDestination %}",
+          "slackNotificationType": "PACKAGE_READY"
         }
       },
       "Output": "{% $states.input %}",

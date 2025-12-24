@@ -49,4 +49,7 @@ export interface StatelessApplicationStackConfig {
 
   /* SSM Stuff */
   ssmParameterPaths: SsmParameterPaths;
+
+  /* Auto Data Sharing Stuff */
+  autoPushSfnArn: string;
 }
