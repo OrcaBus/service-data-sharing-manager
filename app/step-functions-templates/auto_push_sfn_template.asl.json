@@ -1,8 +1,47 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Extract Slack Action Context",
+  "StartAt": "Verify Slack Request",
   "TimeoutSeconds": 86400,
   "States": {
+    "Verify Slack Request": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Output": "{% $states.result.Payload %}",
+      "Arguments": {
+        "FunctionName": "${__verify_slack_request_lambda_function_arn__}",
+        "Payload": "{% $states.input %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Is Slack Request Verified?"
+    },
+    "Is Slack Request Verified?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.verified = false  %}",
+          "Next": "Slack not Verified"
+        }
+      ],
+      "Default": "Extract Slack Action Context"
+    },
+    "Slack not Verified": {
+      "Type": "Fail",
+      "Error": "SlackNotVerified",
+      "Cause": "Slack signature verification failed"
+    },
     "Extract Slack Action Context": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",

@@ -229,6 +229,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
 
   props.autoPushSfn.grantStartExecution(slackApiAutoPushRole);
 
+  // TODO define requestTemplates in a better/robust way
   const startExecutionIntegration = new apigateway.AwsIntegration({
     service: 'states',
     action: 'StartExecution',
@@ -241,7 +242,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
         'application/x-www-form-urlencoded': `{
         "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
         "name": "$context.requestId",
-        "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\"}"
+        "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\",\\"headers\\":\\"$util.escapeJavaScript($input.params().header)\\"}"
       }`,
       },
       integrationResponses: [

@@ -24,6 +24,7 @@ import {
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
   SLACK_BOT_TOKEN_SECRET_NAME,
   SLACK_CONFIG_SECRET_NAME,
+  SLACK_SIGNING_SECRET_NAME,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -154,6 +155,16 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
       SLACK_CONFIG_SECRET_NAME
     );
     slackAllowedUsers.grantRead(lambdaObject);
+  }
+
+  // Allow the verifySlackRequest Lambda to read the signing secret at runtime
+  if (props.lambdaName === 'verifySlackRequest') {
+    const slackSigningSecret = secretsmanager.Secret.fromSecretNameV2(
+      scope,
+      'AutoDataSharingSlackSigningSecret',
+      SLACK_SIGNING_SECRET_NAME
+    );
+    slackSigningSecret.grantRead(lambdaObject);
   }
 
   return {

@@ -1,6 +1,10 @@
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cdk from 'aws-cdk-lib';
-import { SLACK_BOT_TOKEN_SECRET_NAME, SLACK_CONFIG_SECRET_NAME } from '../constants';
+import {
+  SLACK_BOT_TOKEN_SECRET_NAME,
+  SLACK_CONFIG_SECRET_NAME,
+  SLACK_SIGNING_SECRET_NAME,
+} from '../constants';
 import { Construct } from 'constructs';
 import { NagSuppressions } from 'cdk-nag';
 
@@ -21,6 +25,14 @@ export function createSlackSecret(scope: Construct) {
     removalPolicy: cdk.RemovalPolicy.RETAIN,
   });
 
+  // Slack bot token secret
+  const slackSigningSecret = new secretsmanager.Secret(scope, 'AutoDataSharingSlackSigningSecret', {
+    secretName: SLACK_SIGNING_SECRET_NAME,
+    description: 'Slack signing secret for verifying requests to auto-data-sharing',
+    secretStringValue: cdk.SecretValue.unsafePlainText('SET_AFTER_DEPLOY'),
+    removalPolicy: cdk.RemovalPolicy.RETAIN,
+  });
+
   // Slack config secret (channel_id + allowed users)
   const AutoDataSharingSlackConfig = new secretsmanager.Secret(
     scope,
@@ -37,6 +49,17 @@ export function createSlackSecret(scope: Construct) {
   // Add nag suppressions
   NagSuppressions.addResourceSuppressions(
     slackBotTokenSecret,
+    [
+      {
+        id: 'AwsSolutions-SMG4',
+        reason: 'We dont need secrets rotation for this token.',
+      },
+    ],
+    true
+  );
+
+  NagSuppressions.addResourceSuppressions(
+    slackSigningSecret,
     [
       {
         id: 'AwsSolutions-SMG4',
