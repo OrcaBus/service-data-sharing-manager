@@ -36,6 +36,7 @@ import {
   BuildSlackAutoPushApiProps,
 } from './interfaces';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFunctionProps) {
   const lambdaApiFunction = new PythonUvFunction(scope, 'DataSharingApi', {
@@ -212,11 +213,23 @@ export function addHttpRoutes(scope: Construct, props: BuildHttpRoutesProps) {
 
 // Build Slack API Gateway for AutoPush feature
 export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPushApiProps) {
+  // Create CloudWatch Log Group for API Gateway access logs
+  const accessLogGroup = new logs.LogGroup(scope, 'AutoPushSlackApiAccessLogs', {
+    retention: logs.RetentionDays.ONE_MONTH,
+  });
+  // Create the API Gateway
   const slackApi = new apigateway.RestApi(scope, 'AutoPushSlackApi', {
     restApiName: 'AutoPushSlackApi',
     description: 'Slack actions endpoint for Auto Push feature.',
     endpointConfiguration: {
       types: [apigateway.EndpointType.REGIONAL],
+    },
+    deployOptions: {
+      accessLogDestination: new apigateway.LogGroupLogDestination(accessLogGroup),
+      accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
+      loggingLevel: apigateway.MethodLoggingLevel.INFO,
+      dataTraceEnabled: false,
+      metricsEnabled: true,
     },
   });
 
