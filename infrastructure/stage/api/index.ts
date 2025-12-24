@@ -37,6 +37,7 @@ import {
 } from './interfaces';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 
 export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFunctionProps) {
   const lambdaApiFunction = new PythonUvFunction(scope, 'DataSharingApi', {
@@ -231,6 +232,40 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
       dataTraceEnabled: false,
       metricsEnabled: true,
     },
+  });
+
+  // Create WAFv2 Web ACL and associate it with the API Gateway stage
+  const autoPushSlackWebAcl = new wafv2.CfnWebACL(scope, 'AutoPushSlackWebAcl', {
+    scope: 'REGIONAL',
+    defaultAction: { allow: {} },
+    visibilityConfig: {
+      cloudWatchMetricsEnabled: true,
+      metricName: 'AutoPushSlackWebAcl',
+      sampledRequestsEnabled: true,
+    },
+    rules: [
+      {
+        name: 'AWSManagedRulesCommonRuleSet',
+        priority: 0,
+        statement: {
+          managedRuleGroupStatement: {
+            vendorName: 'AWS',
+            name: 'AWSManagedRulesCommonRuleSet',
+          },
+        },
+        overrideAction: { none: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: 'AWSManagedRulesCommonRuleSet',
+          sampledRequestsEnabled: true,
+        },
+      },
+    ],
+  });
+  // Associate the Web ACL with the API Gateway stage
+  new wafv2.CfnWebACLAssociation(scope, 'AutoPushSlackWebAclAssociation', {
+    resourceArn: slackApi.deploymentStage.stageArn,
+    webAclArn: autoPushSlackWebAcl.attrArn,
   });
 
   // Create the /slack/actions resource
