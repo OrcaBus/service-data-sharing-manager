@@ -282,6 +282,10 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
   const postMethod = actions.addMethod('POST', startExecutionIntegration, {
     authorizationType: apigateway.AuthorizationType.NONE,
     requestValidator: requestValidator,
+    requestParameters: {
+      'method.request.header.X-Slack-Request-Timestamp': true,
+      'method.request.header.X-Slack-Signature': true,
+    },
     methodResponses: [{ statusCode: '200' }],
   });
 
