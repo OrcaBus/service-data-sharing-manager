@@ -228,8 +228,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
   });
 
   props.autoPushSfn.grantStartExecution(slackApiAutoPushRole);
-
-  // TODO define requestTemplates in a better/robust way
+  // TODO: proper, no hardoded requestTemplates
   const startExecutionIntegration = new apigateway.AwsIntegration({
     service: 'states',
     action: 'StartExecution',
@@ -240,10 +239,10 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
       timeout: cdk.Duration.millis(29000),
       requestTemplates: {
         'application/x-www-form-urlencoded': `{
-        "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
-        "name": "$context.requestId",
-        "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\",\\"headers\\":\\"$util.escapeJavaScript($input.params().header)\\"}"
-      }`,
+          "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
+          "name": "$context.requestId",
+          "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\",\\"headers\\":\\"$util.escapeJavaScript($input.params().header)\\"}"
+        }`,
       },
       integrationResponses: [
         {
@@ -254,10 +253,27 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
     },
   });
 
-  actions.addMethod('POST', startExecutionIntegration, {
+  // Capture the method so we can add suppressions
+  const postMethod = actions.addMethod('POST', startExecutionIntegration, {
     authorizationType: apigateway.AuthorizationType.NONE,
     methodResponses: [{ statusCode: '200' }],
   });
+
+  // Suppress APIG4 + COG4 on the method since we are not using auth here
+  NagSuppressions.addResourceSuppressions(
+    postMethod,
+    [
+      {
+        id: 'AwsSolutions-APIG4',
+        reason: 'Slack uses signing-secret verification, not API Gateway auth.',
+      },
+      {
+        id: 'AwsSolutions-COG4',
+        reason: 'Slack cannot use a Cognito authorizer.',
+      },
+    ],
+    true
+  );
 
   return slackApi;
 }
