@@ -2,21 +2,8 @@ import time
 import hmac
 import hashlib
 import boto3
+import json
 
-
-
-def _extract_value_from_headers(h: str, key: str) -> str | None:
-    needle = f"{key}="
-    i = h.find(needle)
-    if i == -1:
-        return None
-    start = i + len(needle)
-    end = h.find(", ", start)
-    if end == -1:
-        end = h.rfind("}")
-        if end == -1:
-            end = len(h)
-    return h[start:end]
 
 
 def _get_signing_secret():
@@ -42,7 +29,7 @@ def handler(event, context):
     Verifies that a Slack request is valid using signing secret.
     Implements replay protection by checking timestamp is recent.
     Expects event to have:
-      - headers: stringified dict of headers
+      - headers: JSON-encoded string containing Slack signature headers
       - slackBody: raw body of the Slack request
       Returns dict with:
       - verified: bool
@@ -50,9 +37,17 @@ def handler(event, context):
 
     """
 
+    # Example event shape (from API Gateway → Step Functions):
+    # event = {
+    #   "slackBody": "payload=%7B%22type%22%3A%22block_actions%22%2C...%7D",
+    #   "headers": "{\"X-Slack-Request-Timestamp\":\"1768266882\",\"X-Slack-Signature\":\"v0=4f26fc2c800619151fabb6f22787074bb4ea2eac1b2b611d71f8655b3611c81e\"}"
+    # }
+
+
     headers_str = event.get("headers")
-    timestamp = _extract_value_from_headers(headers_str, "X-Slack-Request-Timestamp")
-    sig = _extract_value_from_headers(headers_str, "X-Slack-Signature")
+    headers = json.loads(headers_str)
+    timestamp = headers.get("X-Slack-Request-Timestamp")
+    sig = headers.get("X-Slack-Signature")
     slack_body = event.get("slackBody")
 
     # Check is signature valid

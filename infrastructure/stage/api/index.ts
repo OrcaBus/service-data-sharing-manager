@@ -288,21 +288,26 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
   });
 
   props.autoPushSfn.grantStartExecution(slackApiAutoPushRole);
-  // TODO: proper, no hardoded requestTemplates
+  // TODO: This mapping template is intentionally double-escaped for the
+  // API Gateway → Step Functions integration. It works, but it’s hard to
+  // read and is ugly! If there’s a cleaner / more idiomatic way to construct
+  //  this payload we should refactor it...
+  const SlackSfnInputTemplate = `{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\",\\"headers\\":\\"{\\\\\\"X-Slack-Request-Timestamp\\\\\\":\\\\\\"$util.escapeJavaScript($input.params('X-Slack-Request-Timestamp'))\\\\\\",\\\\\\"X-Slack-Signature\\\\\\":\\\\\\"$util.escapeJavaScript($input.params('X-Slack-Signature'))\\\\\\"}\\"}`;
+  const startExecutionRequestTemplate = `#set($inputRoot = $input.path('$')){
+          "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
+          "name": "$context.requestId",
+          "input": "${SlackSfnInputTemplate}"
+        }`;
   const startExecutionIntegration = new apigateway.AwsIntegration({
     service: 'states',
     action: 'StartExecution',
     integrationHttpMethod: 'POST',
     options: {
       credentialsRole: slackApiAutoPushRole,
-      passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
+      passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
       timeout: cdk.Duration.millis(29000),
       requestTemplates: {
-        'application/x-www-form-urlencoded': `{
-          "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
-          "name": "$context.requestId",
-          "input": "{\\"slackBody\\":\\"$util.escapeJavaScript($input.body)\\",\\"headers\\":\\"$util.escapeJavaScript($input.params().header)\\"}"
-        }`,
+        'application/x-www-form-urlencoded': startExecutionRequestTemplate,
       },
       integrationResponses: [
         {
