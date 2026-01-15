@@ -42,5 +42,10 @@
     "@orcabus/platform-cdk-constructs": "0.0.86",
     "aws-cdk-lib": "^2.225.0",
     "constructs": "^10.4.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "diff": ">=8.0.3"
+    }
   }
 }
