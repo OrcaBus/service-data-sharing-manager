@@ -288,22 +288,36 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
   });
 
   props.autoPushSfn.grantStartExecution(slackApiAutoPushRole);
-  // API Gateway → Step Functions integration. It works, but it’s hard to
-  // read and is ugly! If there’s a cleaner / more idiomatic way to construct
-  // this payload we should refactor it...
-  const slackSfnInputTemplate = {
-    stateMachineArn: props.autoPushSfn.stateMachineArn,
-    name: '$context.requestId',
-    input: JSON.stringify({
-      slackBody: '$util.escapeJavaScript($input.body)',
-      headers: JSON.stringify({
-        'X-Slack-Request-Timestamp':
-          "$util.escapeJavaScript($input.params('X-Slack-Request-Timestamp'))",
-        'X-Slack-Signature': "$util.escapeJavaScript($input.params('X-Slack-Signature'))",
-      }),
+
+  // NOTE: This block is intentionally “escape-heavy” and is sensitive to small changes.
+  // We are constructing the Step Functions StartExecution `input` value, which must be a
+  // JSON string embedded inside another JSON document (API Gateway → Step Functions).
+  // If quoting/escaping is changed (e.g. removing the wrapping `"` or one stringify/escape),
+  // API Gateway will often fail before calling Step Functions, so the request never reaches
+  // the state machine. If that happens, this is one of the first places to check.
+  // We may refactor this into a cleaner/idiomatic approach later.
+  // ----------------------------------------------------------------------------
+
+  const escapeForJsonStringValue = (s: string) => JSON.stringify(s).slice(1, -1);
+  const slackActionPayload = {
+    slackBody: '$util.escapeJavaScript($input.body)',
+    headers: JSON.stringify({
+      'X-Slack-Request-Timestamp':
+        "$util.escapeJavaScript($input.params('X-Slack-Request-Timestamp'))",
+      'X-Slack-Signature': "$util.escapeJavaScript($input.params('X-Slack-Signature'))",
     }),
   };
-  const startExecutionRequestTemplate = `#set($inputRoot = $input.path('$'))${slackSfnInputTemplate}`;
+  const slackSfnInputJson = JSON.stringify(slackActionPayload);
+  const slackSfnInputEscaped = escapeForJsonStringValue(slackSfnInputJson);
+  // ----------------------------------------------------------------------------
+
+  const startExecutionRequestTemplate = `#set($inputRoot = $input.path('$'))
+  {
+    "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
+    "name": "$context.requestId",
+    "input": "${slackSfnInputEscaped}"
+  }`;
+
   const startExecutionIntegration = new apigateway.AwsIntegration({
     service: 'states',
     action: 'StartExecution',
