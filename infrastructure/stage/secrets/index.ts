@@ -25,7 +25,7 @@ export function createSlackSecret(scope: Construct) {
     removalPolicy: cdk.RemovalPolicy.RETAIN,
   });
 
-  // Slack bot token secret
+  // Slack signing secret
   const slackSigningSecret = new secretsmanager.Secret(scope, 'AutoDataSharingSlackSigningSecret', {
     secretName: SLACK_SIGNING_SECRET_NAME,
     description: 'Slack signing secret for verifying requests to auto-data-sharing',
@@ -40,7 +40,7 @@ export function createSlackSecret(scope: Construct) {
     {
       secretName: SLACK_CONFIG_SECRET_NAME,
       description: 'Slack config: auto-data-sharing channel_id and push allowed users.',
-      // Initialise with a dump JSON array. Need to be updated after deployment.
+      // Initialise with a dummy JSON array. Need to be updated after deployment.
       secretStringValue: cdk.SecretValue.unsafePlainText(initialAllowedUsers),
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     }

@@ -53,7 +53,7 @@ def handler(event, context):
     # Check is signature valid
     signing_secret = _get_signing_secret()
     if not _verify_slack_signature(signing_secret, timestamp, slack_body, sig):
-        print ("Invalid Slack signature")
+        print("Invalid Slack signature")
         return {"verified": False, "slackBody": None}
 
     # Replay protection: max age of request
@@ -61,12 +61,12 @@ def handler(event, context):
     try:
         timestamp_int = int(timestamp)
     except ValueError:
-        print ("Invalid timestamp")
+        print("Invalid timestamp")
         return {"verified": False, "slackBody": None}
 
     now = int(time.time())
     if abs(now - timestamp_int) > MAX_AGE_SECONDS:
-        print ("Request timestamp too old")
+        print("Request timestamp too old")
         return {"verified": False, "slackBody": None}
 
 

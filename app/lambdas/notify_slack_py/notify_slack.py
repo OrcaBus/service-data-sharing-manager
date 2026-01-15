@@ -188,7 +188,7 @@ def handler(event, context):
         return _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            text= text,
+            text=text,
             blocks=blocks,
         )
 
@@ -233,7 +233,7 @@ def handler(event, context):
             bot_token=bot_token,
             channel=channel_id,
             ts=message_ts,
-            text= text,
+            text=text,
             blocks=updated_blocks,
             update=True,
         )
