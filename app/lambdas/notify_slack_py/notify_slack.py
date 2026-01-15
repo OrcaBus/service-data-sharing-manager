@@ -128,7 +128,9 @@ def handler(event, context):
     status = event.get("status")                         # PUSH_COMPLETED
     push_id = event.get("pushId")                        # PUSH_COMPLETED
 
-    package_report_presigned_url = _get_package_report(package_id).strip('"')  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
+    package_report_presigned_url = None
+    if package_id is not None:
+        package_report_presigned_url = _get_package_report(package_id).strip('"')  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
 
     text = f"Auto Package for {package_name} is ready."  # PACKAGE_READY
 
