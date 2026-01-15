@@ -249,7 +249,7 @@ def handler(event, context):
                 f"\n"
                 f":white_check_mark: *Push Completed*\n"
                 f"*Push ID:* {push_id} *{status}*\n"
-                f"*Package ID*: {push_id}\n"
+                f"*Package ID*: {package_id}\n"
                 f"*Share Destination:* {share_destination}"
             )
 
@@ -263,7 +263,7 @@ def handler(event, context):
                 f"\n"
                 f"\n"
                 f":x: Push *{push_id}* {status}.\n"
-                f"*Package ID*: {push_id}\n"
+                f"*Package ID*: {package_id}\n"
             )
 
             block_text = body_text + push_failed_update
