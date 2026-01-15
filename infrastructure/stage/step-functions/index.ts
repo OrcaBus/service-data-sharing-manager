@@ -126,7 +126,7 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
 
   // Auto-push SFN ARN used inside the auto-controller definition
   definitionSubstitutions['__auto_push_sfn_arn__'] =
-    `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}-autoPush`;
+    `arn:aws:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:${STACK_PREFIX}--autoPush`;
 
   // Nested state machine is just part of our props
   definitionSubstitutions['__aws_s3_steps_copy_sfn_arn__'] = props.s3StepsCopySfn.stateMachineArn;
