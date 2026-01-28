@@ -37,7 +37,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
   const lambdaRequirements = lambdaRequirementsMap[props.lambdaName];
   const lambdaObject = new PythonUvFunction(scope, props.lambdaName, {
     entry: path.join(LAMBDA_DIR, lambdaNameToSnakeCase + '_py'),
-    runtime: lambda.Runtime.PYTHON_3_12,
+    runtime: lambda.Runtime.PYTHON_3_14,
     architecture: lambda.Architecture.ARM_64,
     index: lambdaNameToSnakeCase + '.py',
     handler: 'handler',
@@ -192,10 +192,6 @@ export function buildAllLambdas(scope: Construct, props: BuildAllLambdaProps): L
         id: 'AwsSolutions-IAM4',
         reason: 'We use the AWS Lambda basic execution role to run the lambdas.',
       },
-      {
-        id: 'AwsSolutions-L1',
-        reason: 'Were currently using Python 3.12',
-      },
     ],
     true
   );
@@ -211,7 +207,7 @@ export function buildDataSharingToolsLayer(scope: Construct): PythonLayerVersion
     */
   return new PythonLayerVersion(scope, 'data-sharing-tools-layer', {
     entry: path.join(LAYERS_DIR, 'data_sharing_tools_layer'),
-    compatibleRuntimes: [lambda.Runtime.PYTHON_3_12],
+    compatibleRuntimes: [lambda.Runtime.PYTHON_3_14],
     compatibleArchitectures: [lambda.Architecture.ARM_64],
     bundling: {
       image: getPythonUvDockerImage(),
