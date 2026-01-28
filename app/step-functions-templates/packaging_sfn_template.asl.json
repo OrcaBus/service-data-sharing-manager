@@ -1176,7 +1176,7 @@
           ]
         }
       },
-      "Next": "Update Job API (packaging complete)",
+      "Next": "Sync Filemanager Service",
       "Catch": [
         {
           "ErrorEquals": ["States.TaskFailed"],
@@ -1195,6 +1195,33 @@
           "JitterStrategy": "FULL"
         }
       ]
+    },
+    "Sync Filemanager Service": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__sync_filemanager_lambda_function_arn__}",
+        "Payload": {
+          "bucket": "{% $s3SharingBucket %}"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException",
+            "States.TaskFailed"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Update Job API (packaging complete)",
+      "Output": {}
     },
     "Update Job API (packaging complete)": {
       "Type": "Task",
