@@ -15,8 +15,8 @@ importers:
         specifier: 2.236.0-alpha.0
         version: 2.236.0-alpha.0(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5)
       '@orcabus/platform-cdk-constructs':
-        specifier: 1.1.1
-        version: 1.1.1(@aws-cdk/aws-lambda-python-alpha@2.236.0-alpha.0(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5))(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5)
+        specifier: 1.1.2
+        version: 1.1.2(@aws-cdk/aws-lambda-python-alpha@2.236.0-alpha.0(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5))(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5)
       aws-cdk-lib:
         specifier: ^2.236.0
         version: 2.236.0(constructs@10.4.5)
@@ -405,8 +405,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@orcabus/platform-cdk-constructs@1.1.1':
-    resolution: {integrity: sha512-oqFeNIri4hHTyiJZxloDP24Hxeb7WPn5UHolJlcSxQIXVS/zh2L+NsTNX8HPWdVrP1G+3M3Sa1YJSPEHiVpddQ==}
+  '@orcabus/platform-cdk-constructs@1.1.2':
+    resolution: {integrity: sha512-LE/rmmpoCo/m/p4ywSym7HhZ7Y8MNCeMjHIML3urlRPsWeAcNVHTkRsVQAIgW6Sz2pA6u6/9zu2u0FZSLtTw9g==}
     peerDependencies:
       '@aws-cdk/aws-lambda-python-alpha': ^2.233.0-alpha.0
       aws-cdk-lib: ^2.233.0
@@ -2132,7 +2132,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@orcabus/platform-cdk-constructs@1.1.1(@aws-cdk/aws-lambda-python-alpha@2.236.0-alpha.0(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5))(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5)':
+  '@orcabus/platform-cdk-constructs@1.1.2(@aws-cdk/aws-lambda-python-alpha@2.236.0-alpha.0(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5))(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5)':
     dependencies:
       '@aws-cdk/aws-lambda-python-alpha': 2.236.0-alpha.0(aws-cdk-lib@2.236.0(constructs@10.4.5))(constructs@10.4.5)
       aws-cdk-lib: 2.236.0(constructs@10.4.5)
