@@ -20,6 +20,7 @@ export type LambdaName =
   | 'listPortalRunIdsInLibrary'
   | 'packageFileToJsonlData'
   | 'queryAndCollectIcav2Prefixes'
+  | 'syncFilemanager'
   | 'updatePackagingJobApi'
   | 'updatePushJobApi'
   | 'updateIngestId'
@@ -51,6 +52,7 @@ export const lambdaNameList: LambdaName[] = [
   'listPortalRunIdsInLibrary',
   'packageFileToJsonlData',
   'queryAndCollectIcav2Prefixes',
+  'syncFilemanager',
   'updatePackagingJobApi',
   'updatePushJobApi',
   'updateIngestId',
@@ -118,6 +120,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsOrcabusApiToolsLayer: true,
   },
   getFilesListFromPortalRunId: {
+    needsOrcabusApiToolsLayer: true,
+  },
+  syncFilemanager: {
     needsOrcabusApiToolsLayer: true,
   },
   queryAndCollectIcav2Prefixes: {

@@ -42,6 +42,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'getFilesListFromPortalRunId',
     'getFilesAndRelativePathsFromS3AttributeIds',
     'updatePackagingJobApi',
+    'syncFilemanager',
   ],
   presigning: [
     'getDynamodbEvaluatedKeyList',
