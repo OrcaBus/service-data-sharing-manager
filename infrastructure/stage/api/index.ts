@@ -42,7 +42,7 @@ import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFunctionProps) {
   const lambdaApiFunction = new PythonUvFunction(scope, 'DataSharingApi', {
     entry: path.join(INTERFACE_DIR),
-    runtime: lambda.Runtime.PYTHON_3_12,
+    runtime: lambda.Runtime.PYTHON_3_14,
     architecture: lambda.Architecture.ARM_64,
     index: 'handler.py',
     handler: 'handler',
@@ -145,10 +145,6 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
       {
         id: 'AwsSolutions-IAM4',
         reason: 'We use the AWS Lambda Basic Execution Role',
-      },
-      {
-        id: 'AwsSolutions-L1',
-        reason: 'We are using Python 3.12, calm down please',
       },
     ],
     true
