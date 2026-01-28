@@ -22,7 +22,9 @@ import {
   MART_BUCKET_PREFIX,
   MART_ENV_VARS,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
-  SLACK_WEBHOOK_SECRET_NAME,
+  SLACK_BOT_TOKEN_SECRET_NAME,
+  SLACK_CONFIG_SECRET_NAME,
+  SLACK_SIGNING_SECRET_NAME,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -128,14 +130,41 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
-  // Allow the notifier Lambda to read the Slack webhook secret at runtime
+  // Allow the notifier Lambda to read the Slack bot token and config secrets at runtime
   if (props.lambdaName === 'notifySlack') {
-    const slackWebhook = secretsmanager.Secret.fromSecretNameV2(
+    const slackBotToken = secretsmanager.Secret.fromSecretNameV2(
       scope,
-      'SlackWebhookSecret',
-      SLACK_WEBHOOK_SECRET_NAME
+      'SlackBotTokenSecret',
+      SLACK_BOT_TOKEN_SECRET_NAME
     );
-    slackWebhook.grantRead(lambdaObject);
+    slackBotToken.grantRead(lambdaObject);
+
+    const slackConfig = secretsmanager.Secret.fromSecretNameV2(
+      scope,
+      'AutoDataSharingSlackConfigForNotify',
+      SLACK_CONFIG_SECRET_NAME
+    );
+    slackConfig.grantRead(lambdaObject);
+  }
+
+  // Allow the extractSlackActionContext Lambda to read the allowed-users secret at runtime
+  if (props.lambdaName === 'extractSlackActionContext') {
+    const slackAllowedUsers = secretsmanager.Secret.fromSecretNameV2(
+      scope,
+      'AutoDataSharingSlackConfigForCheckPush',
+      SLACK_CONFIG_SECRET_NAME
+    );
+    slackAllowedUsers.grantRead(lambdaObject);
+  }
+
+  // Allow the verifySlackRequest Lambda to read the signing secret at runtime
+  if (props.lambdaName === 'verifySlackRequest') {
+    const slackSigningSecret = secretsmanager.Secret.fromSecretNameV2(
+      scope,
+      'AutoDataSharingSlackSigningSecret',
+      SLACK_SIGNING_SECRET_NAME
+    );
+    slackSigningSecret.grantRead(lambdaObject);
   }
 
   return {

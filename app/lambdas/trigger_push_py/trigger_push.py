@@ -10,7 +10,7 @@ to start a data push job based on the event payload.
 from orcabus_api_tools.data_sharing import push_package
 
 def handler(event, context):
-    package_id = event["id"]
+    package_id = event.get("packageId")
     share_dest = event.get("shareDestination")
 
     return {

@@ -33,7 +33,11 @@ import {
   BuildApiIntegrationProps,
   BuildHttpRoutesProps,
   LambdaApiFunctionProps,
+  BuildSlackAutoPushApiProps,
 } from './interfaces';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 
 export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFunctionProps) {
   const lambdaApiFunction = new PythonUvFunction(scope, 'DataSharingApi', {
@@ -206,4 +210,173 @@ export function addHttpRoutes(scope: Construct, props: BuildHttpRoutesProps) {
     authorizer: props.apiGateway.authStackHttpLambdaAuthorizer,
     routeKey: HttpRouteKey.with(`/api/${API_VERSION}/{PROXY+}`, HttpMethod.DELETE),
   });
+}
+
+// Build Slack API Gateway for AutoPush feature
+export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPushApiProps) {
+  // Create CloudWatch Log Group for API Gateway access logs
+  const accessLogGroup = new logs.LogGroup(scope, 'AutoPushSlackApiAccessLogs', {
+    retention: logs.RetentionDays.ONE_MONTH,
+  });
+  // Create the API Gateway
+  const slackApi = new apigateway.RestApi(scope, 'AutoPushSlackApi', {
+    restApiName: 'AutoPushSlackApi',
+    description: 'Slack actions endpoint for Auto Push feature.',
+    endpointConfiguration: {
+      types: [apigateway.EndpointType.REGIONAL],
+    },
+    deployOptions: {
+      accessLogDestination: new apigateway.LogGroupLogDestination(accessLogGroup),
+      accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
+      loggingLevel: apigateway.MethodLoggingLevel.INFO,
+      dataTraceEnabled: false,
+      metricsEnabled: true,
+    },
+  });
+
+  // Create WAFv2 Web ACL and associate it with the API Gateway stage
+  const autoPushSlackWebAcl = new wafv2.CfnWebACL(scope, 'AutoPushSlackWebAcl', {
+    scope: 'REGIONAL',
+    defaultAction: { allow: {} },
+    visibilityConfig: {
+      cloudWatchMetricsEnabled: true,
+      metricName: 'AutoPushSlackWebAcl',
+      sampledRequestsEnabled: true,
+    },
+    rules: [
+      {
+        name: 'AWSManagedRulesCommonRuleSet',
+        priority: 0,
+        statement: {
+          managedRuleGroupStatement: {
+            vendorName: 'AWS',
+            name: 'AWSManagedRulesCommonRuleSet',
+          },
+        },
+        overrideAction: { none: {} },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: 'AWSManagedRulesCommonRuleSet',
+          sampledRequestsEnabled: true,
+        },
+      },
+    ],
+  });
+  // Associate the Web ACL with the API Gateway stage
+  new wafv2.CfnWebACLAssociation(scope, 'AutoPushSlackWebAclAssociation', {
+    resourceArn: slackApi.deploymentStage.stageArn,
+    webAclArn: autoPushSlackWebAcl.attrArn,
+  });
+
+  // Create the /slack/actions resource
+  const actions = slackApi.root.addResource('slack').addResource('actions');
+
+  // Create request validator
+  const requestValidator = new apigateway.RequestValidator(
+    scope,
+    'AutoPushSlackApiRequestValidator',
+    {
+      restApi: slackApi,
+      validateRequestBody: true,
+      validateRequestParameters: true,
+    }
+  );
+
+  const slackApiAutoPushRole = new iam.Role(scope, 'SlackApiAutoPushRole', {
+    assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+    description: 'Role assumed by Slack REST API Gateway to start autoPush executions',
+  });
+
+  props.autoPushSfn.grantStartExecution(slackApiAutoPushRole);
+
+  // NOTE: This block is intentionally “escape-heavy” and is sensitive to small changes.
+  // We are constructing the Step Functions StartExecution `input` value, which must be a
+  // JSON string embedded inside another JSON document (API Gateway → Step Functions).
+  // If quoting/escaping is changed (e.g. removing the wrapping `"` or one stringify/escape),
+  // API Gateway will often fail before calling Step Functions, so the request never reaches
+  // the state machine. If that happens, this is one of the first places to check.
+  // We may refactor this into a cleaner/idiomatic approach later.
+  // ----------------------------------------------------------------------------
+
+  const escapeForJsonStringValue = (s: string) => JSON.stringify(s).slice(1, -1);
+  const slackActionPayload = {
+    slackBody: '$util.escapeJavaScript($input.body)',
+    headers: JSON.stringify({
+      'X-Slack-Request-Timestamp':
+        "$util.escapeJavaScript($input.params('X-Slack-Request-Timestamp'))",
+      'X-Slack-Signature': "$util.escapeJavaScript($input.params('X-Slack-Signature'))",
+    }),
+  };
+  const slackSfnInputJson = JSON.stringify(slackActionPayload);
+  const slackSfnInputEscaped = escapeForJsonStringValue(slackSfnInputJson);
+  // ----------------------------------------------------------------------------
+
+  const startExecutionRequestTemplate = `#set($inputRoot = $input.path('$'))
+  {
+    "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
+    "name": "$context.requestId",
+    "input": "${slackSfnInputEscaped}"
+  }`;
+
+  const startExecutionIntegration = new apigateway.AwsIntegration({
+    service: 'states',
+    action: 'StartExecution',
+    integrationHttpMethod: 'POST',
+    options: {
+      credentialsRole: slackApiAutoPushRole,
+      passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
+      timeout: cdk.Duration.millis(29000),
+      requestTemplates: {
+        'application/x-www-form-urlencoded': startExecutionRequestTemplate,
+      },
+      integrationResponses: [
+        {
+          statusCode: '200',
+          responseTemplates: { 'application/json': '' },
+        },
+      ],
+    },
+  });
+
+  // Capture the method so we can add suppressions
+  const postMethod = actions.addMethod('POST', startExecutionIntegration, {
+    authorizationType: apigateway.AuthorizationType.NONE,
+    requestValidator: requestValidator,
+    requestParameters: {
+      'method.request.header.X-Slack-Request-Timestamp': true,
+      'method.request.header.X-Slack-Signature': true,
+    },
+
+    methodResponses: [{ statusCode: '200' }],
+  });
+
+  // Suppress APIG4 + COG4 on the method since we are not using auth here
+  NagSuppressions.addResourceSuppressions(
+    postMethod,
+    [
+      {
+        id: 'AwsSolutions-APIG4',
+        reason: 'Slack uses signing-secret verification, not API Gateway auth.',
+      },
+      {
+        id: 'AwsSolutions-COG4',
+        reason: 'Slack cannot use a Cognito authorizer.',
+      },
+    ],
+    true
+  );
+  // Suppress IAM4 on the API Gateway since it uses a managed policy for CloudWatch logging
+  NagSuppressions.addResourceSuppressions(
+    slackApi,
+    [
+      {
+        id: 'AwsSolutions-IAM4',
+        reason:
+          'API Gateway uses an AWS-managed policy (AmazonAPIGatewayPushToCloudWatchLogs) for its CloudWatchRole.',
+      },
+    ],
+    true
+  );
+
+  return slackApi;
 }

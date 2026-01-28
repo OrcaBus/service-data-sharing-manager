@@ -47,7 +47,7 @@ export class StatefulApplicationStack extends cdk.Stack {
     // Set SSM Parameters
     buildSsmParameters(this, props.ssmParameters);
 
-    // Create the slack webhook secret
+    // Create the slack bot token secret
     createSlackSecret(this);
   }
 }

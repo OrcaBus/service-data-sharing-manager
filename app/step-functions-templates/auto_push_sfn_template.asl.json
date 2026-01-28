@@ -1,19 +1,168 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Trigger Push",
+  "StartAt": "Verify Slack Request",
   "TimeoutSeconds": 86400,
   "States": {
+    "Verify Slack Request": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Output": "{% $states.result.Payload %}",
+      "Arguments": {
+        "FunctionName": "${__verify_slack_request_lambda_function_arn__}",
+        "Payload": "{% $states.input %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Is Slack Request Verified?"
+    },
+    "Is Slack Request Verified?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.verified = false  %}",
+          "Next": "Slack not Verified"
+        }
+      ],
+      "Default": "Extract Slack Action Context"
+    },
+    "Slack not Verified": {
+      "Type": "Fail",
+      "Error": "SlackNotVerified",
+      "Cause": "Slack signature verification failed"
+    },
+    "Extract Slack Action Context": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__extract_slack_action_context_lambda_function_arn__}",
+        "Payload": {
+          "slackBody": "{% $states.input.slackBody %}"
+        }
+      },
+      "Output": "{% $states.result.Payload %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Is an authorized user?"
+    },
+    "Is an authorized user?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.userAllowed = false %}",
+          "Next": "Notify Slack: Push Not Authorised"
+        }
+      ],
+      "Default": "Notify Slack: Push Triggered"
+    },
+    "Notify Slack: Push Triggered": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "slackNotificationType": "PUSH_TRIGGERED",
+          "packageId": "{% $states.input.packageId %}",
+          "packageName": "{% $states.input.packageName %}",
+          "shareDestination": "{% $states.input.shareDestination %}",
+          "userId": "{% $states.input.userId %}",
+          "channelId": "{% $states.input.channelId %}",
+          "messageTs": "{% $states.input.messageTs %}"
+        }
+      },
+      "Output": {
+        "shareDestination": "{% $states.input.shareDestination %}",
+        "packageId": "{% $states.input.packageId %}",
+        "userId": "{% $states.input.userId %}",
+        "channelId": "{% $states.input.channelId %}",
+        "messageTs": "{% $states.input.messageTs %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Trigger Push"
+    },
+    "Notify Slack: Push Not Authorised": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "slackNotificationType": "PUSH_NOT_AUTHORISED",
+          "userId": "{% $states.input.userId %}",
+          "channelId": "{% $states.input.channelId %}"
+        }
+      },
+      "Output": "{% $states.result.Payload %}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    },
     "Trigger Push": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__trigger_push_lambda_function_arn__}",
         "Payload": {
-          "id": "{% $states.input.id %}",
+          "packageId": "{% $states.input.packageId %}",
           "shareDestination": "{% $states.input.shareDestination %}"
         }
       },
-      "Output": "{% $states.result.Payload.pushRequestObject %}",
+      "Output": {
+        "id": "{% $states.result.Payload.pushRequestObject.id %}",
+        "status": "{% $states.result.Payload.pushRequestObject.status %}",
+        "packageId": "{% $states.result.Payload.pushRequestObject.packageId %}",
+        "shareDestination": "{% $states.result.Payload.pushRequestObject.shareDestination %}",
+        "userId": "{% $states.input.userId %}",
+        "channelId": "{% $states.input.channelId %}",
+        "messageTs": "{% $states.input.messageTs %}"
+      },
       "Retry": [
         {
           "ErrorEquals": [
@@ -44,7 +193,15 @@
           "id": "{% $states.input.id %}"
         }
       },
-      "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
+      "Output": {
+        "id": "{% $states.input.id %}",
+        "packageId": "{% $states.input.packageId %}",
+        "shareDestination": "{% $states.input.shareDestination %}",
+        "userId": "{% $states.input.userId %}",
+        "channelId": "{% $states.input.channelId %}",
+        "messageTs": "{% $states.input.messageTs %}",
+        "status": "{% $states.result.Payload %}"
+      },
       "Retry": [
         {
           "ErrorEquals": [
@@ -67,21 +224,25 @@
         {
           "Comment": "Push Failed or Cancelled",
           "Condition": "{% $states.input.status in [ 'SUCCEEDED', 'FAILED', 'CANCELLED' ] %}",
-          "Next": "Notify Push Result"
+          "Next": "NotifySlack: Push Completed"
         }
       ],
       "Default": "Wait For Push"
     },
-    "Notify Push Result": {
+    "NotifySlack: Push Completed": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
-          "id": "{% $states.input.id %}",
+          "slackNotificationType": "PUSH_COMPLETED",
+          "pushId": "{% $states.input.id %}",
           "status": "{% $states.input.status %}",
           "packageId": "{% $states.input.packageId %}",
-          "shareDestination": "{% $states.input.shareDestination %}"
+          "shareDestination": "{% $states.input.shareDestination %}",
+          "userId": "{% $states.input.userId %}",
+          "channelId": "{% $states.input.channelId %}",
+          "messageTs": "{% $states.input.messageTs %}"
         }
       },
       "Output": "{% $states.input %}",

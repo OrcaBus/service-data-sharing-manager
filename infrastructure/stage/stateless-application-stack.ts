@@ -15,6 +15,7 @@ import {
   buildApiGateway,
   buildApiIntegration,
   buildApiInterfaceLambda,
+  buildSlackAutoPushApi,
 } from './api';
 import { HOSTED_ZONE_DOMAIN_PARAMETER_NAME } from '@orcabus/platform-cdk-constructs/api-gateway';
 import { StageName } from '@orcabus/platform-cdk-constructs/shared-config/accounts';
@@ -35,6 +36,7 @@ export class StatelessApplicationStack extends cdk.Stack {
      *  * Build the ECS cluster for building the RMarkdown report
      *  * Build the AWS Step functions for orchestrating the workflows
      *  * Build the API Gateway for the stateless application
+     *  * Build Slack REST API for Auto Push feature
      */
 
     // Set the stage name
@@ -198,6 +200,21 @@ export class StatelessApplicationStack extends cdk.Stack {
     addHttpRoutes(this, {
       apiGateway: apiGateway,
       apiIntegration: apiIntegration,
+    });
+
+    /*
+        Part 6: Build Slack API GAteway for AutoPush feature
+        */
+
+    // Import the autoPush Step Function
+    const autoPushSfn = sfn.StateMachine.fromStateMachineArn(
+      this,
+      'AutoPushSfn',
+      props.autoPushSfnArn
+    );
+
+    buildSlackAutoPushApi(this, {
+      autoPushSfn: autoPushSfn,
     });
   }
 }
