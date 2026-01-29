@@ -9,6 +9,7 @@ import {
 } from './dynamodb';
 import { createSlackSecret } from './secrets';
 import { buildSsmParameters } from './ssm';
+import { NagSuppressions } from 'cdk-nag';
 
 export type StatefulApplicationStackProps = cdk.StackProps & StatefulApplicationStackConfig;
 
@@ -49,5 +50,14 @@ export class StatefulApplicationStack extends cdk.Stack {
 
     // Create the slack bot token secret
     createSlackSecret(this);
+
+    // Add in global cdk nag suppressions
+    NagSuppressions.addStackSuppressions(this, [
+      {
+        id: 'AwsSolutions-IAM4',
+        reason:
+          'We have no control over the BucketNotificationsHandler that uses an AWS managed policy',
+      },
+    ]);
   }
 }

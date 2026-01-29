@@ -17,6 +17,8 @@ export function buildDataSharingS3Bucket(scope: Construct, props: DataSharingS3B
     removalPolicy: RemovalPolicy.DESTROY,
     // Enforce SSL
     enforceSSL: true,
+    // Update the event bridge enabled to true
+    eventBridgeEnabled: true, // So that the filemanager can listen to events
   });
 
   // Add in S1 suppressions for the two buckets we've created
