@@ -48,6 +48,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'getDynamodbEvaluatedKeyList',
     'generatePresignedUrlsForDataObjects',
     'createScriptFromPresignedUrlsList',
+    'syncFilemanager',
   ],
   pushIcav2Data: ['queryAndCollectIcav2Prefixes'],
   pushS3Data: [
