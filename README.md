@@ -286,7 +286,7 @@ Upon completion of a sequencing run, the following process is triggered:
 
 ### Job Definitions
 
-Each automatic sharing job is defined as a JSON object and stored in the `auto_package_push_jobs/jobs.json` file, in the data sharing bucket (`DataSharingBucket`) .
+Each automatic sharing job is defined as a JSON object and stored in the `auto_package_push_jobs/jobs.json` file, in the data sharing bucket (`DataSharingBucket`).
 Multiple jobs can be defined within a single JSON array. Below is a template for one job definition:
 
 ```json
