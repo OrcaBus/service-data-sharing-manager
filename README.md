@@ -270,25 +270,24 @@ Navigate the failed AWS Step Function in the AWS UI to determine the source of t
 
 Automatic Data Sharing
 --------------------------------------------------------------------------------
-🚧 This section is a work in progress 🚧
 
 Automatic Data Sharing extends the core service by automatically packaging new sequencing runs and then requiring a human to trigger the push.
-<!--
-- Listens for OrcaBus events (e.g. FastqListRowsAdded) when a run completes.
 
-- On trigger, loads job definitions from S3 and checks them against the run to see if automatic packaging rules apply.
+Upon completion of a sequencing run, the following process is triggered:
+
+- Check the projects in the sequencing run against the job definitions (see [Job Definitions](#job-definitions) below) to identify if any automatic sharing jobs apply.
 
 - If there’s a match, performs packaging fully unattended.
 
-- Posts a Slack notification with package details and a one-liner to manually start the push (human approval required).
+- After packaging completes, posts a Slack notification with package details and link to the package report, together with a button to trigger the push to the defined destination. Note that only users defined in `AutoDataSharingSlackConfig` are able to trigger the push via the Slack button (see [Slack Secret definitions](#slack-secret-definitions) below).
+
+- After push completes, posts another Slack notification confirming the push result.
 
 
 ### Job Definitions
 
-Each automatic sharing job is defined as a JSON object and stored in the `auto_package_push_jobs/jobs.json` file in S3.
-Multiple jobs can be defined within a single JSON array.
-
-Below is a template for one job definition:
+Each automatic sharing job is defined as a JSON object and stored in the `auto_package_push_jobs/jobs.json` file, in the data sharing bucket (`DataSharingBucket`).
+Multiple jobs can be defined within a single JSON array. Below is a template for one job definition:
 
 ```json
 {
@@ -301,8 +300,9 @@ Below is a template for one job definition:
 ```
 
 
-`jobName` (str) – short, unique name for the job. Used in logs and Step Functions.
-enabled (bool) – set to true to activate the job; disabled jobs are ignored.
+`jobName` (str) – short name for the job. Used in logs and Step Functions.
+
+`enabled` (bool) – set to true to activate the job; disabled jobs are ignored.
 
 `projectIdList` (list[str]) – list of project IDs; run must match at least one.
 
@@ -310,20 +310,24 @@ enabled (bool) – set to true to activate the job; disabled jobs are ignored.
 
 `shareDestination` (str) – destination S3 path where the data will be pushed.
 
+### Slack Secret definitions
 
-### Step Functions
+For automatic data sharing, the service uses three secrets to power the Slack notifications:
+1. `AutoDataSharingSlackBotToken`: the token for the Slack bot that will post notifications. The value is found in the Slack App configuration in the "OAuth & Permissions" section under "Bot User OAuth Token". The bot will need to have permissions to post messages and create interactive components in the relevant Slack channel.
+2. `AutoDataSharingSlackSigningSecret`: the signing secret for verifying incoming requests from Slack. The value is found in the Slack App configuration in the "Basic Information" section under "App Credentials" as "Signing Secret".
+3. `AutoDataSharingSlackConfig`: a secret that contains the channel ID for posting notifications and a list of users allowed to trigger the push command. The value should be a JSON string with the following structure:
 
-The automatic data sharing logic is orchestrated through AWS Step Functions.
-They coordinate different Lambda functions to plan, package data automatically when new sequencing runs are detected and set the push.
+```json
+{
+  "channel_id": "C1234567890",
+  "allowed_users": [
+    { "username": "user1.name", "id": "U111111" },
+    { "username": "user2.name", "id": "U222222" }
+  ]
+}
+```
 
-  - **autoController** – central orchestrator for event-driven execution.
-  - **autoPackage** – performs the automatic packaging.
-  - **autoPush** – performs the automatic pushing.
-
-  - **Support Lambdas** – includes utilities like:
-    - `check_project_in_instrument_run`
-    - `start_package_push`
-    - `push_package_job_monitor` -->
+NOTE: The values for these secrets are not set during deployment and will need to be updated manually in AWS Secrets Manager after deployment.
 
 Infrastructure & Deployment
 --------------------------------------------------------------------------------

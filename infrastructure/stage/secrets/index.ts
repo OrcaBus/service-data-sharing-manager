@@ -8,20 +8,11 @@ import {
 import { Construct } from 'constructs';
 import { NagSuppressions } from 'cdk-nag';
 
-const initialAllowedUsers = JSON.stringify({
-  channel_id: 'C1234567890',
-  allowed_users: [
-    { username: 'user1.name', id: 'U111111' },
-    { username: 'user2.name', id: 'U222222' },
-  ],
-});
-
 export function createSlackSecret(scope: Construct) {
   // Slack bot token secret
   const slackBotTokenSecret = new secretsmanager.Secret(scope, 'AutoDataSharingSlackBotToken', {
     secretName: SLACK_BOT_TOKEN_SECRET_NAME,
     description: 'Slack bot token for auto-data-sharing notifications',
-    secretStringValue: cdk.SecretValue.unsafePlainText('SET_AFTER_DEPLOY'),
     removalPolicy: cdk.RemovalPolicy.RETAIN,
   });
 
@@ -29,7 +20,6 @@ export function createSlackSecret(scope: Construct) {
   const slackSigningSecret = new secretsmanager.Secret(scope, 'AutoDataSharingSlackSigningSecret', {
     secretName: SLACK_SIGNING_SECRET_NAME,
     description: 'Slack signing secret for verifying requests to auto-data-sharing',
-    secretStringValue: cdk.SecretValue.unsafePlainText('SET_AFTER_DEPLOY'),
     removalPolicy: cdk.RemovalPolicy.RETAIN,
   });
 
@@ -40,8 +30,6 @@ export function createSlackSecret(scope: Construct) {
     {
       secretName: SLACK_CONFIG_SECRET_NAME,
       description: 'Slack config: auto-data-sharing channel_id and push allowed users.',
-      // Initialise with a dummy JSON array. Need to be updated after deployment.
-      secretStringValue: cdk.SecretValue.unsafePlainText(initialAllowedUsers),
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     }
   );
