@@ -271,7 +271,7 @@ Navigate the failed AWS Step Function in the AWS UI to determine the source of t
 Automatic Data Sharing
 --------------------------------------------------------------------------------
 
-Automatic Data Sharing extends the core service by automatically packaging new sequencing runs and then requiring a human to trigger the push.
+Automatic Data Sharing extends the core service by automatically packaging data from newly completed sequencing runs and then requiring a human to trigger the push.
 
 Upon completion of a sequencing run, the following process is triggered:
 
