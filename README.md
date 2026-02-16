@@ -14,7 +14,7 @@ Data Sharing Service
     - [Pushing Packages](#pushing-packages)
     - [Presigning packages](#presigning-packages)
 - [CLI Troubleshooting](#cli-troubleshooting)
-- [Automatic Data Sharing - 🚧 WIP 🚧 ](#automatic-data-sharing)
+- [Automatic Data Sharing](#automatic-data-sharing)
 - [Infrastructure \& Deployment](#infrastructure--deployment)
   - [Stateful](#stateful)
   - [Stateless](#stateless)
@@ -310,24 +310,45 @@ Multiple jobs can be defined within a single JSON array. Below is a template for
 
 `shareDestination` (str) – destination S3 path where the data will be pushed.
 
-### Slack Secret definitions
 
-For automatic data sharing, the service uses three secrets to power the Slack notifications:
-1. `AutoDataSharingSlackBotToken`: the token for the Slack bot that will post notifications. The value is found in the Slack App configuration in the "OAuth & Permissions" section under "Bot User OAuth Token". The bot will need to have permissions to post messages and create interactive components in the relevant Slack channel.
-2. `AutoDataSharingSlackSigningSecret`: the signing secret for verifying incoming requests from Slack. The value is found in the Slack App configuration in the "Basic Information" section under "App Credentials" as "Signing Secret".
-3. `AutoDataSharingSlackConfig`: a secret that contains the channel ID for posting notifications and a list of users allowed to trigger the push command. The value should be a JSON string with the following structure:
+### Slack Integration
 
-```json
-{
-  "channel_id": "C1234567890",
-  "allowed_users": [
-    { "username": "user1.name", "id": "U111111" },
-    { "username": "user2.name", "id": "U222222" }
-  ]
-}
-```
+Automatic data sharing leverages Slack notifications and push trigger buttons, which are handled by the [`auto-data-sharing`](https://api.slack.com/apps/A0A28QK9752/general?) app in the [UMCCR Slack workspace](https://umccr.slack.com). The app must be configured with the following settings:
 
-NOTE: The values for these secrets are not set during deployment and will need to be updated manually in AWS Secrets Manager after deployment.
+- **Required OAuth Scope:**
+  - `chat:write` — Allows the app to send messages as the bot in channels it is a member of.
+
+- **Channel Integration:**
+  - The `auto-data-sharing` Slack app must be added as an integration to each channel it will post in. In production, this is the private channel `#auto-data-sharing`; in development, it is `#alerts-dev`.
+
+- **Interactivity:**
+  - Under Slack App > “Interactivity & Shortcuts”, set the **Request URL** to the API Gateway endpoint deployed for the stack (`AutoPushSlackApi`, see `infrastructure/stage/api/index.ts`). Find it under "Invoke URL" for `AutoPushSlackApi` in AWS API Gateway Console. The final URL should be:
+  ```
+  https://<api-gateway-id>.execute-api.<region>.amazonaws.com/prod/slack/actions
+  ```
+
+
+### Slack Secret Definitions
+
+To ensure proper Slack integration, the following secrets must be present in AWS Secrets Manager (see definitions in `infrastructure/stage/secrets/index.ts`):
+
+1. **`AutoDataSharingSlackBotToken`:** The bot token used to authenticate API requests (found in the Slack App under "OAuth & Permissions" → "Bot User OAuth Token").
+2. **`AutoDataSharingSlackSigningSecret`:** Slack signing secret for validating requests (found in "Basic Information" → "App Credentials" → "Signing Secret").
+3. **`AutoDataSharingSlackConfig`:** Contains the channel ID for posting and a list of users allowed to trigger push commands. Format:
+
+    ```json
+    {
+      "channel_id": "C1234567890",
+      "allowed_users": [
+        { "username": "user1.name", "id": "U111111" },
+        { "username": "user2.name", "id": "U222222" }
+      ]
+    }
+    ```
+
+> **Note:** These secret values are NOT set during deployment and must be configured manually in AWS Secrets Manager after deployment.
+
+
 
 Infrastructure & Deployment
 --------------------------------------------------------------------------------
