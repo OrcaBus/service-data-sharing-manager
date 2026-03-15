@@ -5,7 +5,7 @@ Job model, used to for job management
 """
 # Standard imports
 import typing
-from typing import List, TypedDict, Self, Literal
+from typing import List, TypedDict, Self
 from os import environ
 from typing import Optional, ClassVar
 from dyntastic import Dyntastic
@@ -13,23 +13,18 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import Field, BaseModel, ConfigDict, model_validator, computed_field
 from datetime import datetime, timedelta, timezone
 
+# Layer imports
 from fastapi_tools import QueryPaginatedResponse
 
 # Layer imports
 from data_sharing_tools.utils.models import SecondaryAnalysisDataType
 
 # Util imports
-from . import JobStatusType
+from . import JobStatusType, DataType, PrimaryDataPathPrefixType, SecondaryAnalysisPathPrefixType
 from ..utils import (
     to_camel, get_ulid, get_packaging_endpoint_url, get_s3_packaging_prefix, to_snake
 )
 from ..globals import PACKAGE_CONTEXT_PREFIX
-
-
-DataType = Literal[
-    'fastq',
-    'secondaryAnalysis',
-]
 
 
 class PackageRequestBase(BaseModel):
@@ -44,6 +39,8 @@ class PackageRequestBase(BaseModel):
     secondary_analysis_type_list: Optional[List[SecondaryAnalysisDataType]] = None
     defrost_archived_fastqs: Optional[bool] = None
     use_workflow_filters: Optional[bool] = True
+    primary_data_path_prefix: Optional[PrimaryDataPathPrefixType] = "fastq"
+    secondary_analysis_path_prefix: Optional[SecondaryAnalysisPathPrefixType] = "secondary-analysis"
 
     @model_validator(mode="after")
     def validate_single_metadata_object(self) -> Self:
@@ -58,6 +55,23 @@ class PackageRequestBase(BaseModel):
             raise ValueError("Expected only one of library_id_list, subject_id_list, individual_id_list, or project_id_list to be set.")
         return self
 
+    # Ensure that the secondary analysis and primary data prefixes do not match
+    # If both data types are set
+    @model_validator(mode="after")
+    def check_prefixes(self) -> Self:
+        if (
+                (
+                        "fastq" in self.data_type_list and "secondaryAnalysis" in self.data_type_list
+                ) and
+                (
+                        self.primary_data_path_prefix == self.secondary_analysis_path_prefix
+                )
+        ):
+            raise ValueError(
+                "If both fastq and secondaryAnalysis are set in the data type list, "
+                "primaryDataPrefix and secondaryAnalysisPrefix values cannot be the same"
+            )
+        return self
 
 class PackageRequestCreate(PackageRequestBase):
     model_config = ConfigDict(
@@ -92,6 +106,8 @@ class PackageRequestResponseDict(TypedDict):
     secondaryAnalysisTypeList: Optional[List[SecondaryAnalysisDataType]]
     defrostArchivedFastqs: Optional[bool]
     useWorkflowFilters: Optional[bool]
+    primaryDataPathPrefix: Optional[PrimaryDataPathPrefixType]
+    secondaryAnalysisPathPrefix: Optional[SecondaryAnalysisPathPrefixType]
 
 
 class PackageRequestResponse(PackageRequestBase):

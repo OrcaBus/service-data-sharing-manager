@@ -10,7 +10,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 import pandas as pd
 import re
-from typing import Dict, Optional
 from tempfile import NamedTemporaryFile
 import boto3
 

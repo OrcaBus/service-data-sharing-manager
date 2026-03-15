@@ -18,7 +18,9 @@
         "dynamoDbFastqGIValue": "{% $states.input.jobId & '__fastq' %}",
         "dynamoDbWorkflowGIValue": "{% $states.input.jobId & '__workflow' %}",
         "dynamoDbFileGIValue": "{% $states.input.jobId & '__file' %}",
-        "useWorkflowFilters": "{% $states.input.useWorkflowFilters ? true : false %}"
+        "useWorkflowFilters": "{% $states.input.useWorkflowFilters ? true : false %}",
+        "primaryDataPathPrefix": "{% $states.input.primaryDataPathPrefix ? $states.input.primaryDataPathPrefix : '/' %}",
+        "secondaryAnalysisPathPrefix": "{% $states.input.secondaryAnalysisPathPrefix ? $states.input.secondaryAnalysisPathPrefix : '/' %}"
       }
     },
     "Add sub prefixes": {
@@ -512,7 +514,8 @@
                                                 "Payload": {
                                                   "ingestId": "{% $ingestIdMapIter %}",
                                                   "fastqObject": "{% $fastqObject %}",
-                                                  "dataType": "fastq"
+                                                  "dataType": "fastq",
+                                                  "primaryDataPathPrefix": "{% ( $primaryDataPathPrefix = '/' ? '' : $primaryDataPathPrefix ) %}"
                                                 }
                                               },
                                               "Retry": [
@@ -1037,7 +1040,8 @@
                                   "Payload": {
                                     "ingestIdList": "{% $ingestIdListIter %}",
                                     "workflowRunObject": "{% $workflowRunObjectMapFilesIter %}",
-                                    "dataType": "secondaryAnalysis"
+                                    "dataType": "secondaryAnalysis",
+                                    "secondaryAnalysisPathPrefix": "{% ( $secondaryAnalysisPathPrefix = '/' ? '' : $secondaryAnalysisPathPrefix %}"
                                   }
                                 },
                                 "Retry": [

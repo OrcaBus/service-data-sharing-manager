@@ -35,7 +35,7 @@ import requests
 import pandas as pd
 import pandera as pa
 from pandera.typing import DataFrame
-from typing import Optional, List, Dict, TypedDict, NotRequired
+from typing import Optional, List, Dict, TypedDict, NotRequired, Literal
 import typing
 import boto3
 from requests import HTTPError
@@ -59,6 +59,19 @@ AWS_HOSTNAME_SSM_PATH = '/hosted_zone/umccr/name'
 AWS_ORCABUS_TOKEN_SECRET_ID = 'orcabus/token-service-jwt'
 AWS_PRODUCTION_ACCOUNT_ID = '472057503814'
 
+# Literals
+PrimaryDataPathPrefixType = Literal[
+    'fastq',
+    'primary',
+    '/',
+]
+
+SecondaryAnalysisPathPrefixType = Literal[
+    'secondary-analysis',
+    'analysis',
+    '/',
+]
+
 # Models
 class PackageRequestResponseDict(TypedDict):
     id: str
@@ -72,11 +85,13 @@ class PackageRequestResponseDict(TypedDict):
 
 class PackageRequestDict(TypedDict):
     libraryIdList: List[str]
+    instrumentRunIdList: NotRequired[List[str]]
     dataTypeList: List[str]
     portalRunIdList: Optional[List[str]]
     defrostArchivedFastqs: NotRequired[bool]
     useWorkflowFilters: NotRequired[bool]
-    instrumentRunIdList: NotRequired[List[str]]
+    primaryDataPathPrefix: NotRequired[PrimaryDataPathPrefixType]
+    secondaryAnalysisPathPrefix: NotRequired[SecondaryAnalysisPathPrefixType]
 
 
 class PushJobRequestResponseDict(TypedDict):
@@ -347,16 +362,21 @@ def generate_package(
         workflow_manifest: Optional[DataFrame[WorkflowManifestDataFrame]] = None,
         exclude_primary_data: bool = False,
         defrost_archived_fastqs: bool = False,
-        use_workflow_filters: bool = True
+        use_workflow_filters: bool = True,
+        primary_data_path_prefix: PrimaryDataPathPrefixType = "fastq",
+        secondary_analysis_path_prefix: SecondaryAnalysisPathPrefixType = "secondaryAnalysis",
 ) -> str:
     """
     Given a package name, the manifest for the LIMS and an optional workflow manifest,
     generate and launch a package request.
     :param defrost_archived_fastqs:
+    :param use_workflow_filters:
     :param exclude_primary_data:
     :param package_name:
     :param lims_manifest:
     :param workflow_manifest:
+    :param primary_data_path_prefix:
+    :param secondary_analysis_path_prefix:
     :return:
     """
 
@@ -395,7 +415,9 @@ def generate_package(
         "instrumentRunIdList": instrument_run_ids,
         "portalRunIdList": portal_run_ids,
         "defrostArchivedFastqs": True if defrost_archived_fastqs else False,
-        "useWorkflowFilters": use_workflow_filters
+        "useWorkflowFilters": use_workflow_filters,
+        "primaryDataPathPrefix": primary_data_path_prefix,
+        "secondaryAnalysisPathPrefix":secondary_analysis_path_prefix,
     }
 
     return create_package(
@@ -432,6 +454,8 @@ class GeneratePackageSubCommand(Command):
                                            [--exclude-primary-data]
                                            [--defrost-archived-fastqs]
                                            [--no-use-workflow-file-filters]
+                                           [--primary-data-path-prefix=<primary_data_path_prefix>]
+                                           [--secondary-analysis-path-prefix=<secondary_analysis_path_prefix>]
                                            [--wait]
 
     Description:
@@ -446,6 +470,8 @@ class GeneratePackageSubCommand(Command):
                                                              Only applicable if --workflow-manifest-csv is provided
       --defrost-archived-fastqs                              defrost archive fastqs if fastqs are in archive
       --no-use-workflow-file-filters                         Do not use the workflow specific file filters, this will include all files for secondary analyses
+      --primary-data-path-prefix                             Path prefix for primary data, defaults to 'primary'
+      --secondary-analysis-path-prefix                       Path prefix for secondary analysis, defaults to 'secondary-analysis'
       --wait                                                 Wait for the package to be created before exiting
 
       --help                                                 Show this help message and exit
@@ -467,6 +493,8 @@ class GeneratePackageSubCommand(Command):
         self.exclude_primary_data = self.cli_args['--exclude-primary-data']
         self.defrost_archived_fastqs = self.cli_args['--defrost-archived-fastqs']
         self.no_use_workflow_file_filters = self.cli_args['--no-use-workflow-file-filters']
+        self.primary_data_path_prefix = self.cli_args['--primary-data-path-prefix']
+        self.secondary_analysis_path_prefix = self.cli_args['--secondary-analysis-path-prefix']
         self.wait = self.cli_args['--wait']
 
         # Check args
@@ -486,7 +514,9 @@ class GeneratePackageSubCommand(Command):
             workflow_manifest=pd.read_csv(self.workflow_manifest) if self.workflow_manifest else None,
             exclude_primary_data=self.exclude_primary_data,
             defrost_archived_fastqs=self.defrost_archived_fastqs,
-            use_workflow_filters=(not self.no_use_workflow_file_filters)
+            use_workflow_filters=(not self.no_use_workflow_file_filters),
+            primary_data_path_prefix=self.primary_data_path_prefix,
+            secondary_analysis_path_prefix=self.secondary_analysis_path_prefix,
         )
 
         if self.wait:

@@ -47,6 +47,10 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
     # Get the data type
     data_type: DataType = event.get("dataType")
 
+    # Get the relative path name
+    secondary_analysis_path_prefix = event.get("secondaryAnalysisPathPrefix")
+    primary_data_path_prefix = event.get("primaryDataPathPrefix")
+
     if data_type == 'secondaryAnalysis':
         # Get workflow from the file object
         workflow_run: 'WorkflowRun' = event.get("workflowRunObject")
@@ -61,7 +65,7 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
             **{
                 'dataType': data_type,
                 'relativePath': str(
-                    Path('secondary-analysis') /
+                    Path(secondary_analysis_path_prefix) /
                     workflow_run['workflow']['workflowName'] /
                     workflow_run['portalRunId'] /
                     key_relative_to_portal_run_id
@@ -79,7 +83,7 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
             **{
                 'dataType': data_type,
                 'relativePath': str(
-                    Path('fastq') /
+                    Path(primary_data_path_prefix) /
                     fastq_obj['instrumentRunId'] /
                     f"Lane_{str(fastq_obj['lane'])}" /
                     fastq_obj['library']['libraryId'] /

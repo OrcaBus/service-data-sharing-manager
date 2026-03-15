@@ -52,9 +52,10 @@ from fastapi import Depends, Query, Body
 from fastapi.routing import APIRouter, HTTPException
 from dyntastic import A, DoesNotExist
 
+# Layer imports
 from data_sharing_tools import generate_presigned_url
-
 from fastapi_tools import QueryPagination
+
 # Model imports
 from ...models.package import (
     PackageCreate, PackageData, PackageQueryPaginatedResponse,
@@ -65,6 +66,8 @@ from ...models.push import (
 )
 
 from ...models import JobPatch
+
+# Local imports
 from ...globals import get_default_job_patch_entry, PACKAGE_JOB_STATE_MACHINE_ARN_ENV_VAR, PACKAGE_BUCKET_NAME_ENV_VAR, \
     PRESIGN_STATE_MACHINE_ARN_ENV_VAR, PUSH_JOB_STATE_MACHINE_ARN_ENV_VAR, get_default_push_location_body_entry, \
     get_default_package_create_entry
@@ -247,6 +250,8 @@ async def get_jobs(package_id: str = Depends(sanitise_pkg_orcabus_id)) -> Packag
     tags=["package job"],
     description=dedent("""
     Create a new data package for sharing.
+
+    We recommend using the data cli sharing tool for a description of parameter options
     """)
 )
 async def create_package(package_obj: Annotated[PackageCreate, Body()] = get_default_package_create_entry()) -> PackageResponseDict:
@@ -263,7 +268,7 @@ async def create_package(package_obj: Annotated[PackageCreate, Body()] = get_def
             "jobId": package_obj.id,
             "packageName": package_obj.package_name,
             "packageQuery": package_request_dict,
-            "s3SharingPrefix": package_obj.package_s3_sharing_prefix
+            "s3SharingPrefix": package_obj.package_s3_sharing_prefix,
         }
     )
 
