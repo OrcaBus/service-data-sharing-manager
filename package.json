@@ -46,6 +46,9 @@
   "pnpm": {
     "overrides": {
       "diff": ">=8.0.3"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "unrs-resolver"
+    ]
   }
 }
