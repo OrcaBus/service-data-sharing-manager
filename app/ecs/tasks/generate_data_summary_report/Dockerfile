@@ -2,12 +2,14 @@ FROM public.ecr.aws/ubuntu/ubuntu:24.04_stable
 
 ARG TARGETPLATFORM=linux/arm64
 
-ENV VIRTUAL_ENV=/usr/local/uv-venv
-ENV LC_ALL=en_US.UTF-8
-ENV LANG=en_US.UTF-8
-ENV DEBIAN_FRONTEND=noninteractive
+ARG PYTHON_VERSION="3.14"
+
+ENV VIRTUAL_ENV="/usr/local/uv-venv"
+ENV LC_ALL="en_US.UTF-8"
+ENV LANG="en_US.UTF-8"
+ENV DEBIAN_FRONTEND="noninteractive"
 ## Otherwise timedatectl will get called which leads to 'no systemd' inside Docker
-ENV TZ=UTC
+ENV TZ="UTC"
 
 RUN \
   apt update -y -q && \
@@ -66,7 +68,9 @@ COPY generate_data_summary_report_template.py generate_data_summary_report_templ
 COPY data_summary_reporting_tools data_summary_reporting_tools
 
 # And now install the required
-RUN uv venv && \
-  uv pip install data_summary_reporting_tools/.
+RUN \
+    uv venv \
+      --python "${PYTHON_VERSION}" && \
+    uv pip install data_summary_reporting_tools/.
 
 CMD [ "bash", "docker-entrypoint.sh" ]

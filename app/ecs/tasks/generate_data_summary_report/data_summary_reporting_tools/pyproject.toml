@@ -14,7 +14,7 @@ homepage = "https://github.com/umccr/orcabus"
 repository = "https://github.com/umccr/orcabus"
 
 [tool.poetry.dependencies]
-python = "^3.12, <3.13"
+python = "^3.14, <3.15"
 requests = "^2.31.0"
 snakemd = "^2.0.0"
 pandas = "^2.2.3"
