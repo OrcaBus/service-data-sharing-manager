@@ -47,7 +47,7 @@ RUN \
   unzip -q "awscliv2.zip" && \
   ./aws/install && \
   rm "awscliv2.zip" && \
-  # Install R through apt
+  # Install R through apt \
   apt install -y -q \
      r-base \
      r-base-dev \
@@ -58,7 +58,7 @@ RUN \
      r-cran-rmarkdown && \
   # Install the latest version of DT through CRAN \
   Rscript -e "install.packages('DT')" && \
-  # Now install python
+  # Now install python \
   curl -LsSf https://astral.sh/uv/install.sh | XDG_CONFIG_HOME=/tmp UV_INSTALL_DIR=/usr/bin sh && \
   rm -rf /tmp/downloaded_packages/ /tmp/*.rds && \
   rm -rf /var/lib/apt/lists/*
@@ -69,6 +69,7 @@ COPY data_summary_reporting_tools data_summary_reporting_tools
 
 # And now install the required
 RUN \
+    uv python install "${PYTHON_VERSION}" && \
     uv venv \
       --python "${PYTHON_VERSION}" && \
     uv pip install data_summary_reporting_tools/.
