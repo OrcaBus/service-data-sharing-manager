@@ -72,7 +72,7 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
   lambdaApiFunction.addLayers(props.dataSharingLayer);
 
   // Give lambda function permissions to put events on the event bus
-  props.eventBus.grantPutEventsTo(lambdaApiFunction.currentVersion);
+  props.eventBus.grantPutEventsTo(lambdaApiFunction);
 
   // Add in permissions and env vars to the three state machines
   for (const sfnObject of props.sfnObjects) {
@@ -83,7 +83,7 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
           'PACKAGE_JOB_STATE_MACHINE_ARN',
           sfnObject.stateMachineObj.stateMachineArn
         );
-        sfnObject.stateMachineObj.grantStartExecution(lambdaApiFunction.currentVersion);
+        sfnObject.stateMachineObj.grantStartExecution(lambdaApiFunction);
         break;
       }
       // For presigning
@@ -92,7 +92,7 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
           'PRESIGN_STATE_MACHINE_ARN',
           sfnObject.stateMachineObj.stateMachineArn
         );
-        sfnObject.stateMachineObj.grantStartSyncExecution(lambdaApiFunction.currentVersion);
+        sfnObject.stateMachineObj.grantStartSyncExecution(lambdaApiFunction);
         break;
       }
       case 'push': {
@@ -100,19 +100,19 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
           'PUSH_JOB_STATE_MACHINE_ARN',
           sfnObject.stateMachineObj.stateMachineArn
         );
-        sfnObject.stateMachineObj.grantStartExecution(lambdaApiFunction.currentVersion);
+        sfnObject.stateMachineObj.grantStartExecution(lambdaApiFunction);
         break;
       }
     }
   }
 
   // Allow read/write access to the dynamodb table
-  props.packagingDynamoDbApiTable.grantReadWriteData(lambdaApiFunction.currentVersion);
-  props.pushJobDynamoDbApiTable.grantReadWriteData(lambdaApiFunction.currentVersion);
+  props.packagingDynamoDbApiTable.grantReadWriteData(lambdaApiFunction);
+  props.pushJobDynamoDbApiTable.grantReadWriteData(lambdaApiFunction);
 
   // Lambda needs read access to the packaging bucket in order to generate the presigned urls
   props.packagingLookUpBucket.grantRead(
-    lambdaApiFunction.currentVersion,
+    lambdaApiFunction,
     path.join(DATA_SHARING_BUCKET_PREFIX, '*')
   );
 
@@ -128,7 +128,7 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
     }
   );
 
-  lambdaApiFunction.currentVersion.addToRolePolicy(
+  lambdaApiFunction.addToRolePolicy(
     new iam.PolicyStatement({
       actions: ['dynamodb:Query'],
       resources: [...packaging_index_arn_list, ...push_index_arn_list],
@@ -140,7 +140,8 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
     [
       {
         id: 'AwsSolutions-IAM5',
-        reason: 'Need access to packaging look up bucket',
+        reason:
+          'Need access to packaging look up bucket, lambda object uses asterisk on permissions when versions not used',
       },
       {
         id: 'AwsSolutions-IAM4',

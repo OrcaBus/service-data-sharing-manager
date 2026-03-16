@@ -59,7 +59,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
       }
     );
 
-    lambdaObject.currentVersion.addToRolePolicy(
+    lambdaObject.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['dynamodb:Query'],
         resources: [...packaging_index_arn_list],
@@ -80,10 +80,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     });
 
     // Add in the bucket permissions
-    props.athenaQueryResultsBucket.grantReadWrite(
-      lambdaObject.currentVersion,
-      path.join(MART_BUCKET_PREFIX, '*')
-    );
+    props.athenaQueryResultsBucket.grantReadWrite(lambdaObject, path.join(MART_BUCKET_PREFIX, '*'));
 
     // Add nag suppressions
     NagSuppressions.addResourceSuppressions(
@@ -91,7 +88,8 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
       [
         {
           id: 'AwsSolutions-IAM5',
-          reason: 'Mart need asterisk across athena resources',
+          reason:
+            'Mart need asterisk across athena resources, lambda object uses asterisk on permissions when versions not used',
         },
       ],
       true
@@ -100,13 +98,14 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
 
   if (lambdaRequirements.needsPackagingBucketPermissions) {
     // Grant read/write permissions to the packaging bucket
-    props.packagingLookUpBucket.grantReadWrite(lambdaObject.currentVersion);
+    props.packagingLookUpBucket.grantReadWrite(lambdaObject);
     NagSuppressions.addResourceSuppressions(
       lambdaObject,
       [
         {
           id: 'AwsSolutions-IAM5',
-          reason: 'Packaging bucket needs asterisk across s3 resources',
+          reason:
+            'Packaging bucket needs asterisk across s3 resources, lambda object uses asterisk on permissions when versions not used',
         },
       ],
       true
@@ -115,7 +114,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
 
   if (lambdaRequirements.needsStepsS3UploadPermissions) {
     props.s3StepsCopyBucket.grantReadWrite(
-      lambdaObject.currentVersion,
+      lambdaObject,
       path.join(props.s3StepsCopyBucketPrefix, '*')
     );
     NagSuppressions.addResourceSuppressions(
@@ -123,7 +122,8 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
       [
         {
           id: 'AwsSolutions-IAM5',
-          reason: 'Lambda needs asterisk across s3 resources',
+          reason:
+            'Lambda needs asterisk across s3 resources, lambda object uses asterisk on permissions when versions not used',
         },
       ],
       true
