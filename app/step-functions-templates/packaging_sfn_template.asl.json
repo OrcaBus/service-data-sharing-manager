@@ -1041,7 +1041,7 @@
                                     "ingestIdList": "{% $ingestIdListIter %}",
                                     "workflowRunObject": "{% $workflowRunObjectMapFilesIter %}",
                                     "dataType": "secondaryAnalysis",
-                                    "secondaryAnalysisPathPrefix": "{% ( $secondaryAnalysisPathPrefix = '/' ? '' : $secondaryAnalysisPathPrefix %}"
+                                    "secondaryAnalysisPathPrefix": "{% $secondaryAnalysisPathPrefix = '/' ? '' : $secondaryAnalysisPathPrefix %}"
                                   }
                                 },
                                 "Retry": [
