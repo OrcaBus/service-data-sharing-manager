@@ -59,6 +59,10 @@ class PackageRequestBase(BaseModel):
     # If both data types are set
     @model_validator(mode="after")
     def check_prefixes(self) -> Self:
+        # If no data types are specified, there is nothing to validate here
+        if not self.data_type_list:
+            return self
+
         if (
                 (
                         "fastq" in self.data_type_list and "secondaryAnalysis" in self.data_type_list
@@ -69,7 +73,7 @@ class PackageRequestBase(BaseModel):
         ):
             raise ValueError(
                 "If both fastq and secondaryAnalysis are set in the data type list, "
-                "primaryDataPrefix and secondaryAnalysisPrefix values cannot be the same"
+                "primaryDataPathPrefix and secondaryAnalysisPathPrefix values cannot be the same"
             )
         return self
 

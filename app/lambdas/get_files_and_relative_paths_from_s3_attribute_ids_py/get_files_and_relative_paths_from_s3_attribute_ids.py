@@ -9,7 +9,7 @@ import typing
 from pathlib import Path
 from typing import Dict, List
 
-from data_sharing_tools import DataType
+from data_sharing_tools import DataType, SecondaryAnalysisPathPrefixType
 from orcabus_api_tools.filemanager import (
     get_s3_objs_from_ingest_ids_map
 )
@@ -60,7 +60,11 @@ def handler(event, context) -> Dict[str, List['FileObjectWithRelativePathTypeDef
     data_type: DataType = event.get("dataType")
 
     # Get the relative path name
-    secondary_analysis_path_prefix = event.get("secondaryAnalysisPathPrefix")
+    secondary_analysis_path_prefix: SecondaryAnalysisPathPrefixType = event.get("secondaryAnalysisPathPrefix")
+
+    # Ensure secondary analysis path prefix is one of
+    if secondary_analysis_path_prefix is None and data_type == 'secondaryAnalysis':
+        raise ValueError("Data Type is secondary analysis but secondary analysis path prefix is not set")
 
     if data_type == 'secondaryAnalysis':
         # Get workflow from the file object
