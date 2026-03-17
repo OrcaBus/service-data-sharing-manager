@@ -35,7 +35,7 @@ import requests
 import pandas as pd
 import pandera as pa
 from pandera.typing import DataFrame
-from typing import Optional, List, Dict, TypedDict, NotRequired
+from typing import Optional, List, Dict, TypedDict, NotRequired, Literal
 import typing
 import boto3
 from requests import HTTPError
@@ -59,6 +59,20 @@ AWS_HOSTNAME_SSM_PATH = '/hosted_zone/umccr/name'
 AWS_ORCABUS_TOKEN_SECRET_ID = 'orcabus/token-service-jwt'
 AWS_PRODUCTION_ACCOUNT_ID = '472057503814'
 
+# Literals
+PrimaryDataPathPrefixType = Literal[
+    'fastq',
+    'primary',
+    '/',
+]
+
+SecondaryAnalysisPathPrefixType = Literal[
+    'secondary-analysis',
+    'analysis',
+    '/',
+]
+
+
 # Models
 class PackageRequestResponseDict(TypedDict):
     id: str
@@ -72,11 +86,13 @@ class PackageRequestResponseDict(TypedDict):
 
 class PackageRequestDict(TypedDict):
     libraryIdList: List[str]
+    instrumentRunIdList: NotRequired[List[str]]
     dataTypeList: List[str]
     portalRunIdList: Optional[List[str]]
     defrostArchivedFastqs: NotRequired[bool]
     useWorkflowFilters: NotRequired[bool]
-    instrumentRunIdList: NotRequired[List[str]]
+    primaryDataPathPrefix: NotRequired[PrimaryDataPathPrefixType]
+    secondaryAnalysisPathPrefix: NotRequired[SecondaryAnalysisPathPrefixType]
 
 
 class PushJobRequestResponseDict(TypedDict):
@@ -89,6 +105,7 @@ class PushJobRequestResponseDict(TypedDict):
     logUri: str
     endTime: Optional[str]
     errorMessage: Optional[str]
+
 
 # Dataframe models
 class LimsManifestDataFrame(pa.DataFrameModel):
@@ -347,16 +364,21 @@ def generate_package(
         workflow_manifest: Optional[DataFrame[WorkflowManifestDataFrame]] = None,
         exclude_primary_data: bool = False,
         defrost_archived_fastqs: bool = False,
-        use_workflow_filters: bool = True
+        use_workflow_filters: bool = True,
+        primary_data_path_prefix: PrimaryDataPathPrefixType = "fastq",
+        secondary_analysis_path_prefix: SecondaryAnalysisPathPrefixType = "secondary-analysis",
 ) -> str:
     """
     Given a package name, the manifest for the LIMS and an optional workflow manifest,
     generate and launch a package request.
     :param defrost_archived_fastqs:
+    :param use_workflow_filters:
     :param exclude_primary_data:
     :param package_name:
     :param lims_manifest:
     :param workflow_manifest:
+    :param primary_data_path_prefix:
+    :param secondary_analysis_path_prefix:
     :return:
     """
 
@@ -372,14 +394,15 @@ def generate_package(
     if workflow_manifest is not None:
         # Check if any library ids in the workflow manifest are not in the lims manifest
         if any(map(
-            lambda library_id_iter_: library_id_iter_ not in library_ids,
-            workflow_manifest['library_id'].unique().tolist()
+                lambda library_id_iter_: library_id_iter_ not in library_ids,
+                workflow_manifest['library_id'].unique().tolist()
         )):
             missing_libraries = list(filter(
                 lambda library_id_iter_: library_id_iter_ not in library_ids,
                 workflow_manifest['library_id'].unique().tolist()
             ))
-            logger.error(f"The following library ids are missing from the LIMS manifest: {', '.join(missing_libraries)}")
+            logger.error(
+                f"The following library ids are missing from the LIMS manifest: {', '.join(missing_libraries)}")
             raise ValueError("Some library ids in the workflow manifest are not present in the LIMS manifest")
         portal_run_ids = workflow_manifest['portal_run_id'].unique().tolist()
     else:
@@ -389,13 +412,15 @@ def generate_package(
     package_request: PackageRequestDict = {
         "libraryIdList": library_ids,
         "dataTypeList": (
-            (["fastq"] if not exclude_primary_data else []) +
-            (["secondaryAnalysis"] if workflow_manifest is not None else [])
+                (["fastq"] if not exclude_primary_data else []) +
+                (["secondaryAnalysis"] if workflow_manifest is not None else [])
         ),
         "instrumentRunIdList": instrument_run_ids,
         "portalRunIdList": portal_run_ids,
         "defrostArchivedFastqs": True if defrost_archived_fastqs else False,
-        "useWorkflowFilters": use_workflow_filters
+        "useWorkflowFilters": use_workflow_filters,
+        "primaryDataPathPrefix": primary_data_path_prefix,
+        "secondaryAnalysisPathPrefix": secondary_analysis_path_prefix,
     }
 
     return create_package(
@@ -432,6 +457,8 @@ class GeneratePackageSubCommand(Command):
                                            [--exclude-primary-data]
                                            [--defrost-archived-fastqs]
                                            [--no-use-workflow-file-filters]
+                                           [--primary-data-path-prefix=<primary_data_path_prefix>]
+                                           [--secondary-analysis-path-prefix=<secondary_analysis_path_prefix>]
                                            [--wait]
 
     Description:
@@ -446,6 +473,8 @@ class GeneratePackageSubCommand(Command):
                                                              Only applicable if --workflow-manifest-csv is provided
       --defrost-archived-fastqs                              defrost archive fastqs if fastqs are in archive
       --no-use-workflow-file-filters                         Do not use the workflow specific file filters, this will include all files for secondary analyses
+      --primary-data-path-prefix                             Path prefix for primary data, defaults to 'fastq'
+      --secondary-analysis-path-prefix                       Path prefix for secondary analysis, defaults to 'secondary-analysis'
       --wait                                                 Wait for the package to be created before exiting
 
       --help                                                 Show this help message and exit
@@ -467,6 +496,8 @@ class GeneratePackageSubCommand(Command):
         self.exclude_primary_data = self.cli_args['--exclude-primary-data']
         self.defrost_archived_fastqs = self.cli_args['--defrost-archived-fastqs']
         self.no_use_workflow_file_filters = self.cli_args['--no-use-workflow-file-filters']
+        self.primary_data_path_prefix = self.cli_args['--primary-data-path-prefix']
+        self.secondary_analysis_path_prefix = self.cli_args['--secondary-analysis-path-prefix']
         self.wait = self.cli_args['--wait']
 
         # Check args
@@ -477,16 +508,25 @@ class GeneratePackageSubCommand(Command):
 
         # Check package name doesn't have any spaces or special characters
         if not self.package_name.replace("-", "").replace("_", "").isalnum():
-            raise ValueError(f"Package name {self.package_name} contains invalid characters. Only alphanumeric characters are allowed.")
+            raise ValueError(
+                f"Package name {self.package_name} contains invalid characters. Only alphanumeric characters are allowed."
+            )
 
         # Generate the package
         package_id = generate_package(
-            package_name=self.package_name,
-            lims_manifest=pd.read_csv(self.lims_manifest),
-            workflow_manifest=pd.read_csv(self.workflow_manifest) if self.workflow_manifest else None,
-            exclude_primary_data=self.exclude_primary_data,
-            defrost_archived_fastqs=self.defrost_archived_fastqs,
-            use_workflow_filters=(not self.no_use_workflow_file_filters)
+            **dict(filter(
+                lambda kv_iter_: kv_iter_[1] is not None,
+                {
+                    "package_name": self.package_name,
+                    "lims_manifest": self.lims_manifest,
+                    "workflow_manifest": self.workflow_manifest,
+                    "exclude_primary_data": self.exclude_primary_data,
+                    "defrost_archived_fastqs": self.defrost_archived_fastqs,
+                    "no_use_workflow_file_filters": self.no_use_workflow_file_filters,
+                    "primary_data_path_prefix": self.primary_data_path_prefix,
+                    "secondary_analysis_path_prefix": self.secondary_analysis_path_prefix,
+                }.items()
+            ))
         )
 
         if self.wait:
@@ -497,7 +537,8 @@ class GeneratePackageSubCommand(Command):
                     print(f"Generated package: {json.dumps(package_id, indent=4)}")
                     break
                 if package_status == "FAILED":
-                    print(f"Package generation failed, see sfn logs '{get_package(package_id)['stepsExecutionArn']}' for more information")
+                    print(
+                        f"Package generation failed, see sfn logs '{get_package(package_id)['stepsExecutionArn']}' for more information")
                     break
                 if get_package(package_id)['status'] == "RUNNING":
                     sleep(10)
@@ -536,7 +577,6 @@ class ListPackagesSubCommand(Command):
     Example:
         data-sharing-tool list-packages --package-name 'latest-fastqs'
     """
-
 
     def __init__(self, command_argv):
         super().__init__(command_argv)
@@ -678,7 +718,8 @@ class PushPackageSubCommand(Command):
                     print(f"Generated push job: {json.dumps(push_job_id, indent=4)}")
                     break
                 if package_status == "FAILED":
-                    print(f"Push to destination failed, see sfn logs '{get_push_job(push_job_id)['stepFunctionsExecutionArn']}' for more information")
+                    print(
+                        f"Push to destination failed, see sfn logs '{get_push_job(push_job_id)['stepFunctionsExecutionArn']}' for more information")
                     break
                 if get_push_job(push_job_id)['status'] == "RUNNING":
                     sleep(10)
@@ -686,6 +727,7 @@ class PushPackageSubCommand(Command):
             print(
                 f"Pushing package '{self.package_id}' to '{self.share_location}' with push job id '{push_job_id}'"
             )
+
 
 class PresignPackageSubCommand(Command):
     """
@@ -799,7 +841,6 @@ class GetPushJobStatusSubCommand(Command):
             get_push_job(push_job_id=self.push_job_id),
             indent=4
         ))
-
 
 
 # Subcommand functions

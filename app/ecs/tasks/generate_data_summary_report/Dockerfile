@@ -1,6 +1,6 @@
 FROM public.ecr.aws/ubuntu/ubuntu:24.04_stable
 
-ARG TARGETPLATFORM=linux/arm64
+ARG TARGETPLATFORM
 
 ARG PYTHON_VERSION="3.14"
 
@@ -39,7 +39,7 @@ RUN \
     lsb-release \
     vim-tiny \
     curl && \
-  # Install aws cli v2
+  # Install aws cli v2 \
   wget \
     --quiet \
     --output-document "awscliv2.zip" \

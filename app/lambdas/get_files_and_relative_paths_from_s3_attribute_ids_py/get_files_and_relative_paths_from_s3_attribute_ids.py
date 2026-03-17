@@ -9,7 +9,7 @@ import typing
 from pathlib import Path
 from typing import Dict, List
 
-from data_sharing_tools import DataType
+from data_sharing_tools import DataType, SecondaryAnalysisPathPrefixType
 from orcabus_api_tools.filemanager import (
     get_s3_objs_from_ingest_ids_map
 )
@@ -23,6 +23,7 @@ if typing.TYPE_CHECKING:
 def get_relative_path_for_file_object_for_secondary_analysis(
         file_object: 'FileObject',
         workflow_run_object: 'WorkflowRunModelSlim',
+        secondary_analysis_path_prefix: str,
 ):
     """
     Get the relative path for the file object
@@ -34,7 +35,7 @@ def get_relative_path_for_file_object_for_secondary_analysis(
 
     # Generate the file object with presigned url
     return str(
-        Path('secondary-analysis') /
+        Path(secondary_analysis_path_prefix) /
         workflow_run_object['workflowName'] /
         workflow_run_object['portalRunId'] /
         key_relative_to_portal_run_id
@@ -58,6 +59,13 @@ def handler(event, context) -> Dict[str, List['FileObjectWithRelativePathTypeDef
     # Get the data type
     data_type: DataType = event.get("dataType")
 
+    # Get the relative path name
+    secondary_analysis_path_prefix: SecondaryAnalysisPathPrefixType = event.get("secondaryAnalysisPathPrefix")
+
+    # Ensure secondary analysis path prefix is one of
+    if secondary_analysis_path_prefix is None and data_type == 'secondaryAnalysis':
+        raise ValueError("Data Type is secondary analysis but secondary analysis path prefix is not set")
+
     if data_type == 'secondaryAnalysis':
         # Get workflow from the file object
         workflow_run_object: 'WorkflowRunModelSlim' = event.get("workflowRunObject")
@@ -71,8 +79,9 @@ def handler(event, context) -> Dict[str, List['FileObjectWithRelativePathTypeDef
                         'dataType': data_type,
                         'relativePath': get_relative_path_for_file_object_for_secondary_analysis(
                             file_object_iter_,
-                            workflow_run_object
-                        )
+                            workflow_run_object,
+                            secondary_analysis_path_prefix=secondary_analysis_path_prefix
+                        ),
                     }
                 ),
                 file_object_list

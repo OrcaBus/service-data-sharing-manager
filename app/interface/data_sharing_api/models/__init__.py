@@ -5,6 +5,23 @@ from typing import TypedDict, Optional, Literal
 from pydantic import BaseModel
 
 
+DataType = Literal[
+    'fastq',
+    'secondaryAnalysis',
+]
+
+PrimaryDataPathPrefixType = Literal[
+    'fastq',
+    'primary',
+    '/'
+]
+
+SecondaryAnalysisPathPrefixType = Literal[
+    'secondary-analysis',
+    'analysis',
+    '/'
+]
+
 class LibraryDict(TypedDict):
     orcabusId: Optional[str]
     libraryId: Optional[str]

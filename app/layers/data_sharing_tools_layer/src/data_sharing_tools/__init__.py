@@ -1,7 +1,9 @@
 from .utils.models import (
     FileObjectWithRelativePathTypeDef,
     FileObjectWithPresignedUrlTypeDef,
-    DataType
+    DataType,
+    PrimaryDataPathPrefixType,
+    SecondaryAnalysisPathPrefixType,
 )
 
 from .utils.s3_helpers import (
@@ -22,6 +24,8 @@ __all__ = [
     "FileObjectWithRelativePathTypeDef",
     "FileObjectWithPresignedUrlTypeDef",
     "DataType",
+    "PrimaryDataPathPrefixType",
+    "SecondaryAnalysisPathPrefixType",
     # Functions
     "read_in_s3_json_objects_as_list",
     "upload_obj_to_s3",

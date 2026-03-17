@@ -28,7 +28,7 @@ else
 fi
 
 # Create a virtual environment
-uv venv --python '==3.12' --allow-existing "${DATA_SHARING_INSTALL_VENV}"
+uv venv --python '==3.14' --allow-existing "${DATA_SHARING_INSTALL_VENV}"
 
 # Activate the virtual environment
 source "${DATA_SHARING_INSTALL_VENV}/bin/activate"

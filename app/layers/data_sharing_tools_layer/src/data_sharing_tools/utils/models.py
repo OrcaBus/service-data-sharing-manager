@@ -10,11 +10,24 @@ from datetime import datetime
 from typing import Optional
 from orcabus_api_tools.filemanager.models import FileObject
 
-
+# Literals
 DataType = Literal[
     "fastq",
     "secondaryAnalysis",
 ]
+
+PrimaryDataPathPrefixType = Literal[
+    'fastq',
+    'primary',
+    '',  # Replaces '/' at interface level
+]
+
+SecondaryAnalysisPathPrefixType = Literal[
+    'secondary-analysis',
+    'analysis',
+    '',  # Replaces '/' at interface level
+]
+
 
 
 class FileObjectWithRelativePathTypeDef(FileObject):

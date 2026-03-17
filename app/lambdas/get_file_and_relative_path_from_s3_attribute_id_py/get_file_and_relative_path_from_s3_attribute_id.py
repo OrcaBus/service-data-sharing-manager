@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict
 
 # Data sharing tools
-from data_sharing_tools import DataType
+from data_sharing_tools import DataType, PrimaryDataPathPrefixType, SecondaryAnalysisPathPrefixType
 
 # Orcabus API tools
 from orcabus_api_tools.filemanager import (
@@ -47,6 +47,16 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
     # Get the data type
     data_type: DataType = event.get("dataType")
 
+    # Get the relative path name
+    primary_data_path_prefix: PrimaryDataPathPrefixType = event.get("primaryDataPathPrefix")
+    secondary_analysis_path_prefix: SecondaryAnalysisPathPrefixType = event.get("secondaryAnalysisPathPrefix")
+
+    # Ensure secondary_analysis_path_prefix and primary_data_path_prefix are both not None
+    if primary_data_path_prefix is None and data_type == 'fastq':
+        raise ValueError("Data Type is fastq but primary data path prefix is not set")
+    if secondary_analysis_path_prefix is None and data_type == 'secondaryAnalysis':
+        raise ValueError("Data Type is secondary analysis but secondary analysis path prefix is not set")
+
     if data_type == 'secondaryAnalysis':
         # Get workflow from the file object
         workflow_run: 'WorkflowRun' = event.get("workflowRunObject")
@@ -61,7 +71,7 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
             **{
                 'dataType': data_type,
                 'relativePath': str(
-                    Path('secondary-analysis') /
+                    Path(secondary_analysis_path_prefix) /
                     workflow_run['workflow']['workflowName'] /
                     workflow_run['portalRunId'] /
                     key_relative_to_portal_run_id
@@ -79,7 +89,7 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
             **{
                 'dataType': data_type,
                 'relativePath': str(
-                    Path('fastq') /
+                    Path(primary_data_path_prefix) /
                     fastq_obj['instrumentRunId'] /
                     f"Lane_{str(fastq_obj['lane'])}" /
                     fastq_obj['library']['libraryId'] /
