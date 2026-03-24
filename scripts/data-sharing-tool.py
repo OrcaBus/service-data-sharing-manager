@@ -30,10 +30,9 @@ from datetime import datetime
 from tzlocal import get_localzone
 
 from botocore.exceptions import TokenRetrievalError
-from docopt import docopt
 import requests
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 from pandera.typing import DataFrame
 from typing import Optional, List, Dict, TypedDict, NotRequired, Literal
 import typing
@@ -41,6 +40,11 @@ import boto3
 from requests import HTTPError
 from subprocess import call
 import logging
+from warnings import filterwarnings
+
+# Ignore syntax warning when importing docopt
+filterwarnings("ignore", category=SyntaxWarning)
+from docopt import docopt
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
@@ -466,18 +470,18 @@ class GeneratePackageSubCommand(Command):
       more help can be found in the README.md file
 
     Options:
-      --package-name=<package_name>                          Name of the package
-      --lims-manifest-csv=<lims_manifest_csv_path>           The LIMS manifest CSV file
-      --workflow-manifest-csv=<workflow_manifest_csv_path>   The workflow manifest CSV file
-      --exclude-primary-data                                 Exclude fastq files from the package
-                                                             Only applicable if --workflow-manifest-csv is provided
-      --defrost-archived-fastqs                              defrost archive fastqs if fastqs are in archive
-      --no-use-workflow-file-filters                         Do not use the workflow specific file filters, this will include all files for secondary analyses
-      --primary-data-path-prefix                             Path prefix for primary data, defaults to 'fastq'
-      --secondary-analysis-path-prefix                       Path prefix for secondary analysis, defaults to 'secondary-analysis'
-      --wait                                                 Wait for the package to be created before exiting
+      --package-name=<package_name>                                        Name of the package
+      --lims-manifest-csv=<lims_manifest_csv_path>                         The LIMS manifest CSV file
+      --workflow-manifest-csv=<workflow_manifest_csv_path>                 The workflow manifest CSV file
+      --exclude-primary-data                                               Exclude fastq files from the package
+                                                                           Only applicable if --workflow-manifest-csv is provided
+      --defrost-archived-fastqs                                            defrost archive fastqs if fastqs are in archive
+      --no-use-workflow-file-filters                                       Do not use the workflow specific file filters, this will include all files for secondary analyses
+      --primary-data-path-prefix=<primary_data_path_prefix>                Path prefix for primary data, defaults to 'fastq'
+      --secondary-analysis-path-prefix=<secondary_analysis_path_prefix>    Path prefix for secondary analysis, defaults to 'secondary-analysis'
+      --wait                                                               Wait for the package to be created before exiting
 
-      --help                                                 Show this help message and exit
+      --help                                                               Show this help message and exit
 
     Environment variables:
       AWS_PROFILE       The AWS profile used by boto3
@@ -512,6 +516,12 @@ class GeneratePackageSubCommand(Command):
                 f"Package name {self.package_name} contains invalid characters. Only alphanumeric characters are allowed."
             )
 
+        # Read in lims manifest as a dataframe
+        self.lims_manifest = pd.read_csv(self.lims_manifest, header=0)
+
+        if self.workflow_manifest is not None:
+            self.workflow_manifest = pd.read_csv(self.workflow_manifest, header=0)
+
         # Generate the package
         package_id = generate_package(
             **dict(filter(
@@ -522,7 +532,7 @@ class GeneratePackageSubCommand(Command):
                     "workflow_manifest": self.workflow_manifest,
                     "exclude_primary_data": self.exclude_primary_data,
                     "defrost_archived_fastqs": self.defrost_archived_fastqs,
-                    "no_use_workflow_file_filters": self.no_use_workflow_file_filters,
+                    "use_workflow_filters":  not self.no_use_workflow_file_filters,
                     "primary_data_path_prefix": self.primary_data_path_prefix,
                     "secondary_analysis_path_prefix": self.secondary_analysis_path_prefix,
                 }.items()
