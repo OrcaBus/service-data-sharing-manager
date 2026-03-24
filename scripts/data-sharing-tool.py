@@ -21,6 +21,7 @@ Command:
 # Imports
 import json
 import sys
+import warnings
 from os import environ
 from pathlib import Path
 from textwrap import dedent
@@ -40,11 +41,12 @@ import boto3
 from requests import HTTPError
 from subprocess import call
 import logging
-from warnings import filterwarnings
+from warnings import catch_warnings, filterwarnings
 
 # Ignore syntax warning when importing docopt
-filterwarnings("ignore", category=SyntaxWarning)
-from docopt import docopt
+with catch_warnings():
+    filterwarnings("ignore", category=SyntaxWarning, module="docopt")
+    from docopt import docopt
 
 # Setup logger
 logging.basicConfig(level=logging.INFO)
