@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import Dict, Optional
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 import re
 from pandera.typing import DataFrame
 import humanfriendly
@@ -15,7 +15,6 @@ from .models import (
     FastqFileModel,
     FastqSummaryModel,
     SecondaryFileModel,
-    DataType
 )
 
 

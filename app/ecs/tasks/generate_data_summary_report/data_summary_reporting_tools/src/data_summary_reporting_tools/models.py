@@ -1,7 +1,7 @@
 # Imports
 from datetime import datetime
 from typing import Optional, TypedDict, List, Dict, Literal, Any
-import pandera as pa
+import pandera.pandas as pa
 
 DataType = Literal[
     "fastq",
