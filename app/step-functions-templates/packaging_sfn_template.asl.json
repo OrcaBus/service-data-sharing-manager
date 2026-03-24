@@ -92,20 +92,23 @@
     "Get library objects from library id (batched)": {
       "Type": "Map",
       "Items": "{% $libraryOrcabusIdList %}",
-      "ItemSelector": {
-        "libraryOrcabusId": "{% $states.context.Map.Item.Value %}",
-        "dynamoDbTableNameMapIter": "{% $dynamoDbTableName %}",
-        "dynamoDbLibraryGIValueMapIter": "{% $dynamoDbLibraryGIValue %}",
-        "packagingJobIdMapIter": "{% $packagingJobId %}",
-        "totalItemLengthMapIter": "{% $count($states.context.Map.Item.Value) %}"
-      },
       "ItemProcessor": {
         "ProcessorConfig": {
           "Mode": "DISTRIBUTED",
           "ExecutionType": "STANDARD"
         },
-        "StartAt": "For each library in batch",
+        "StartAt": "Set vars inside batch (library)",
         "States": {
+          "Set vars inside batch (library)": {
+            "Type": "Pass",
+            "Next": "For each library in batch",
+            "Assign": {
+              "dynamoDbTableNameMapIter": "{% $states.input.BatchInput.dynamoDbTableNameMapIter %}",
+              "dynamoDbLibraryGIValueMapIter": "{% $states.input.BatchInput.dynamoDbLibraryGIValueMapIter %}",
+              "packagingJobIdMapIter": "{% $states.input.BatchInput.packagingJobIdMapIter %}",
+              "totalItemLengthMapIter": "{% $states.input.BatchInput.totalItemLengthMapIter %}"
+            }
+          },
           "For each library in batch": {
             "Type": "Map",
             "ItemProcessor": {
@@ -118,11 +121,7 @@
                   "Type": "Pass",
                   "Next": "Jitter lambda",
                   "Assign": {
-                    "libraryOrcabusId": "{% $states.input.libraryOrcabusId %}",
-                    "dynamoDbTableNameMapIter": "{% $states.input.dynamoDbTableNameMapIter %}",
-                    "dynamoDbLibraryGIValueMapIter": "{% $states.input.dynamoDbLibraryGIValueMapIter %}",
-                    "packagingJobIdMapIter": "{% $states.input.packagingJobIdMapIter %}",
-                    "totalItemLengthMapIter": "{% $states.input.totalItemLengthMapIter %}"
+                    "libraryOrcabusIdMapIter": "{% $states.input %}"
                   }
                 },
                 "Jitter lambda": {
@@ -139,7 +138,7 @@
                   "Arguments": {
                     "FunctionName": "${__get_library_object_from_library_orcabus_id_lambda_function_arn__}",
                     "Payload": {
-                      "libraryOrcabusId": "{% $states.input.libraryOrcabusId %}"
+                      "libraryOrcabusId": "{% $libraryOrcabusIdMapIter %}"
                     }
                   },
                   "Retry": [
@@ -196,7 +195,13 @@
       "Label": "Getlibraryobjectsfromlibraryidbatched",
       "MaxConcurrency": 1000,
       "ItemBatcher": {
-        "MaxItemsPerBatch": 100
+        "MaxItemsPerBatch": 100,
+        "BatchInput": {
+          "dynamoDbTableNameMapIter": "{% $dynamoDbTableName %}",
+          "dynamoDbLibraryGIValueMapIter": "{% $dynamoDbLibraryGIValue %}",
+          "packagingJobIdMapIter": "{% $packagingJobId %}",
+          "totalItemLengthMapIter": "{% $count($libraryOrcabusIdList) %}"
+        }
       },
       "Output": {}
     },
@@ -246,22 +251,27 @@
             "Fastq Retrieval (for each library) (batched)": {
               "Type": "Map",
               "Items": "{% $states.input.libraryOrcabusIds %}",
-              "ItemSelector": {
-                "libraryOrcabusId": "{% $states.context.Map.Item.Value %}",
-                "defrostArchivedFastqs": "{% $defrostArchivedFastqs ? true : false %}",
-                "dynamoDbTableName": "{% $dynamoDbTableName %}",
-                "packagingJobId": "{% $packagingJobId %}",
-                "instrumentRunIdList": "{% $instrumentRunIdList %}",
-                "dynamoDbFastqGIValue": "{% $dynamoDbFastqGIValue %}",
-                "dynamoDbFileGIValue": "{% $dynamoDbFileGIValue %}"
-              },
               "ItemProcessor": {
                 "ProcessorConfig": {
                   "Mode": "DISTRIBUTED",
                   "ExecutionType": "STANDARD"
                 },
-                "StartAt": "For each Library",
+                "StartAt": "Set batch input vars (fastq retrieval)",
                 "States": {
+                  "Set batch input vars (fastq retrieval)": {
+                    "Type": "Pass",
+                    "Next": "For each Library",
+                    "Assign": {
+                      "libraryCountMapIter": "{% $states.input.BatchInput.libraryCountMapIter %}",
+                      "defrostArchivedFastqsMapIter": "{% $states.input.BatchInput.defrostArchivedFastqsMapIter %}",
+                      "dynamoDbTableNameMapIter": "{% $states.input.BatchInput.dynamoDbTableNameMapIter %}",
+                      "packagingJobIdMapIter": "{% $states.input.BatchInput.packagingJobIdMapIter %}",
+                      "instrumentRunIdListMapIter": "{% $states.input.BatchInput.instrumentRunIdListMapIter %}",
+                      "dynamoDbFastqGIValueMapIter": "{% $states.input.BatchInput.dynamoDbFastqGIValueMapIter %}",
+                      "dynamoDbFileGIValueMapIter": "{% $states.input.BatchInput.dynamoDbFileGIValueMapIter %}",
+                      "primaryDataPathPrefixMapIter": "{% $states.input.BatchInput.primaryDataPathPrefixMapIter %}"
+                    }
+                  },
                   "For each Library": {
                     "Type": "Map",
                     "Items": "{% $states.input.Items %}",
@@ -274,14 +284,7 @@
                         "Set Library Map Iter Var (fastq)": {
                           "Type": "Pass",
                           "Assign": {
-                            "libraryOrcabusIdMapIter": "{% $states.input.libraryOrcabusId %}",
-                            "defrostArchivedFastqsMapIter": "{% $states.input.defrostArchivedFastqs %}",
-                            "dynamoDbTableNameMapIter": "{% $states.input.dynamoDbTableName %}",
-                            "packagingJobIdMapIter": "{% $states.input.packagingJobId %}",
-                            "instrumentRunIdListMapIter": "{% $states.input.instrumentRunIdList %}",
-                            "dynamoDbFastqGIValueMapIter": "{% $states.input.dynamoDbFastqGIValue %}",
-                            "dynamoDbFileGIValueMapIter": "{% $states.input.dynamoDbFileGIValue %}",
-                            "libraryCountMapIter": "{% $states.input.libraryCount %}"
+                            "libraryOrcabusIdMapIter": "{% $states.input %}"
                           },
                           "Next": "Get Library Obj (fastq)"
                         },
@@ -393,9 +396,6 @@
                         "For each fastq id": {
                           "Type": "Map",
                           "Items": "{% $states.input.fastqIdList %}",
-                          "ItemSelector": {
-                            "fastqIdMapIter": "{% $states.context.Map.Item.Value %}"
-                          },
                           "ItemProcessor": {
                             "ProcessorConfig": {
                               "Mode": "INLINE"
@@ -406,7 +406,7 @@
                                 "Type": "Pass",
                                 "Next": "Get fastq object",
                                 "Assign": {
-                                  "fastqIdMapIter": "{% $states.input.fastqIdMapIter %}"
+                                  "fastqIdMapIter": "{% $states.input %}"
                                 }
                               },
                               "Get fastq object": {
@@ -487,9 +487,6 @@
                                       "For each file in fastq object": {
                                         "Type": "Map",
                                         "Items": "{% $ingestIds %}",
-                                        "ItemSelector": {
-                                          "ingestIdMapIter": "{% $states.context.Map.Item.Value %}"
-                                        },
                                         "ItemProcessor": {
                                           "ProcessorConfig": {
                                             "Mode": "INLINE"
@@ -499,7 +496,7 @@
                                             "Get Ingest Id Var (fastq)": {
                                               "Type": "Pass",
                                               "Assign": {
-                                                "ingestIdMapIter": "{% $states.input.ingestIdMapIter %}"
+                                                "ingestIdMapIter": "{% $states.input %}"
                                               },
                                               "Next": "Get File Object from Ingest Id (fastq)"
                                             },
@@ -515,7 +512,7 @@
                                                   "ingestId": "{% $ingestIdMapIter %}",
                                                   "fastqObject": "{% $fastqObject %}",
                                                   "dataType": "fastq",
-                                                  "primaryDataPathPrefix": "{% ( $primaryDataPathPrefix = '/' ? '' : $primaryDataPathPrefix ) %}"
+                                                  "primaryDataPathPrefix": "{% ( $primaryDataPathPrefixMapIter = '/' ? '' : $primaryDataPathPrefixMapIter ) %}"
                                                 }
                                               },
                                               "Retry": [
@@ -589,8 +586,7 @@
                       }
                     },
                     "Output": {},
-                    "End": true,
-                    "ItemSelector": "{% [\n  $states.context.Map.Item.Value, \n  {\n    \"libraryCount\": $states.input.BatchInput.libraryCount\n  }\n] ~> $merge %}"
+                    "End": true
                   }
                 }
               },
@@ -599,7 +595,14 @@
               "ItemBatcher": {
                 "MaxItemsPerBatch": 10,
                 "BatchInput": {
-                  "libraryCount": "{% $states.input.libraryCount %}"
+                  "libraryCountMapIter": "{% $states.input.libraryCount %}",
+                  "defrostArchivedFastqsMapIter": "{% $defrostArchivedFastqs ? true : false %}",
+                  "dynamoDbTableNameMapIter": "{% $dynamoDbTableName %}",
+                  "packagingJobIdMapIter": "{% $packagingJobId %}",
+                  "instrumentRunIdListMapIter": "{% $instrumentRunIdList %}",
+                  "dynamoDbFastqGIValueMapIter": "{% $dynamoDbFastqGIValue %}",
+                  "dynamoDbFileGIValueMapIter": "{% $dynamoDbFileGIValue %}",
+                  "primaryDataPathPrefixMapIter": "{% $primaryDataPathPrefix %}"
                 }
               },
               "Output": {},
@@ -663,21 +666,24 @@
             "Analysis Retrieval (for each library) (batched)": {
               "Type": "Map",
               "Items": "{% $states.input.libraryOrcabusIdList %}",
-              "ItemSelector": {
-                "portalRunIdExclusionListMapIter": "{% $portalRunIdExclusionList %}",
-                "libraryOrcabusIdMapIter": "{% $states.context.Map.Item.Value %}",
-                "secondaryAnalysisTypeListMapIter": "{% $secondaryAnalysisTypeList %}",
-                "dynamoDbTableNameMapIter": "{% $dynamoDbTableName %}",
-                "packagingJobIdMapIter": "{% $packagingJobId %}",
-                "totalItemLengthMapIter": "{% $count($states.input.libraryOrcabusIdList) %}"
-              },
               "ItemProcessor": {
                 "ProcessorConfig": {
                   "Mode": "DISTRIBUTED",
                   "ExecutionType": "STANDARD"
                 },
-                "StartAt": "For each library (Analysis retrieval)",
+                "StartAt": "Set batch env vars (analysis retrieval)",
                 "States": {
+                  "Set batch env vars (analysis retrieval)": {
+                    "Type": "Pass",
+                    "Next": "For each library (Analysis retrieval)",
+                    "Assign": {
+                      "portalRunIdExclusionListMapIter": "{% $states.input.BatchInput.portalRunIdExclusionListMapIter %}",
+                      "secondaryAnalysisTypeListMapIter": "{% $states.input.BatchInput.secondaryAnalysisTypeListMapIter %}",
+                      "dynamoDbTableNameMapIter": "{% $states.input.BatchInput.dynamoDbTableNameMapIter %}",
+                      "packagingJobIdMapIter": "{% $states.input.BatchInput.packagingJobIdMapIter %}",
+                      "totalItemLengthMapIter": "{% $states.input.BatchInput.totalItemLengthMapIter %}"
+                    }
+                  },
                   "For each library (Analysis retrieval)": {
                     "Type": "Map",
                     "Items": "{% $states.input.Items %}",
@@ -690,12 +696,7 @@
                         "Get Library Map Iter Var (workflow)": {
                           "Type": "Pass",
                           "Assign": {
-                            "libraryOrcabusIdMapIter": "{% $states.input.libraryOrcabusIdMapIter %}",
-                            "portalRunIdExclusionListMapIter": "{% $states.input.portalRunIdExclusionListMapIter %}",
-                            "secondaryAnalysisTypeListMapIter": "{% $states.input.secondaryAnalysisTypeListMapIter %}",
-                            "dynamoDbTableNameMapIter": "{% $states.input.dynamoDbTableNameMapIter %}",
-                            "packagingJobIdMapIter": "{% $states.input.packagingJobIdMapIter %}",
-                            "totalItemLengthMapIter": "{% $states.input.totalItemLengthMapIter %}"
+                            "libraryOrcabusIdMapIter": "{% $states.input %}"
                           },
                           "Next": "Jitter Portal Run ID Retrieval"
                         },
@@ -769,27 +770,37 @@
               "Label": "AnalysisRetrievalforeachlibrarybatched",
               "MaxConcurrency": 1000,
               "ItemBatcher": {
-                "MaxItemsPerBatch": 10
+                "MaxItemsPerBatch": 10,
+                "BatchInput": {
+                  "portalRunIdExclusionListMapIter": "{% $portalRunIdExclusionList %}",
+                  "secondaryAnalysisTypeListMapIter": "{% $secondaryAnalysisTypeList %}",
+                  "dynamoDbTableNameMapIter": "{% $dynamoDbTableName %}",
+                  "packagingJobIdMapIter": "{% $packagingJobId %}",
+                  "totalItemLengthMapIter": "{% $count($states.input.libraryOrcabusIdList) %}"
+                }
               }
             },
             "For each portal run id (batch)": {
               "Type": "Map",
               "Items": "{% $portalRunIdListFiltered %}",
-              "ItemSelector": {
-                "portalRunIdIter": "{% $states.context.Map.Item.Value %}",
-                "dynamoDbTableNameIter": "{% $dynamoDbTableName %}",
-                "packagingJobIdIter": "{% $packagingJobId %}",
-                "dynamoDbWorkflowGIValueIter": "{% $dynamoDbWorkflowGIValue %}",
-                "totalItemLengthMapIter": "{% $count($portalRunIdListFiltered) %}",
-                "useWorkflowFiltersMapIter": "{% $useWorkflowFilters %}"
-              },
               "ItemProcessor": {
                 "ProcessorConfig": {
                   "Mode": "DISTRIBUTED",
                   "ExecutionType": "STANDARD"
                 },
-                "StartAt": "For each portal run id",
+                "StartAt": "Set batch env vars (portal run id)",
                 "States": {
+                  "Set batch env vars (portal run id)": {
+                    "Type": "Pass",
+                    "Next": "For each portal run id",
+                    "Assign": {
+                      "dynamoDbTableNameIter": "{% $states.input.BatchInput.dynamoDbTableNameIter %}",
+                      "packagingJobIdIter": "{% $states.input.BatchInput.packagingJobIdIter %}",
+                      "dynamoDbWorkflowGIValueIter": "{% $states.input.BatchInput.dynamoDbWorkflowGIValueIter %}",
+                      "totalItemLengthMapIter": "{% $states.input.BatchInput.totalItemLengthMapIter %}",
+                      "useWorkflowFiltersMapIter": "{% $states.input.BatchInput.useWorkflowFiltersMapIter %}"
+                    }
+                  },
                   "For each portal run id": {
                     "Type": "Map",
                     "ItemProcessor": {
@@ -801,12 +812,7 @@
                         "Get portal run id map iter var (workflow)": {
                           "Type": "Pass",
                           "Assign": {
-                            "portalRunIdIter": "{% $states.input.portalRunIdIter %}",
-                            "dynamoDbTableNameIter": "{% $states.input.dynamoDbTableNameIter %}",
-                            "packagingJobIdIter": "{% $states.input.packagingJobIdIter %}",
-                            "dynamoDbWorkflowGIValueIter": "{% $states.input.dynamoDbWorkflowGIValueIter %}",
-                            "totalItemLengthMapIter": "{% $states.input.totalItemLengthMapIter %}",
-                            "useWorkflowFiltersMapIter": "{% $states.input.useWorkflowFiltersMapIter %}"
+                            "portalRunIdIter": "{% $states.input %}"
                           },
                           "Next": "Jitter Lambda (portal run id batch)"
                         },
@@ -910,22 +916,31 @@
               "Items": "{% $states.input.workflowRunIds %}",
               "Label": "Foreachworkflowrunbatch",
               "ItemBatcher": {
-                "MaxItemsPerBatch": 10
-              },
-              "ItemSelector": {
-                "workflowRunIdIter": "{% $states.context.Map.Item.Value %}",
-                "packagingJobIdIter": "{% $packagingJobId %}",
-                "dynamoDbTableNameIter": "{% $dynamoDbTableName %}",
-                "dynamoDbFileGIValueIter": "{% $dynamoDbFileGIValue %}",
-                "totalItemLengthMapIter": "{% $count($states.input.workflowRunIds) %}"
+                "MaxItemsPerBatch": 10,
+                "BatchInput": {
+                  "packagingJobIdIter": "{% $packagingJobId %}",
+                  "dynamoDbTableNameIter": "{% $dynamoDbTableName %}",
+                  "dynamoDbFileGIValueIter": "{% $dynamoDbFileGIValue %}",
+                  "totalItemLengthMapIter": "{% $count($states.input.workflowRunIds) %}"
+                }
               },
               "ItemProcessor": {
                 "ProcessorConfig": {
                   "Mode": "DISTRIBUTED",
                   "ExecutionType": "STANDARD"
                 },
-                "StartAt": "For each workflow item",
+                "StartAt": "Set batch input vars (workflow run batch)",
                 "States": {
+                  "Set batch input vars (workflow run batch)": {
+                    "Type": "Pass",
+                    "Next": "For each workflow item",
+                    "Assign": {
+                      "packagingJobIdIter": "{% $states.input.BatchInput.packagingJobIdIter %}",
+                      "dynamoDbTableNameIter": "{% $states.input.BatchInput.dynamoDbTableNameIter %}",
+                      "dynamoDbFileGIValueIter": "{% $states.input.BatchInput.dynamoDbFileGIValueIter %}",
+                      "totalItemLengthMapIter": "{% $states.input.BatchInput.totalItemLengthMapIter %}"
+                    }
+                  },
                   "For each workflow item": {
                     "Type": "Map",
                     "Items": "{% $states.input.Items %}",
@@ -938,11 +953,7 @@
                         "Set inputs as vars (map workflows)": {
                           "Type": "Pass",
                           "Assign": {
-                            "workflowRunIdIter": "{% $states.input.workflowRunIdIter %}",
-                            "packagingJobIdIter": "{% $states.input.packagingJobIdIter %}",
-                            "dynamoDbTableNameIter": "{% $states.input.dynamoDbTableNameIter %}",
-                            "dynamoDbFileGIValueIter": "{% $states.input.dynamoDbFileGIValueIter %}",
-                            "totalItemLengthMapIter": "{% $states.input.totalItemLengthMapIter %}"
+                            "workflowRunIdIter": "{% $states.input %}"
                           },
                           "Next": "Jitter Each Workflow Lambda"
                         },
@@ -1005,14 +1016,14 @@
                           "Label": "Foreachfilebatchsecondary",
                           "MaxConcurrency": 1000,
                           "ItemBatcher": {
-                            "MaxItemsPerBatch": 100
-                          },
-                          "ItemSelector": {
-                            "ingestIdListIter": "{% $states.context.Map.Item.Value %}",
-                            "packagingJobIdMapFilesIter": "{% $packagingJobIdIter %}",
-                            "dynamoDbTableNameIter": "{% $dynamoDbTableNameIter %}",
-                            "workflowRunObjectMapFilesIter": "{% $workflowRunObjectMapIter %}",
-                            "dynamoDbFileGIValueMapFilesIter": "{% $dynamoDbFileGIValueIter %}"
+                            "MaxItemsPerBatch": 100,
+                            "BatchInput": {
+                              "packagingJobIdMapFilesIter": "{% $packagingJobIdIter %}",
+                              "dynamoDbTableNameIter": "{% $dynamoDbTableNameIter %}",
+                              "workflowRunObjectMapFilesIter": "{% $workflowRunObjectMapIter %}",
+                              "dynamoDbFileGIValueMapFilesIter": "{% $dynamoDbFileGIValueIter %}",
+                              "secondaryAnalysisPathPrefixIter": "{% $secondaryAnalysisPathPrefix %}"
+                            }
                           },
                           "ItemProcessor": {
                             "ProcessorConfig": {
@@ -1025,11 +1036,12 @@
                                 "Type": "Pass",
                                 "Next": "Get files from object list (secondary analysis)",
                                 "Assign": {
-                                  "ingestIdListIter": "{% [$map($states.input.Items, function($item){$item.ingestIdListIter})] %}",
-                                  "packagingJobIdMapFilesIter": "{% $states.input.Items[0].packagingJobIdMapFilesIter %}",
-                                  "dynamoDbTableNameMapFilesIter": "{% $states.input.Items[0].dynamoDbTableNameIter %}",
-                                  "workflowRunObjectMapFilesIter": "{% $states.input.Items[0].workflowRunObjectMapFilesIter %}",
-                                  "dynamoDbFileGIValueMapFilesIter": "{% $states.input.Items[0].dynamoDbFileGIValueMapFilesIter %}"
+                                  "ingestIdListIter": "{% $states.input %}",
+                                  "packagingJobIdMapFilesIter": "{% $states.input.BatchInput.packagingJobIdMapFilesIter %}",
+                                  "dynamoDbTableNameMapFilesIter": "{% $states.input.BatchInput.dynamoDbTableNameIter %}",
+                                  "workflowRunObjectMapFilesIter": "{% $states.input.BatchInput.workflowRunObjectMapFilesIter %}",
+                                  "dynamoDbFileGIValueMapFilesIter": "{% $states.input.BatchInput.dynamoDbFileGIValueMapFilesIter %}",
+                                  "secondaryAnalysisPathPrefixIter": "{% $states.input.BatchInput.secondaryAnalysisPathPrefixIter %}"
                                 }
                               },
                               "Get files from object list (secondary analysis)": {
@@ -1041,7 +1053,7 @@
                                     "ingestIdList": "{% $ingestIdListIter %}",
                                     "workflowRunObject": "{% $workflowRunObjectMapFilesIter %}",
                                     "dataType": "secondaryAnalysis",
-                                    "secondaryAnalysisPathPrefix": "{% $secondaryAnalysisPathPrefix = '/' ? '' : $secondaryAnalysisPathPrefix %}"
+                                    "secondaryAnalysisPathPrefix": "{% $secondaryAnalysisPathPrefixIter = '/' ? '' : $secondaryAnalysisPathPrefixIter %}"
                                   }
                                 },
                                 "Retry": [
@@ -1066,9 +1078,6 @@
                               "For each file": {
                                 "Type": "Map",
                                 "Items": "{% $states.input.fileObjectList %}",
-                                "ItemSelector": {
-                                  "fileObject": "{% $states.context.Map.Item.Value %}"
-                                },
                                 "ItemProcessor": {
                                   "ProcessorConfig": {
                                     "Mode": "INLINE"
@@ -1082,7 +1091,7 @@
                                         "TableName": "{% $dynamoDbTableNameMapFilesIter %}",
                                         "Item": {
                                           "id": {
-                                            "S": "{% $states.input.fileObject.ingestId %}"
+                                            "S": "{% $states.input.ingestId %}"
                                           },
                                           "job_id": {
                                             "S": "{% $packagingJobIdMapFilesIter %}"
@@ -1091,7 +1100,7 @@
                                             "S": "{% $dynamoDbFileGIValueMapFilesIter %}"
                                           },
                                           "content": {
-                                            "S": "{% $string($states.input.fileObject) %}"
+                                            "S": "{% $string($states.input) %}"
                                           },
                                           "expire_at": {
                                             "N": "{% $string($round(($millis() + (30 * 24 * 60 * 60 * 1000)) / 1000)) %}"
