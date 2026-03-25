@@ -13,6 +13,7 @@ Quick shell script to perform the following tasks
 '
 
 # Globals
+PYTHON_VERSION="3.14"
 DATA_SHARING_INSTALL_VENV="${HOME}/.local/data-sharing-cli-venv"
 
 # Get this directory
@@ -28,7 +29,11 @@ else
 fi
 
 # Create a virtual environment
-uv venv --python '==3.14' --allow-existing "${DATA_SHARING_INSTALL_VENV}"
+uv python install "${PYTHON_VERSION}"
+uv venv \
+  --python "${PYTHON_VERSION}" \
+  --allow-existing \
+  "${DATA_SHARING_INSTALL_VENV}"
 
 # Activate the virtual environment
 source "${DATA_SHARING_INSTALL_VENV}/bin/activate"
