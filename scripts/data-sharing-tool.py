@@ -471,6 +471,12 @@ class GeneratePackageSubCommand(Command):
       Generate a package, use the athena mart tables to generate the lims and workflow manifest files,
       more help can be found in the README.md file
 
+    Package prefixes note:
+      Writing data to the root prefix, i.e no fastq/ or secondary-analysis/ is possible by setting
+      either --primary-data-path-prefix to '/' or --secondary-analysis-path-prefix to '/'.
+      Note that you must have EITHER primary OR secondary data to use this option, not both.
+
+
     Options:
       --package-name=<package_name>                                        Name of the package
       --lims-manifest-csv=<lims_manifest_csv_path>                         The LIMS manifest CSV file
