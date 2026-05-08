@@ -73,9 +73,9 @@ export const DATA_SHARING_BUCKET_PREFIX = 'packages';
 S3 Copy Steps Function ARNs by account id
 */
 export const s3CopyStepsBucket: Record<StageName, string> = {
-  BETA: 'stepss3copy-working66f7dd3f-x4jwbnt6qvxc', // pragma: allowlist secret
-  GAMMA: 'stg-stepss3copystack-stepss3copyworking01b34927-szqxpff5lsbx', // pragma: allowlist secret
-  PROD: 'prod-stepss3copystack-stepss3copyworking01b34927-mp9y88d9e1py', // pragma: allowlist secret
+  BETA: 'stepss3copy-working66f7dd3f-xhr0lonzniqq', // pragma: allowlist secret
+  GAMMA: 'stg-stepss3copystack-stepss3copyworking01b34927-cxeihtal0buq', // pragma: allowlist secret
+  PROD: 'prod-stepss3copystack-stepss3copyworking01b34927-wpet59sdjgzi', // pragma: allowlist secret
 };
 
 export const S3_STEPS_COPY_PREFIX: Record<StageName, string> = {
