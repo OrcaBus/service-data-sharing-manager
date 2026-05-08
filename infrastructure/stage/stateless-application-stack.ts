@@ -153,7 +153,6 @@ export class StatelessApplicationStack extends cdk.Stack {
       s3StepsCopySfn: s3StepsCopySfn,
       s3StepsCopyPrefix: props.s3StepsCopyPrefix,
       s3StepsCopyMidfix: props.s3StepsCopyMidfix,
-      s3StepsUseJsonLCopyFormat: props.s3StepsUseJsonLCopyFormat,
       // Packaging Bucket
       packagingBucket: dataSharingBucket,
       // ECS Cluster

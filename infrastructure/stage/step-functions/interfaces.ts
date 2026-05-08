@@ -136,7 +136,6 @@ export interface SfnProps {
   s3StepsCopySfn: IStateMachine;
   s3StepsCopyPrefix: string;
   s3StepsCopyMidfix: string;
-  s3StepsUseJsonLCopyFormat: boolean;
   // Packaging Bucket
   packagingBucket: IBucket;
   // ECS Cluster

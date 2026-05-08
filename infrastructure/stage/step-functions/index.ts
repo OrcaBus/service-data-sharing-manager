@@ -88,7 +88,6 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   definitionSubstitutions['__aws_s3_copy_steps_bucket__'] = props.s3StepsCopyBucket.bucketName;
   definitionSubstitutions['__aws_s3_copy_steps_prefix__'] = props.s3StepsCopyPrefix;
   definitionSubstitutions['__aws_s3_copy_steps_midfix__'] = props.s3StepsCopyMidfix;
-  definitionSubstitutions['__use_jsonl_format__'] = props.s3StepsUseJsonLCopyFormat.toString();
 
   // Auto Jobs Config (for AutoController SFN)
   definitionSubstitutions['__jobs_config_bucket__'] = props.dataSharingBucketName;

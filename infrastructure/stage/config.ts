@@ -13,7 +13,6 @@ import {
   s3CopyStepsBucket,
   s3CopyStepsFunctionArn,
   SSM_ROOT_PREFIX,
-  USE_JSONL_COPY_FORMAT,
   autoPushSfnArn,
 } from './constants';
 import {
@@ -86,7 +85,6 @@ export const getStatelessApplicationStackProps = (
     s3StepsCopySfnArn: s3CopyStepsFunctionArn[stage],
     s3StepsCopyPrefix: S3_STEPS_COPY_PREFIX[stage],
     s3StepsCopyMidfix: S3_STEPS_COPY_MIDFIX,
-    s3StepsUseJsonLCopyFormat: USE_JSONL_COPY_FORMAT[stage],
 
     // Athena stuff
     athenaQueryResultsBucketName: MART_BUCKET_NAME[stage],
