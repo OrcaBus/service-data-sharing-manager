@@ -11,7 +11,7 @@
         "packagingJobId": "{% $states.input.packagingJobId %}",
         "pushLocation": "{% $states.input.pushLocation %}",
         "s3StepsCopyBucket": "${__aws_s3_copy_steps_bucket__}",
-        "s3StepsCopyCsvKey": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $states.context.Execution.Name & '.__index__' & ( ${__use_jsonl_format__} ? '.jsonl' : '.csv') %}"
+        "s3StepsCopyCsvKey": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $states.context.Execution.Name & '.__index__.jsonl' %}"
       }
     },
     "Query and collect prefixes Count (jsonl)": {
