@@ -87,16 +87,9 @@ export const S3_STEPS_COPY_PREFIX: Record<StageName, string> = {
 export const S3_STEPS_COPY_MIDFIX: string = 'DATA_SHARING/';
 
 export const s3CopyStepsFunctionArn: Record<StageName, string> = {
-  BETA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['BETA']}:stateMachine:StepsS3CopyStateMachine157A1409-jx4WNxpdckgQ`, // pragma: allowlist secret
+  BETA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['BETA']}:stateMachine:StepsS3CopyStateMachine157A1409-RRK2W5NEeUSC`, // pragma: allowlist secret
   GAMMA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['GAMMA']}:stateMachine:StepsS3CopyStateMachine157A1409-ikBos7HzwDtL`, // pragma: allowlist secret
   PROD: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['PROD']}:stateMachine:StepsS3CopyStateMachine157A1409-YbCgUX7dCZRm`, // pragma: allowlist secret
-};
-
-// S3 Steps Copy Implementations
-export const USE_JSONL_COPY_FORMAT: Record<StageName, boolean> = {
-  BETA: true,
-  GAMMA: false,
-  PROD: false,
 };
 
 // Auto Data Sharing stuff
