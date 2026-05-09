@@ -145,7 +145,7 @@
                   "Arguments": {
                     "StateMachineArn": "${__aws_s3_steps_copy_sfn_arn__}",
                     "Input": {
-                      "sourceFilesCsvKey": "{% $substringAfter($s3StepsCopyKeyMapIterX, '${__aws_s3_copy_steps_prefix__}') %}",
+                      "copyInstructionsKey": "{% $substringAfter($s3StepsCopyKeyMapIterX, '${__aws_s3_copy_steps_prefix__}') %}",
                       "destinationBucket": "{% $states.input.destinationBucket %}",
                       "destinationFolderKey": "{% $states.input.destinationFolderKey %}"
                     }

@@ -89,7 +89,7 @@ export const S3_STEPS_COPY_MIDFIX: string = 'DATA_SHARING/';
 export const s3CopyStepsFunctionArn: Record<StageName, string> = {
   BETA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['BETA']}:stateMachine:StepsS3CopyStateMachine157A1409-RRK2W5NEeUSC`, // pragma: allowlist secret
   GAMMA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['GAMMA']}:stateMachine:StepsS3CopyStateMachine157A1409-ikBos7HzwDtL`, // pragma: allowlist secret
-  PROD: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['PROD']}:stateMachine:StepsS3CopyStateMachine157A1409-YbCgUX7dCZRm`, // pragma: allowlist secret
+  PROD: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['PROD']}:stateMachine:StepsS3CopyStateMachine157A1409-3kaW26vI3yre`, // pragma: allowlist secret
 };
 
 // Auto Data Sharing stuff
