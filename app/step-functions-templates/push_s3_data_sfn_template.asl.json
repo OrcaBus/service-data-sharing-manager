@@ -5,25 +5,30 @@
   "States": {
     "Set Vars": {
       "Type": "Pass",
-      "Next": "Query and collect prefixes Count (jsonl)",
+      "Next": "Generate jsonl and upload to s3",
       "Assign": {
         "pushJobId": "{% $states.input.pushJobId %}",
         "packagingJobId": "{% $states.input.packagingJobId %}",
         "pushLocation": "{% $states.input.pushLocation %}",
         "s3StepsCopyBucket": "${__aws_s3_copy_steps_bucket__}",
-        "s3StepsCopyCsvKey": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $states.context.Execution.Name & '.__index__.jsonl' %}"
+        "s3StepsCopyCsvPrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $pushJobId & '/' %}",
+        "s3StepsCopyCsvKey": "{% 'package_list.jsonl' %}"
       }
     },
-    "Query and collect prefixes Count (jsonl)": {
+    "Generate jsonl and upload to s3": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
+      "Output": {
+        "destinationBucket": "{% $states.result.Payload.destinationBucket %}",
+        "destinationPrefix": "{% $states.result.Payload.destinationPrefix %}"
+      },
       "Arguments": {
         "FunctionName": "${__package_file_to_jsonl_data_lambda_function_arn__}",
         "Payload": {
           "packagingJobId": "{% $packagingJobId %}",
           "pushLocation": "{% $pushLocation %}",
-          "countOnly": true
+          "s3StepsCopyBucket": "{% $s3StepsCopyBucket %}",
+          "s3StepsCopyKey": "{% $s3StepsCopyCsvPrefix & $s3StepsCopyCsvKey %}"
         }
       },
       "Retry": [
@@ -40,132 +45,55 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Assign": {
-        "listCount": "{% $states.result.Payload.listCount %}"
-      },
-      "Next": "For each destination and source mapping uri (jsonl)"
+      "Next": "Run S3 Copy"
     },
-    "For each destination and source mapping uri (jsonl)": {
-      "Type": "Map",
-      "Label": "Foreachdestinationandsourcemappingjsonl",
-      "MaxConcurrency": 1000,
-      "ItemBatcher": {
-        "MaxItemsPerBatch": 10,
-        "BatchInput": {
-          "packagingJobIdMapIter": "{% $packagingJobId %}",
-          "pushLocationMapIter": "{% $pushLocation %}",
-          "s3StepsCopyBucketMapIter": "{% $s3StepsCopyBucket %}",
-          "s3StepsCopyCsvKeyMapIter": "{% $s3StepsCopyCsvKey %}",
-          "s3StepsCopyKeyMapIter": "{% $s3StepsCopyCsvKey %}"
+    "Run S3 Copy": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::states:startExecution.sync:2",
+      "Arguments": {
+        "StateMachineArn": "${__aws_s3_steps_copy_sfn_arn__}",
+        "Input": {
+          "instructionsPrefix": "{% $s3StepsCopyCsvPrefix %}",
+          "instructionsKey": "{% $s3StepsCopyCsvPrefix %}",
+          "destinationBucket": "{% $states.input.destinationBucket %}",
+          "destinationPrefix": "{% $states.input.destinationPrefix %}",
+          "retainSummaryCsv": true
         }
       },
-      "Items": "{% [$map([0..$listCount-1], function($v, $i, $a) { $i })] %}",
-      "ItemProcessor": {
-        "ProcessorConfig": {
-          "Mode": "DISTRIBUTED",
-          "ExecutionType": "STANDARD"
-        },
-        "StartAt": "Set vars in distributed map (jsonl)",
-        "States": {
-          "Set vars in distributed map (jsonl)": {
-            "Type": "Pass",
-            "Next": "For each destination and source mapping list",
-            "Assign": {
-              "packagingJobIdMapIter": "{% $states.input.BatchInput.packagingJobIdMapIter %}",
-              "pushLocationMapIter": "{% $states.input.BatchInput.pushLocationMapIter %}",
-              "s3StepsCopyBucketMapIter": "{% $states.input.BatchInput.s3StepsCopyBucketMapIter %}",
-              "s3StepsCopyCsvKeyMapIter": "{% $states.input.BatchInput.s3StepsCopyCsvKeyMapIter %}",
-              "itemRangeMin": "{% $states.input.Items[0] %}",
-              "itemRangeMax": "{% $states.input.Items[-1] %}"
-            }
-          },
-          "For each destination and source mapping list": {
-            "Type": "Map",
-            "Items": "{% [$map([$itemRangeMin..$itemRangeMax], function($v, $i, $a) { $i })] %}",
-            "ItemSelector": {
-              "packagingJobIdMapIterX": "{% $packagingJobIdMapIter %}",
-              "paginationCountMapIterX": "{% $states.context.Map.Item.Value %}",
-              "pushLocationMapIterX": "{% $pushLocationMapIter %}",
-              "s3StepsCopyBucketMapIterX": "{% $s3StepsCopyBucketMapIter %}",
-              "s3StepsCopyKeyMapIterX": "{% /* https://try.jsonata.org/mZnjTty1- */ $replace($s3StepsCopyCsvKeyMapIter, '__index__', $string($states.context.Map.Item.Index + $itemRangeMin)) %}"
-            },
-            "ItemProcessor": {
-              "ProcessorConfig": {
-                "Mode": "INLINE"
-              },
-              "StartAt": "Set vars in map (jsonl)",
-              "States": {
-                "Set vars in map (jsonl)": {
-                  "Type": "Pass",
-                  "Next": "Generate jsonl and upload to s3",
-                  "Assign": {
-                    "packagingJobIdMapIterX": "{% $states.input.packagingJobIdMapIterX %}",
-                    "paginationCountMapIterX": "{% $states.input.paginationCountMapIterX %}",
-                    "pushLocationMapIterX": "{% $states.input.pushLocationMapIterX %}",
-                    "s3StepsCopyBucketMapIterX": "{% $states.input.s3StepsCopyBucketMapIterX %}",
-                    "s3StepsCopyKeyMapIterX": "{% $states.input.s3StepsCopyKeyMapIterX %}"
-                  }
-                },
-                "Generate jsonl and upload to s3": {
-                  "Type": "Task",
-                  "Resource": "arn:aws:states:::lambda:invoke",
-                  "Output": {
-                    "destinationBucket": "{% $states.result.Payload.destinationBucket %}",
-                    "destinationFolderKey": "{% $states.result.Payload.destinationFolderKey %}"
-                  },
-                  "Arguments": {
-                    "FunctionName": "${__package_file_to_jsonl_data_lambda_function_arn__}",
-                    "Payload": {
-                      "packagingJobId": "{% $packagingJobIdMapIterX %}",
-                      "pushLocation": "{% $pushLocationMapIterX %}",
-                      "paginationIndex": "{% $paginationCountMapIterX %}",
-                      "s3StepsCopyBucket": "{% $s3StepsCopyBucketMapIterX %}",
-                      "s3StepsCopyKey": "{% $s3StepsCopyKeyMapIterX %}"
-                    }
-                  },
-                  "Retry": [
-                    {
-                      "ErrorEquals": [
-                        "Lambda.ServiceException",
-                        "Lambda.AWSLambdaException",
-                        "Lambda.SdkClientException",
-                        "Lambda.TooManyRequestsException"
-                      ],
-                      "IntervalSeconds": 1,
-                      "MaxAttempts": 3,
-                      "BackoffRate": 2,
-                      "JitterStrategy": "FULL"
-                    }
-                  ],
-                  "Next": "Run S3 Copy"
-                },
-                "Run S3 Copy": {
-                  "Type": "Task",
-                  "Resource": "arn:aws:states:::states:startExecution.sync:2",
-                  "Arguments": {
-                    "StateMachineArn": "${__aws_s3_steps_copy_sfn_arn__}",
-                    "Input": {
-                      "copyInstructionsKey": "{% $substringAfter($s3StepsCopyKeyMapIterX, '${__aws_s3_copy_steps_prefix__}') %}",
-                      "destinationBucket": "{% $states.input.destinationBucket %}",
-                      "destinationFolderKey": "{% $states.input.destinationFolderKey %}"
-                    }
-                  },
-                  "End": true,
-                  "Output": {
-                    "stepsExecutionId": "{% $states.result.ExecutionArn %}",
-                    "output": "{% $states.result.Output ? $states.result.Output : null %}",
-                    "error": "{% $states.result.Error ? $states.result.Error : null %}",
-                    "hasError": "{% $states.result.Error ? true : false %}",
-                    "errorMessage": "{% $states.result.Cause ? $states.result.Cause : null %}"
-                  }
-                }
-              }
-            },
-            "End": true
-          }
+      "Output": {
+        "workingCsvKey": "{% $states.result.Output.workingCsvKey %}"
+      },
+      "Next": "Check Output Copy CSV"
+    },
+    "Check Output Copy CSV": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__check_steps_copy_output_lambda_function_arn__}",
+        "Payload": {
+          "workingCsvBucket": "{% $s3StepsCopyBucket %}",
+          "workingCsvKey": "{% $s3StepsCopyCsvPrefix & 'ENDED_COPY.csv' %}"
         }
       },
-      "Next": "No errors"
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "No errors",
+      "Output": {
+        "hasError": "{% $states.result.Payload.hasError %}",
+        "errorMessage": "{% $states.result.Payload.errorMessage %}"
+      }
     },
     "No errors": {
       "Type": "Choice",
@@ -201,7 +129,7 @@
           "pushJobId": "{% $pushJobId %}",
           "packagingJobId": "{% $packagingJobId %}",
           "hasError": "{% $states.input.hasError ? $states.input.hasError : null %}",
-          "errorMessages": "{% $states.input.errorMessages ? $states.input.errorMessages : null %}",
+          "errorMessage": "{% $states.input.errorMessage ? $states.input.errorMessage : null %}",
           "status": "{% $states.input.hasError ? 'FAILED' : 'SUCCEEDED' %}"
         }
       },

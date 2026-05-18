@@ -56,6 +56,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'createCsvForS3StepsCopy',
     'updatePushJobApi',
     'packageFileToJsonlData',
+    'checkStepsCopyOutput',
   ],
   updateFastqIngestIds: ['updateIngestId', 'getFastqsInPackagingJob'],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
