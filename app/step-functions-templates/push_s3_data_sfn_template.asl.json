@@ -54,7 +54,7 @@
         "StateMachineArn": "${__aws_s3_steps_copy_sfn_arn__}",
         "Input": {
           "instructionsPrefix": "{% $s3StepsCopyCsvPrefix %}",
-          "instructionsKey": "{% $s3StepsCopyCsvPrefix %}",
+          "instructionsKey": "{% $s3StepsCopyCsvKey %}",
           "destinationBucket": "{% $states.input.destinationBucket %}",
           "destinationPrefix": "{% $states.input.destinationPrefix %}",
           "retainSummaryCsv": true
