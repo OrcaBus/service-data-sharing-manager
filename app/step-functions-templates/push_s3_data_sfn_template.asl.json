@@ -72,7 +72,7 @@
         "FunctionName": "${__check_steps_copy_output_lambda_function_arn__}",
         "Payload": {
           "workingCsvBucket": "{% $s3StepsCopyBucket %}",
-          "workingCsvKey": "{% $s3StepsCopyCsvPrefix & 'ENDED_COPY.csv' %}"
+          "workingCsvKey": "{% $states.input.workingCsvKey %}"
         }
       },
       "Retry": [
