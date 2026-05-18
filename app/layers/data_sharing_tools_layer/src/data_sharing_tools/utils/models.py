@@ -50,23 +50,24 @@ class FileObjectWithPresignedUrlTypeDef(FileObjectWithRelativePathTypeDef):
 
 
 SecondaryAnalysisDataType = Literal[
-    # CURRENT
+    # ARCHIVED
     "tumor-normal",
     "wts",
     "cttsov2",
+    'umccrise',
 
-    # FUTURE
+    # DRAGEN CURRENT
     'dragen-wgts-dna',
     'dragen-wgts-rna',
     'dragen-tso500-ctdna',
 
-    # ONCOANALYSER
+    # ONCOANALYSER CURRENT
     'oncoanalyser-wgts-dna',
     'oncoanalyser-wgts-rna',
     'oncoanalyser-wgts-dna-rna',
 
+    # TERTIARY CURRENT
     'sash',
-    'umccrise',
     'rnasum',
 ]
 
