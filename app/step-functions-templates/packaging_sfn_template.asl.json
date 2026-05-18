@@ -895,7 +895,8 @@
                   "useWorkflowFiltersIter": "{% $useWorkflowFilters %}"
                 }
               },
-              "Output": {}
+              "Output": {},
+              "MaxConcurrency": 100
             },
             "Query Workflow": {
               "Type": "Task",
@@ -1144,7 +1145,8 @@
                 }
               },
               "Output": {},
-              "End": true
+              "End": true,
+              "MaxConcurrency": 100
             },
             "No Secondary Analysis to Share": {
               "Type": "Pass",
