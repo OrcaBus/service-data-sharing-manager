@@ -112,7 +112,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
-  if (lambdaRequirements.needsStepsS3DownloadPermissions){
+  if (lambdaRequirements.needsStepsS3DownloadPermissions) {
     props.s3StepsCopyBucket.grantRead(
       lambdaObject,
       path.join(props.s3StepsCopyBucketPrefix, '*')

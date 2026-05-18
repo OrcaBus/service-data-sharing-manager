@@ -20,7 +20,8 @@ L2300950_S11_L002_R2_001.fastq.ora,COPIED,79.82039818880112,,s3://umccr-test-des
 
 # Then return
 {
-  "hasError": bool
+  "hasError": bool,
+  "errorMessage": str | None
 }
 
 """
