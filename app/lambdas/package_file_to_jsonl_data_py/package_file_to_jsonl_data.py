@@ -79,14 +79,14 @@ def handler(event, context) -> dict[str, str]:
     """
 
     # Extract the jobId and pushLocation from the event
-    job_id: str = event.get("packagingJobId")
+    packaging_job_id: str = event.get("packagingJobId")
     push_location: str = event.get("pushLocation")
     s3_steps_copy_bucket: str = event.get("s3StepsCopyBucket", None)
     s3_steps_copy_key: str = event.get("s3StepsCopyKey", None)
 
     # Check if the jobId and pushLocation are provided
-    if not job_id or not push_location:
-        raise ValueError("jobId and pushLocation are required")
+    if not packaging_job_id or not push_location:
+        raise ValueError("packagingJobId and pushLocation are required")
 
     # Get the push location as a url object
     push_location_url_obj = urlparse(push_location)
@@ -101,7 +101,7 @@ def handler(event, context) -> dict[str, str]:
 
     # Get the data from DynamoDB
     data_df = get_data_from_dynamodb(
-        job_id=job_id,
+        job_id=packaging_job_id,
         context="file"
     )
 
