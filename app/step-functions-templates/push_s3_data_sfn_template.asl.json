@@ -11,7 +11,7 @@
         "packagingJobId": "{% $states.input.packagingJobId %}",
         "pushLocation": "{% $states.input.pushLocation %}",
         "s3StepsCopyBucket": "${__aws_s3_copy_steps_bucket__}",
-        "s3StepsCopyCsvPrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $pushJobId & '/' %}",
+        "s3StepsCopyCsvPrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $fromMillis($toMillis($now()), \"[Y0001]__[M01]__[D01]\") & '/' & $states.input.pushJobId & '/' %}",
         "s3StepsCopyCsvKey": "{% 'package_list.jsonl' %}"
       }
     },
@@ -57,6 +57,8 @@
           "instructionsKey": "{% $s3StepsCopyCsvKey %}",
           "destinationBucket": "{% $states.input.destinationBucket %}",
           "destinationPrefix": "{% $states.input.destinationPrefix %}",
+          "startMarkerKey": "{% 'STARTED_COPY__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $pushJobId & '.txt' %}",
+          "summaryCsvKey": "{% 'ENDED_COPY__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $pushJobId & '.csv' %}",
           "retainSummaryCsv": true
         }
       },
