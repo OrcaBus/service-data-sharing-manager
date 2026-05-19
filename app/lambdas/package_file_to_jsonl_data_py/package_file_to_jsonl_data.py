@@ -79,20 +79,14 @@ def handler(event, context) -> dict[str, str]:
     """
 
     # Extract the jobId and pushLocation from the event
-    job_id: str = event.get("packagingJobId")
+    packaging_job_id: str = event.get("packagingJobId")
     push_location: str = event.get("pushLocation")
-    count_only: bool = event.get("countOnly", False)
-    pagination_index: int = event.get("paginationIndex", None)
     s3_steps_copy_bucket: str = event.get("s3StepsCopyBucket", None)
     s3_steps_copy_key: str = event.get("s3StepsCopyKey", None)
 
     # Check if the jobId and pushLocation are provided
-    if not job_id or not push_location:
-        raise ValueError("jobId and pushLocation are required")
-
-    # Confirm that paginationIndex is specified if countOnly is false
-    if not count_only and pagination_index is None:
-        raise ValueError("paginationIndex is required when countOnly is false")
+    if not packaging_job_id or not push_location:
+        raise ValueError("packagingJobId and pushLocation are required")
 
     # Get the push location as a url object
     push_location_url_obj = urlparse(push_location)
@@ -107,78 +101,24 @@ def handler(event, context) -> dict[str, str]:
 
     # Get the data from DynamoDB
     data_df = get_data_from_dynamodb(
-        job_id=job_id,
+        job_id=packaging_job_id,
         context="file"
     )
 
-    # Calculate the relative parent path for all source files
-    # Get the portal run id by the relative path (for secondary analysis)
-    data_df["portalRunId"] = data_df.apply(
-        lambda row_iter_: (
-            get_portal_run_id_from_relative_path(Path(row_iter_['relativePath']).parent)
-            if row_iter_['relativePath'].startswith("secondary-analysis")
-            else None
-        ),
-        axis='columns'
-    )
-
-    data_df["instrumentRunId"] = data_df.apply(
-        lambda row_iter_: (
-            get_instrument_run_id_from_relative_path(Path(row_iter_['relativePath']).parent)
-            if row_iter_['relativePath'].startswith("fastq")
-            else None
-        ),
-        axis='columns'
-    )
-
-    # Group by parent path and collect the relative paths
-    secondary_data_df = data_df.query("~portalRunId.isnull()", engine='python')
-    primary_data_df = data_df.query("~instrumentRunId.isnull()", engine='python')
-
-    # Get the number of primary data folders
-    items_list = (
-        sorted(primary_data_df['instrumentRunId'].unique().tolist()) +
-        sorted(secondary_data_df['portalRunId'].unique().tolist())
-    )
-
-    # If count only is true, return the count of the destination and source uri mappings list
-    if count_only:
-        return {
-            "listCount": len(items_list)
-        }
-
     # Okay we mean business and were uploading
     s3_client: S3Client = boto3.client("s3")
-
-    if pagination_index < len(sorted(primary_data_df['instrumentRunId'].unique().tolist())):
-        instrument_run_id = sorted(primary_data_df['instrumentRunId'].unique().tolist())[pagination_index]
-        data_df = primary_data_df.query("instrumentRunId == @instrument_run_id")
-        destination_folder_key = Path(f"fastq/{instrument_run_id}")
-        # Get the relative path parent for each file
-        data_df["relativeFolderKey"] = data_df['relativePath'].apply(
-            lambda relative_path_iter_: str(Path(relative_path_iter_).parent.relative_to(destination_folder_key)) + "/"
-        )
-    else:
-        pagination_index -= len(sorted(primary_data_df['instrumentRunId'].unique().tolist()))
-        portal_run_id = sorted(secondary_data_df['portalRunId'].unique().tolist())[pagination_index]
-        data_df = secondary_data_df.query("portalRunId == @portal_run_id")
-        destination_folder_key = Path(f"secondary-analysis/{portal_run_id}")
-        # Get the relative path parent for each file
-        data_df["relativeFolderKey"] = data_df['relativePath'].apply(
-            lambda relative_path_iter_: str(Path(relative_path_iter_).parent.relative_to(destination_folder_key)) + "/"
-        )
 
     # Now generate the jsonl data
     with NamedTemporaryFile(suffix="*.jsonl") as temp_file:
         data_df[[
             "bucket",
             "key",
-            "relativeFolderKey"
+            "relativePath"
         ]].rename(
             columns={
                 "bucket": "sourceBucket",
                 "key": "sourceKey",
-                "relativeFolderKey": "destinationRelativeFolderKey"
+                "relativePath": "destinationPrefix"
             }
         ).to_json(
             temp_file,
@@ -197,5 +137,5 @@ def handler(event, context) -> dict[str, str]:
 
     return {
         "destinationBucket": push_location_url_obj.netloc,
-        "destinationFolderKey": str(Path(push_location_url_obj.path.lstrip('/')).joinpath(destination_folder_key)) + "/",
+        "destinationPrefix": str(Path(push_location_url_obj.path)) + '/',
     }

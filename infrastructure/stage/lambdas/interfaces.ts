@@ -19,6 +19,7 @@ export type LambdaName =
   | 'getFilesListFromPortalRunId'
   | 'listPortalRunIdsInLibrary'
   | 'packageFileToJsonlData'
+  | 'checkStepsCopyOutput'
   | 'queryAndCollectIcav2Prefixes'
   | 'syncFilemanager'
   | 'updatePackagingJobApi'
@@ -51,6 +52,7 @@ export const lambdaNameList: LambdaName[] = [
   'getFilesListFromPortalRunId',
   'listPortalRunIdsInLibrary',
   'packageFileToJsonlData',
+  'checkStepsCopyOutput',
   'queryAndCollectIcav2Prefixes',
   'syncFilemanager',
   'updatePackagingJobApi',
@@ -74,6 +76,7 @@ export interface Requirements {
   needsMartLayer?: boolean;
   needsDbPermissions?: boolean;
   needsStepsS3UploadPermissions?: boolean;
+  needsStepsS3DownloadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
 }
 
@@ -138,6 +141,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsStepsS3UploadPermissions: true,
     needsDataSharingToolsLayer: true,
     needsOrcabusApiToolsLayer: true,
+  },
+  checkStepsCopyOutput: {
+    needsStepsS3DownloadPermissions: true,
   },
   updatePackagingJobApi: {
     needsOrcabusApiToolsLayer: true,

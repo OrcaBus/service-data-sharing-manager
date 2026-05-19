@@ -112,6 +112,21 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
+  if (lambdaRequirements.needsStepsS3DownloadPermissions) {
+    props.s3StepsCopyBucket.grantRead(lambdaObject, path.join(props.s3StepsCopyBucketPrefix, '*'));
+    NagSuppressions.addResourceSuppressions(
+      lambdaObject,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'Lambda needs asterisk across s3 resources, lambda object uses asterisk on permissions when versions not used',
+        },
+      ],
+      true
+    );
+  }
+
   if (lambdaRequirements.needsStepsS3UploadPermissions) {
     props.s3StepsCopyBucket.grantReadWrite(
       lambdaObject,
