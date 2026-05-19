@@ -108,17 +108,21 @@ def handler(event, context) -> dict[str, str]:
     # Okay we mean business and were uploading
     s3_client: S3Client = boto3.client("s3")
 
+    data_df["relativePathPrefix"] = data_df["relativePath"].apply(
+        lambda rel_path_iter_: str(Path(rel_path_iter_).parent) + "/"
+    )
+
     # Now generate the jsonl data
     with NamedTemporaryFile(suffix="*.jsonl") as temp_file:
         data_df[[
             "bucket",
             "key",
-            "relativePath"
+            "relativePathPrefix"
         ]].rename(
             columns={
                 "bucket": "sourceBucket",
                 "key": "sourceKey",
-                "relativePath": "destinationPrefix"
+                "relativePathPrefix": "destinationRelativeFolderKey"
             }
         ).to_json(
             temp_file,
@@ -137,5 +141,8 @@ def handler(event, context) -> dict[str, str]:
 
     return {
         "destinationBucket": push_location_url_obj.netloc,
-        "destinationPrefix": str(Path(push_location_url_obj.path)) + '/',
+        "destinationPrefix": (
+            ( str(Path(push_location_url_obj.path)).lstrip("/") + '/' )
+            if not push_location_url_obj.path == "/" else ""
+        ),
     }
