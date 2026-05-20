@@ -113,7 +113,7 @@ def handler(event, context) -> dict[str, str]:
     )
 
     # Now generate the jsonl data
-    with NamedTemporaryFile(suffix="*.jsonl") as temp_file:
+    with NamedTemporaryFile(suffix=".jsonl") as temp_file:
         data_df[[
             "bucket",
             "key",
