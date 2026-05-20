@@ -12,7 +12,7 @@
         "pushLocation": "{% $states.input.pushLocation %}",
         "s3StepsCopyBucket": "${__aws_s3_copy_steps_bucket__}",
         "s3StepsCopyCsvPrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $fromMillis($toMillis($now()), \"[Y0001]__[M01]__[D01]\") & '/' & $states.input.pushJobId & '/' %}",
-        "s3StepsCopyCsvKey": "{% 'package_list.jsonl' %}"
+        "s3StepsCopyJsonlKey": "{% 'package_list.jsonl' %}"
       }
     },
     "Generate jsonl and upload to s3": {
@@ -28,7 +28,7 @@
           "packagingJobId": "{% $packagingJobId %}",
           "pushLocation": "{% $pushLocation %}",
           "s3StepsCopyBucket": "{% $s3StepsCopyBucket %}",
-          "s3StepsCopyKey": "{% $s3StepsCopyCsvPrefix & $s3StepsCopyCsvKey %}"
+          "s3StepsCopyKey": "{% $s3StepsCopyCsvPrefix & $s3StepsCopyJsonlKey %}"
         }
       },
       "Retry": [
@@ -54,7 +54,7 @@
         "StateMachineArn": "${__aws_s3_steps_copy_sfn_arn__}",
         "Input": {
           "instructionsPrefix": "{% $s3StepsCopyCsvPrefix %}",
-          "instructionsKey": "{% $s3StepsCopyCsvKey %}",
+          "instructionsKey": "{% $s3StepsCopyJsonlKey %}",
           "destinationBucket": "{% $states.input.destinationBucket %}",
           "destinationPrefix": "{% $states.input.destinationPrefix %}",
           "startMarkerKey": "{% 'STARTED_COPY__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $pushJobId & '.txt' %}",
