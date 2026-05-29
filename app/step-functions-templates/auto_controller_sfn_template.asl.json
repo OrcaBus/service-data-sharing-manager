@@ -1,76 +1,54 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "For each Job (from S3)",
+  "StartAt": "Check projects in instrument run",
   "States": {
-    "For each Job (from S3)": {
-      "Type": "Map",
-      "MaxConcurrency": 5,
-      "ItemReader": {
-        "Resource": "arn:aws:states:::s3:getObject",
-        "ReaderConfig": {
-          "InputType": "JSON"
-        },
-        "Arguments": {
-          "Bucket": "${__jobs_config_bucket__}",
-          "Key": "${__jobs_config_key__}"
+    "Check projects in instrument run": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__check_project_in_instrument_run_lambda_function_arn__}",
+        "Payload": {
+          "instrumentRunId": "{% $states.input.instrumentRunId %}",
+          "jobsConfigBucket": "${__jobs_config_bucket__}",
+          "jobsConfigKey": "${__jobs_config_key__}"
         }
       },
-      "ItemSelector": {
-        "enabled": "{% $states.context.Map.Item.Value.enabled %}",
-        "packageName": "{% 'autosharing-' & $states.context.Map.Item.Value.jobName & '-' & $states.input.instrumentRunId %}",
-        "packageRequest": {
-          "instrumentRunIdList": "{% [$states.input.instrumentRunId] %}",
-          "dataTypeList": "{% $states.context.Map.Item.Value.dataTypeList %}",
-          "projectIdList": "{% $states.context.Map.Item.Value.projectIdList %}"
-        },
-        "shareDestination": "{% $states.context.Map.Item.Value.shareDestination %}",
-        "instrumentRunId": "{% $states.input.instrumentRunId %}"
-      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.TaskFailed",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Output": "{% $merge([$states.input, $states.result.Payload]) %}",
+      "Next": "Matching Jobs Found in Run?"
+    },
+    "Matching Jobs Found in Run?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.matchingJobsFound %}",
+          "Next": "Map"
+        }
+      ],
+      "Default": "Skip"
+    },
+    "Map": {
+      "Type": "Map",
       "ItemProcessor": {
         "ProcessorConfig": {
-          "Mode": "DISTRIBUTED",
-          "ExecutionType": "STANDARD"
+          "Mode": "INLINE"
         },
-        "StartAt": "Check projects in instrument run",
+        "StartAt": "Run autoPackage",
         "States": {
-          "Check projects in instrument run": {
-            "Type": "Task",
-            "Resource": "arn:aws:states:::lambda:invoke",
-            "Arguments": {
-              "FunctionName": "${__check_project_in_instrument_run_lambda_function_arn__}",
-              "Payload": {
-                "instrumentRunId": "{% $states.input.instrumentRunId %}",
-                "projectIdList": "{% $states.input.packageRequest.projectIdList %}"
-              }
-            },
-            "Retry": [
-              {
-                "ErrorEquals": [
-                  "States.TaskFailed",
-                  "Lambda.ServiceException",
-                  "Lambda.AWSLambdaException",
-                  "Lambda.SdkClientException",
-                  "Lambda.TooManyRequestsException"
-                ],
-                "IntervalSeconds": 1,
-                "MaxAttempts": 3,
-                "BackoffRate": 2,
-                "JitterStrategy": "FULL"
-              }
-            ],
-            "Output": "{% $merge([$states.input, $states.result.Payload]) %}",
-            "Next": "Job Enabled and Project Found in Run?"
-          },
-          "Job Enabled and Project Found in Run?": {
-            "Type": "Choice",
-            "Choices": [
-              {
-                "Condition": "{% $states.input.enabled and $states.input.project_found %}",
-                "Next": "Run autoPackage"
-              }
-            ],
-            "Default": "Skip"
-          },
           "Run autoPackage": {
             "Type": "Task",
             "Resource": "arn:aws:states:::states:startExecution.sync:2",
@@ -92,16 +70,14 @@
               }
             ],
             "End": true
-          },
-          "Skip": {
-            "Type": "Succeed"
           }
         }
       },
-      "Output": {
-        "plans": "{% $states.result %}"
-      },
-      "End": true
+      "End": true,
+      "Items": "{% $states.input.jobList%}"
+    },
+    "Skip": {
+      "Type": "Succeed"
     }
   }
 }

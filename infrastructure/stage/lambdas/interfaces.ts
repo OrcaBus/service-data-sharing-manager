@@ -175,6 +175,8 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   checkProjectInInstrumentRun: {
     needsOrcabusApiToolsLayer: true,
+    needsMartLayer: true,
+    needsPackagingBucketPermissions: true,
   },
   notifySlack: {
     needsOrcabusApiToolsLayer: true,
