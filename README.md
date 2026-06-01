@@ -275,7 +275,7 @@ Automatic Data Sharing extends the core service by automatically packaging data 
 
 Upon completion of a sequencing run, the following process is triggered:
 
-- Check the projects in the sequencing run against the job definitions (see [Job Definitions](#job-definitions) below) to identify if any automatic sharing jobs apply.
+- Check the owner and project IDs in the labriries in sequencing run against the job definitions (see [Job Definitions](#job-definitions) below) to identify if any automatic sharing jobs apply.
 
 - If there’s a match, performs packaging fully unattended.
 
@@ -293,7 +293,8 @@ Multiple jobs can be defined within a single JSON array. Below is a template for
 {
   "jobName": "project-shortname",
   "enabled": true,
-  "projectIdList": ["PROJECT1"],
+  "ownerId": "OWNER1",
+  "projectIdList": ["PROJECT1", "PROJECT2"],
   "dataTypeList": ["fastq"],
   "shareDestination": "s3://target-bucket/path/"
 }
@@ -303,6 +304,8 @@ Multiple jobs can be defined within a single JSON array. Below is a template for
 `jobName` (str) – short name for the job. Used in logs and Step Functions.
 
 `enabled` (bool) – set to true to activate the job; disabled jobs are ignored.
+
+`ownerId` (str) – owner ID; run must match to be included.
 
 `projectIdList` (list[str]) – list of project IDs; run must match at least one.
 

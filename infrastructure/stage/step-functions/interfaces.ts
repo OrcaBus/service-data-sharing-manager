@@ -60,7 +60,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   ],
   updateFastqIngestIds: ['updateIngestId', 'getFastqsInPackagingJob'],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
-  autoController: ['checkProjectInInstrumentRun'],
+  autoController: ['findMatchingJobsForRun'],
   autoPackage: ['triggerPackaging', 'checkPackagePushStatus', 'notifySlack'],
   autoPush: [
     'triggerPush',

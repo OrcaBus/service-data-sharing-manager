@@ -31,7 +31,7 @@ export type LambdaName =
   | 'triggerPackaging'
   | 'checkPackagePushStatus'
   | 'triggerPush'
-  | 'checkProjectInInstrumentRun'
+  | 'findMatchingJobsForRun'
   | 'notifySlack'
   | 'extractSlackActionContext'
   | 'verifySlackRequest';
@@ -64,7 +64,7 @@ export const lambdaNameList: LambdaName[] = [
   'triggerPackaging',
   'checkPackagePushStatus',
   'triggerPush',
-  'checkProjectInInstrumentRun',
+  'findMatchingJobsForRun',
   'notifySlack',
   'extractSlackActionContext',
   'verifySlackRequest',
@@ -173,7 +173,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   triggerPush: {
     needsOrcabusApiToolsLayer: true,
   },
-  checkProjectInInstrumentRun: {
+  findMatchingJobsForRun: {
     needsOrcabusApiToolsLayer: true,
     needsMartLayer: true,
     needsPackagingBucketPermissions: true,

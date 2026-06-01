@@ -1,12 +1,12 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Check projects in instrument run",
+  "StartAt": "Find matching Jobs for instrument run",
   "States": {
-    "Check projects in instrument run": {
+    "Find matching Jobs for instrument run": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
-        "FunctionName": "${__check_project_in_instrument_run_lambda_function_arn__}",
+        "FunctionName": "${__find_matching_jobs_for_run_lambda_function_arn__}",
         "Payload": {
           "instrumentRunId": "{% $states.input.instrumentRunId %}",
           "jobsConfigBucket": "${__jobs_config_bucket__}",
