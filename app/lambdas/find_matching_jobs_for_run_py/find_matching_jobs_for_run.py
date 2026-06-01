@@ -9,8 +9,10 @@ import boto3
 from orcabus_api_tools.sequence import get_libraries_from_instrument_run_id
 
 
-# ========================= ANCILLARY FUNCTIONS =========================
-
+# ========================= COMMON ANCILLARY FUNCTIONS =========================
+# This functions are already used in other lambdas (get_workflow_runs_for_portal_run
+# and list_portal_run_ids_in_library) and are general enough for moving them into a
+#  common module (?)
 
 
 WORKGROUP_ENV_VAR = 'ATHENA_WORKGROUP_NAME'
@@ -72,7 +74,7 @@ def run_athena_sql_query(sql_query: str) -> pd.DataFrame:
         }
     )
 
-# =======================================================================
+# ==============================================================================
 
 
 def load_job_definitions_from_s3(bucket, key):
