@@ -293,7 +293,7 @@ Multiple jobs can be defined within a single JSON array. Below is a template for
 {
   "jobName": "project-shortname",
   "enabled": true,
-  "ownerId": "OWNER1",
+  "ownerId": "OWNER-ID",
   "projectIdList": ["PROJECT1", "PROJECT2"],
   "dataTypeList": ["fastq"],
   "shareDestination": "s3://target-bucket/path/"
