@@ -63,19 +63,14 @@ def _post_message(
     ephemeral: bool = False,
     user: str | None = None,
     ts: str | None = None,
-    thread_ts: str | None = None,
-    update: bool = False,
-
+    thread_ts: str | None = None
 ):
     """
     Generic wrapper:
       - normal message: chat.postMessage
       - ephemeral: chat.postEphemeral
-      - update existing messages: chat.update
     """
-    if update:
-        url = "https://slack.com/api/chat.update"
-    elif ephemeral:
+    if ephemeral:
         url = "https://slack.com/api/chat.postEphemeral"
     else:
         url = "https://slack.com/api/chat.postMessage"
@@ -84,11 +79,8 @@ def _post_message(
     payload: dict = {"channel": channel}
 
     # Mandatory fields depending on mode
-    if update:
-        payload["ts"] = ts
     if ephemeral:
         payload["user"] = user
-
     if thread_ts:
         payload["thread_ts"] = thread_ts
     # Optional fields
@@ -160,6 +152,7 @@ def handler(event, context):
     # ------------------------------------------------------------------
     # All fields pulled from the event up front
     # ------------------------------------------------------------------
+    job_name = event.get("jobName")
     package_id = event.get("packageId")                  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
     package_name = event.get("packageName")              # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
     share_destination = event.get("shareDestination")    # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
@@ -167,6 +160,7 @@ def handler(event, context):
     channel_id = event.get("channelId")                  # PACKAGE_READY (overwritten), PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
     user_id = event.get("userId")                        # PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
     message_ts = event.get("messageTs")                  # PUSH_TRIGGERED, PUSH_COMPLETED
+    header_ts = event.get("headerTs")
 
     status = event.get("status")                         # PUSH_COMPLETED
     push_id = event.get("pushId")                        # PUSH_COMPLETED
@@ -177,9 +171,6 @@ def handler(event, context):
 
 
 
-    #  Added on Thread refactor
-    job_name = event.get("jobName")                      # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
-    header_ts = event.get("headerTs")                    #  PUSH_TRIGGERED, PUSH_COMPLETED
 
 
     # Header text for the message. This is the main notification that appears in the channel,
@@ -220,9 +211,6 @@ def handler(event, context):
 
 
         # First message in the thread with package details, report link and push button.
-
-
-
         button_value = json.dumps(
             {
                 "packageId": package_id,
@@ -233,7 +221,7 @@ def handler(event, context):
             }
         )
 
-
+        # Needs a block for set the button.
         thread_blocks = [
             {
                 "type": "section",
