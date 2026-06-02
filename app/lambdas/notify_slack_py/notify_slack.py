@@ -186,7 +186,7 @@ def handler(event, context):
     # the rest of the info is in the thread under it.
     def header_text(job_name, status):
         return (
-        f":package: A new auto-package is ready.\n"
+        f"A new auto-package is ready.\n"
         f"*Job Name:* `{job_name}`\n"
         f"{status}"
         )
@@ -194,7 +194,7 @@ def handler(event, context):
     package_ready_text = (
         f"*Package Name:* `{package_name}`\n"
         f"*Package ID:* `{package_id}`\n"
-        f"Destination: `{share_destination}`\n"
+        f"*Share Destination:* `{share_destination}`\n"
         f"Review the packaging report <{package_report_presigned_url}|here>.\n"
     )
 
@@ -208,7 +208,7 @@ def handler(event, context):
         #  as is empty in the event
         channel_id = _get_slack_channel_id()
 
-        header_text = header_text(job_name, ':large_yellow_circle: Awaiting review')
+        header_text = header_text(job_name, ':bell: Awaiting review')
 
         post_header_response = _post_message(
             bot_token=bot_token,
@@ -292,82 +292,88 @@ def handler(event, context):
     elif slack_notification_type == "PUSH_TRIGGERED":
 
         # Update Status in header messege to "In progress".
-        updated_header_text = header_text(job_name, ':large_blue_circle: In progress')
+        updated_header_text = header_text(job_name, ':outbox_tray: Push in progress...')
 
-        update_response = _update_message(
+        _update_message(
             bot_token=bot_token,
             channel=channel_id,
             ts=header_ts,
             text=updated_header_text,
         )
 
+        # Update package ready message in thread JUST to remove the button and prevent double push.
 
-        print('=============================================================================')
-        print("header update response:", update_response)
-        print('=============================================================================')
-
-        # Update thread with push in progress message and remove the button (preventing double push)
-        push_in_progress_update = (
-            f":outbox_tray: Push in progress… triggered by <@{user_id}>."
+        _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=message_ts,
+            text=package_ready_text,
         )
-        push_in_progress_update_text = package_ready_text + push_in_progress_update
+
+        # Post message in thread to show the push is in progress and who triggered it.
+        push_in_progress_text = (
+            f"*Push triggered* by <@{user_id}>."
+        )
 
         _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            ts=message_ts,
-            text=push_in_progress_update_text,
-            update=True,
+            thread_ts=header_ts,
+            text=push_in_progress_text,
         )
 
 
+    elif slack_notification_type == "PUSH_COMPLETED":
+        # Push succeded
+        if status == "SUCCEEDED":
+
+            # Update Status in header messege to "Completed!".
+            succeeded_updated_header_text = header_text(job_name, ':white_check_mark: Completed!')
+
+            _update_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                ts=header_ts,
+                text=succeeded_updated_header_text,
+            )
+
+            # Post message in thread to show the push result and details.
+            push_succeeded_text = (
+                f"*Push Completed:* {status}.\n"
+                f"*Push ID:* {push_id}\n"
+                f"*Share Destination:* `{share_destination}`"
+            )
+
+            _post_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                thread_ts=header_ts,
+                text=push_succeeded_text,
+            )
 
 
-    # elif slack_notification_type == "PUSH_COMPLETED":
-    #     # Push succeded
-    #     if status == "SUCCEEDED":
+        # Push NOT succeded; catch and show the issue
+        else:
+            # Update status in header message to "Failed".
+            failed_updated_header_text = header_text(job_name, ':warning: Push not successful.')
 
-    #         push_succeeded_update = (
-    #             f"Pushed by <@{user_id}>.\n"
-    #             f"\n"
-    #             f"\n"
-    #             f":white_check_mark: *Push Completed*\n"
-    #             f"*Push ID:* {push_id} *{status}*\n"
-    #             f"*Package ID*: {package_id}\n"
-    #             f"*Share Destination:* {share_destination}"
-    #         )
+            _update_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                ts=header_ts,
+                text=failed_updated_header_text,
+            )
+            # Post message in thread to show the push result and details.
+            push_failed_text = (
+                f"*Push completed, but was NOT successful:* {status}\n"
+                f"*Push ID:* {push_id}\n"
+                f"*Share Destination:* `{share_destination}`\n"
+                f"Please check `data-sharing--autoPush` state machine for more details."
+            )
 
-    #         block_text = body_text + push_succeeded_update
-
-
-    #     # Push NOT succeded; catch and show the issue
-    #     else:
-    #         push_failed_update = (
-    #             f"Pushed by <@{user_id}>.\n"
-    #             f"\n"
-    #             f"\n"
-    #             f":x: Push *{push_id}* {status}.\n"
-    #             f"*Package ID*: {package_id}\n"
-    #         )
-
-    #         block_text = body_text + push_failed_update
-
-    #     # Update
-    #     updated_blocks = [
-    #         {
-    #             "type": "section",
-    #             "text": {
-    #                 "type": "mrkdwn",
-    #                 "text": block_text,
-    #             },
-    #         },
-    #     ]
-
-    #     # Post updated message
-    #     return _post_message(
-    #         bot_token=bot_token,
-    #         channel=channel_id,
-    #         ts=message_ts,
-    #         blocks=updated_blocks,
-    #         update=True,
-    #     )
+            _post_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                thread_ts=header_ts,
+                text=push_failed_text
+            )
