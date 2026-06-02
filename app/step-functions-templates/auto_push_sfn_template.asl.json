@@ -90,9 +90,9 @@
           "shareDestination": "{% $states.input.shareDestination %}",
           "userId": "{% $states.input.userId %}",
           "channelId": "{% $states.input.channelId %}",
-          "messageTs": "{% $states.input.messageTs %}",
+          "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}",
           "jobName": "{% $states.input.jobName %}",
-          "headerTs": "{% $states.input.headerTs %}"
+          "mainMessageTs": "{% $states.input.mainMessageTs %}"
         }
       },
       "Output": {
@@ -100,7 +100,7 @@
         "packageId": "{% $states.input.packageId %}",
         "userId": "{% $states.input.userId %}",
         "channelId": "{% $states.input.channelId %}",
-        "messageTs": "{% $states.input.messageTs %}"
+        "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
       },
       "Retry": [
         {
@@ -163,7 +163,7 @@
         "shareDestination": "{% $states.result.Payload.pushRequestObject.shareDestination %}",
         "userId": "{% $states.input.userId %}",
         "channelId": "{% $states.input.channelId %}",
-        "messageTs": "{% $states.input.messageTs %}"
+        "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
       },
       "Retry": [
         {
@@ -201,7 +201,7 @@
         "shareDestination": "{% $states.input.shareDestination %}",
         "userId": "{% $states.input.userId %}",
         "channelId": "{% $states.input.channelId %}",
-        "messageTs": "{% $states.input.messageTs %}",
+        "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}",
         "status": "{% $states.result.Payload %}"
       },
       "Retry": [
@@ -244,7 +244,7 @@
           "shareDestination": "{% $states.input.shareDestination %}",
           "userId": "{% $states.input.userId %}",
           "channelId": "{% $states.input.channelId %}",
-          "messageTs": "{% $states.input.messageTs %}"
+          "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
         }
       },
       "Output": "{% $states.input %}",

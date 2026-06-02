@@ -13,7 +13,7 @@ def _event_from_slack_body(slack_body: str) -> dict:
         "shareDestination": "s3://...",
         "user_id": "U…",
         "channel_id": "C…",
-        "message_ts": "17-digit-ts"
+        "package_ready_message_ts": "17-digit-ts"
       }
     """
     #
@@ -26,7 +26,7 @@ def _event_from_slack_body(slack_body: str) -> dict:
 
     container = slack_payload.get("container")
     channel_id = container.get("channel_id")
-    message_ts = container.get("message_ts")
+    package_ready_message_ts = container.get("package_ready_message_ts")
 
     action = slack_payload.get("actions")[0]
     raw_value = action.get("value")
@@ -37,7 +37,7 @@ def _event_from_slack_body(slack_body: str) -> dict:
     package_name = value.get("packageName")
     share_destination = value.get("shareDestination")
     job_name = value.get("jobName")
-    header_ts = value.get("headerTs")
+    main_package_ready_message_ts = value.get("mainMessageTs")
 
     return {
       "packageId": package_id,
@@ -45,9 +45,9 @@ def _event_from_slack_body(slack_body: str) -> dict:
       "shareDestination": share_destination,
       "userId": user_id,
       "channelId": channel_id,
-      "messageTs": message_ts,
+      "packageReadyMessageTs": package_ready_message_ts,
       "jobName": job_name,
-      "headerTs": header_ts
+      "mainMessageTs": main_package_ready_message_ts
     }
 
 
@@ -99,9 +99,9 @@ def handler(event, context):
   share_destination = event_data.get("shareDestination")
   user_id = event_data.get("userId")
   channel_id = event_data.get("channelId")
-  message_ts = event_data.get("messageTs")
+  package_ready_message_ts = event_data.get("packageReadyMessageTs")
   job_name = event_data.get("jobName")
-  header_ts = event_data.get("headerTs")
+  main_package_ready_message_ts = event_data.get("mainMessageTs")
   userAllowed = user_id in allowed_users
 
 
@@ -112,7 +112,7 @@ def handler(event, context):
       "shareDestination": share_destination,
       "userId": user_id,
       "channelId": channel_id,
-      "messageTs": message_ts,
+      "packageReadyMessageTs": package_ready_message_ts,
       "jobName": job_name,
-      "headerTs": header_ts
+      "mainMessageTs": main_package_ready_message_ts
   }

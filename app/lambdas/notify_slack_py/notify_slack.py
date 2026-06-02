@@ -144,6 +144,14 @@ def _update_message(
 
 # ----------------------------------------------------------------------
 
+# Header text for the message. This is the main notification that appears in the channel,
+# the rest of the info is in the thread under it.
+def header_text(job_name, status):
+    return (
+    f"A new auto-package is ready.\n"
+    f"*Job Name:* `{job_name}`\n"
+    f"{status}"
+    )
 
 def handler(event, context):
     bot_token = _get_slack_bot_token()
@@ -159,8 +167,8 @@ def handler(event, context):
 
     channel_id = event.get("channelId")                  # PACKAGE_READY (overwritten), PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
     user_id = event.get("userId")                        # PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
-    message_ts = event.get("messageTs")                  # PUSH_TRIGGERED, PUSH_COMPLETED
-    header_ts = event.get("headerTs")
+    package_ready_message_ts = event.get("packageReadyMessageTs")                  # PUSH_TRIGGERED, PUSH_COMPLETED
+    main_package_ready_message_ts = event.get("mainMessageTs")
 
     status = event.get("status")                         # PUSH_COMPLETED
     push_id = event.get("pushId")                        # PUSH_COMPLETED
@@ -170,17 +178,6 @@ def handler(event, context):
         package_report_presigned_url = _get_package_report(package_id).strip('"')  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
 
 
-
-
-
-    # Header text for the message. This is the main notification that appears in the channel,
-    # the rest of the info is in the thread under it.
-    def header_text(job_name, status):
-        return (
-        f"A new auto-package is ready.\n"
-        f"*Job Name:* `{job_name}`\n"
-        f"{status}"
-        )
 
     package_ready_text = (
         f"*Package Name:* `{package_name}`\n"
@@ -199,7 +196,7 @@ def handler(event, context):
         #  as is empty in the event
         channel_id = _get_slack_channel_id()
 
-        header_text = header_text(job_name, ':bell: Awaiting review')
+        header_text = header_text(job_name, ':package: Awaiting review')
 
         post_header_response = _post_message(
             bot_token=bot_token,
@@ -207,7 +204,9 @@ def handler(event, context):
             text=header_text,
         )
 
-        header_ts = post_header_response.get("ts")
+        # Read the main message time stamp from the response, in the following notifications both
+        # for update status or post in a thread under it.
+        main_package_ready_message_ts = post_header_response.get("ts")
 
 
         # First message in the thread with package details, report link and push button.
@@ -217,7 +216,7 @@ def handler(event, context):
                 "jobName": job_name,
                 "packageName": package_name,
                 "shareDestination": share_destination,
-                "headerTs": header_ts
+                "mainMessageTs": main_package_ready_message_ts
             }
         )
 
@@ -248,10 +247,11 @@ def handler(event, context):
             },
         ]
 
+        # Post the message in the thread with the button to trigger the push and package details.
         thread_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            thread_ts=header_ts,
+            thread_ts=main_package_ready_message_ts,
             text=package_ready_text,
             blocks=thread_blocks,
         )
@@ -285,7 +285,7 @@ def handler(event, context):
         _update_message(
             bot_token=bot_token,
             channel=channel_id,
-            ts=header_ts,
+            ts=main_package_ready_message_ts,
             text=updated_header_text,
         )
 
@@ -294,7 +294,7 @@ def handler(event, context):
         _update_message(
             bot_token=bot_token,
             channel=channel_id,
-            ts=message_ts,
+            ts=package_ready_message_ts,
             text=package_ready_text,
         )
 
@@ -306,7 +306,7 @@ def handler(event, context):
         _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            thread_ts=header_ts,
+            thread_ts=main_package_ready_message_ts,
             text=push_in_progress_text,
         )
 
@@ -321,7 +321,7 @@ def handler(event, context):
             _update_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                ts=header_ts,
+                ts=main_package_ready_message_ts,
                 text=succeeded_updated_header_text,
             )
 
@@ -335,7 +335,7 @@ def handler(event, context):
             _post_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                thread_ts=header_ts,
+                thread_ts=main_package_ready_message_ts,
                 text=push_succeeded_text,
             )
 
@@ -348,7 +348,7 @@ def handler(event, context):
             _update_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                ts=header_ts,
+                ts=main_package_ready_message_ts,
                 text=failed_updated_header_text,
             )
             # Post message in thread to show the push result and details.
@@ -362,6 +362,6 @@ def handler(event, context):
             _post_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                thread_ts=header_ts,
+                thread_ts=main_package_ready_message_ts,
                 text=push_failed_text
             )
