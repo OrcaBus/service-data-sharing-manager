@@ -44,7 +44,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     timeout: Duration.seconds(300),
     includeOrcabusApiToolsLayer: lambdaRequirements.needsOrcabusApiToolsLayer,
     includeMartLayer: lambdaRequirements.needsMartLayer,
-    memorySize: lambdaRequirements.needsHigherMemory ? 1024 : undefined,
+    ...(lambdaRequirements.needsHigherMemory ? { memorySize: 1024 } : {}),
   });
 
   if (lambdaRequirements.needsDataSharingToolsLayer) {
