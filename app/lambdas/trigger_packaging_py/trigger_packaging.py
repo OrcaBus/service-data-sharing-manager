@@ -10,6 +10,7 @@ to start a packaging job based on the event payload.
 from orcabus_api_tools.data_sharing import create_package
 
 def handler(event, context):
+    jon_name = event["jobName"]
     package_name = event["packageName"]
     package_request = event["packageRequest"]
 

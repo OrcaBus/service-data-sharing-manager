@@ -90,7 +90,9 @@
           "shareDestination": "{% $states.input.shareDestination %}",
           "userId": "{% $states.input.userId %}",
           "channelId": "{% $states.input.channelId %}",
-          "messageTs": "{% $states.input.messageTs %}"
+          "messageTs": "{% $states.input.messageTs %}",
+          "jobName": "{% $states.input.jobName %}",
+          "headerTs": "{% $states.input.headerTs %}"
         }
       },
       "Output": {

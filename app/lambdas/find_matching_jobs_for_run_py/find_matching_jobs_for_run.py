@@ -183,6 +183,7 @@ def handler(event, context):
             share_destination = job_definitions_df.loc[job_name, 'shareDestination']
 
             job_list.append({
+                "jobName": job_name,
                 "packageName": package_name,
                 "packageRequest": package_request,
                 "shareDestination": share_destination

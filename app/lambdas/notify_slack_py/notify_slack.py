@@ -63,7 +63,9 @@ def _post_message(
     ephemeral: bool = False,
     user: str | None = None,
     ts: str | None = None,
+    thread_ts: str | None = None,
     update: bool = False,
+
 ):
     """
     Generic wrapper:
@@ -87,6 +89,8 @@ def _post_message(
     if ephemeral:
         payload["user"] = user
 
+    if thread_ts:
+        payload["thread_ts"] = thread_ts
     # Optional fields
     if text is not None:
         payload["text"] = text
@@ -102,10 +106,49 @@ def _post_message(
     return {
         "ok": response_data.get("ok"),
         "error": response_data.get("error"),
+        "ts": response_data.get("ts")
     }
 
 
+def _update_message(
+    bot_token: str,
+    channel: str,
+    ts: str,
+    text: str | None = None,
+    blocks: list | None = None,
+) -> dict:
+    """
+    Update an existing Slack message via chat.update.
 
+    Required:
+      - channel
+      - ts
+
+    Optional:
+      - text
+      - blocks
+    """
+    payload: dict = {
+        "channel": channel,
+        "ts": ts,
+    }
+
+    if text is not None:
+        payload["text"] = text
+
+    if blocks is not None:
+        payload["blocks"] = blocks
+
+    response_data = _slack_api_post(
+        url="https://slack.com/api/chat.update",
+        bot_token=bot_token,
+        payload=payload,
+    )
+
+    return {
+        "ok": response_data.get("ok"),
+        "error": response_data.get("error"),
+    }
 
 # ----------------------------------------------------------------------
 
@@ -132,39 +175,71 @@ def handler(event, context):
     if package_id is not None:
         package_report_presigned_url = _get_package_report(package_id).strip('"')  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
 
-    text = f"Auto Package for {package_name} is ready."  # PACKAGE_READY
 
-    body_text = (                                         # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
-        f":package: *Auto Package*\n"
-        f"*{package_name}* is ready.\n"
+
+    #  Added on Thread refactor
+    job_name = event.get("jobName")                      # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
+    header_ts = event.get("headerTs")                    #  PUSH_TRIGGERED, PUSH_COMPLETED
+
+
+    # Header text for the message. This is the main notification that appears in the channel,
+    # the rest of the info is in the thread under it.
+    def header_text(job_name, status):
+        return (
+        f":package: A new auto-package is ready.\n"
+        f"*Job Name:* `{job_name}`\n"
+        f"{status}"
+        )
+
+    package_ready_text = (
+        f"*Package Name:* `{package_name}`\n"
         f"*Package ID:* `{package_id}`\n"
         f"Destination: `{share_destination}`\n"
         f"Review the packaging report <{package_report_presigned_url}|here>.\n"
     )
 
+
     # ----------------------------------------------------
     # Package notifications
     # ----------------------------------------------------
     if slack_notification_type == "PACKAGE_READY":
+
         # When a package is ready, the channel ID is pulled from the secret
         #  as is empty in the event
         channel_id = _get_slack_channel_id()
 
+        header_text = header_text(job_name, ':large_yellow_circle: Awaiting review')
+
+        post_header_response = _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            text=header_text,
+        )
+
+        header_ts = post_header_response.get("ts")
+
+
+        # First message in the thread with package details, report link and push button.
+
+
+
         button_value = json.dumps(
             {
                 "packageId": package_id,
+                "jobName": job_name,
                 "packageName": package_name,
                 "shareDestination": share_destination,
+                "headerTs": header_ts
             }
         )
 
 
-        blocks = [
+        thread_blocks = [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": body_text,
+                    "text": package_ready_text,
                 },
             },
             {
@@ -185,15 +260,18 @@ def handler(event, context):
             },
         ]
 
-
-
-        return _post_message(
+        thread_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            text=text,
-            blocks=blocks,
+            thread_ts=header_ts,
+            text=package_ready_text,
+            blocks=thread_blocks,
         )
 
+        return {
+            "ok": thread_response.get("ok"),
+            "error": thread_response.get("error"),
+        }
 
 
     # ----------------------------------------------------
@@ -213,79 +291,83 @@ def handler(event, context):
 
     elif slack_notification_type == "PUSH_TRIGGERED":
 
+        # Update Status in header messege to "In progress".
+        updated_header_text = header_text(job_name, ':large_blue_circle: In progress')
+
+        update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=header_ts,
+            text=updated_header_text,
+        )
+
+
+        print('=============================================================================')
+        print("header update response:", update_response)
+        print('=============================================================================')
+
+        # Update thread with push in progress message and remove the button (preventing double push)
         push_in_progress_update = (
             f":outbox_tray: Push in progress… triggered by <@{user_id}>."
         )
+        push_in_progress_update_text = package_ready_text + push_in_progress_update
 
-        block_text = body_text + push_in_progress_update
-
-        updated_blocks = [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": block_text,
-                },
-            },
-        ]
-
-
-        # Remove button for everyone by updating only the blocks
-        return _post_message(
+        _post_message(
             bot_token=bot_token,
             channel=channel_id,
             ts=message_ts,
-            text=text,
-            blocks=updated_blocks,
+            text=push_in_progress_update_text,
             update=True,
         )
 
 
-    elif slack_notification_type == "PUSH_COMPLETED":
-        # Push succeded
-        if status == "SUCCEEDED":
-
-            push_succeeded_update = (
-                f"Pushed by <@{user_id}>.\n"
-                f"\n"
-                f"\n"
-                f":white_check_mark: *Push Completed*\n"
-                f"*Push ID:* {push_id} *{status}*\n"
-                f"*Package ID*: {package_id}\n"
-                f"*Share Destination:* {share_destination}"
-            )
-
-            block_text = body_text + push_succeeded_update
 
 
-        # Push NOT succeded; catch and show the issue
-        else:
-            push_failed_update = (
-                f"Pushed by <@{user_id}>.\n"
-                f"\n"
-                f"\n"
-                f":x: Push *{push_id}* {status}.\n"
-                f"*Package ID*: {package_id}\n"
-            )
+    # elif slack_notification_type == "PUSH_COMPLETED":
+    #     # Push succeded
+    #     if status == "SUCCEEDED":
 
-            block_text = body_text + push_failed_update
+    #         push_succeeded_update = (
+    #             f"Pushed by <@{user_id}>.\n"
+    #             f"\n"
+    #             f"\n"
+    #             f":white_check_mark: *Push Completed*\n"
+    #             f"*Push ID:* {push_id} *{status}*\n"
+    #             f"*Package ID*: {package_id}\n"
+    #             f"*Share Destination:* {share_destination}"
+    #         )
 
-        # Update
-        updated_blocks = [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": block_text,
-                },
-            },
-        ]
+    #         block_text = body_text + push_succeeded_update
 
-        # Post updated message
-        return _post_message(
-            bot_token=bot_token,
-            channel=channel_id,
-            ts=message_ts,
-            blocks=updated_blocks,
-            update=True,
-        )
+
+    #     # Push NOT succeded; catch and show the issue
+    #     else:
+    #         push_failed_update = (
+    #             f"Pushed by <@{user_id}>.\n"
+    #             f"\n"
+    #             f"\n"
+    #             f":x: Push *{push_id}* {status}.\n"
+    #             f"*Package ID*: {package_id}\n"
+    #         )
+
+    #         block_text = body_text + push_failed_update
+
+    #     # Update
+    #     updated_blocks = [
+    #         {
+    #             "type": "section",
+    #             "text": {
+    #                 "type": "mrkdwn",
+    #                 "text": block_text,
+    #             },
+    #         },
+    #     ]
+
+    #     # Post updated message
+    #     return _post_message(
+    #         bot_token=bot_token,
+    #         channel=channel_id,
+    #         ts=message_ts,
+    #         blocks=updated_blocks,
+    #         update=True,
+    #     )

@@ -36,6 +36,8 @@ def _event_from_slack_body(slack_body: str) -> dict:
     package_id = value.get("packageId")
     package_name = value.get("packageName")
     share_destination = value.get("shareDestination")
+    job_name = value.get("jobName")
+    header_ts = value.get("headerTs")
 
     return {
       "packageId": package_id,
@@ -43,7 +45,9 @@ def _event_from_slack_body(slack_body: str) -> dict:
       "shareDestination": share_destination,
       "userId": user_id,
       "channelId": channel_id,
-      "messageTs": message_ts
+      "messageTs": message_ts,
+      "jobName": job_name,
+      "headerTs": header_ts
     }
 
 
@@ -96,6 +100,8 @@ def handler(event, context):
   user_id = event_data.get("userId")
   channel_id = event_data.get("channelId")
   message_ts = event_data.get("messageTs")
+  job_name = event_data.get("jobName")
+  header_ts = event_data.get("headerTs")
   userAllowed = user_id in allowed_users
 
 
@@ -107,4 +113,6 @@ def handler(event, context):
       "userId": user_id,
       "channelId": channel_id,
       "messageTs": message_ts,
+      "jobName": job_name,
+      "headerTs": header_ts
   }

@@ -55,6 +55,7 @@
             "Arguments": {
               "StateMachineArn": "${__auto_package_sfn_arn__}",
               "Input": {
+                "jobName": "{% $states.input.jobName %}",
                 "packageName": "{% $states.input.packageName %}",
                 "packageRequest": "{% $states.input.packageRequest %}",
                 "shareDestination": "{% $states.input.shareDestination %}"
