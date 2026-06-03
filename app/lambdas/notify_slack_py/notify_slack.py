@@ -66,9 +66,7 @@ def _post_message(
     thread_ts: str | None = None
 ):
     """
-    Generic wrapper:
-      - normal message: chat.postMessage
-      - ephemeral: chat.postEphemeral
+    Post a message to Slack via chat.postMessage or chat.postEphemeral (if ephemeral=True).
     """
     if ephemeral:
         url = "https://slack.com/api/chat.postEphemeral"
@@ -78,17 +76,17 @@ def _post_message(
     # Base payload always has channel
     payload: dict = {"channel": channel}
 
-    # Mandatory fields depending on mode
+    # Build payload depending on the case
     if ephemeral:
         payload["user"] = user
     if thread_ts:
         payload["thread_ts"] = thread_ts
-    # Optional fields
     if text is not None:
         payload["text"] = text
     if blocks is not None:
         payload["blocks"] = blocks
 
+    # Call the Slack API to update the message and return the response.
     response_data = _slack_api_post(
         url=url,
         bot_token=bot_token,
@@ -106,31 +104,20 @@ def _update_message(
     bot_token: str,
     channel: str,
     ts: str,
-    text: str | None = None,
-    blocks: list | None = None,
+    text: str,
 ) -> dict:
     """
     Update an existing Slack message via chat.update.
-
-    Required:
-      - channel
-      - ts
-
-    Optional:
-      - text
-      - blocks
     """
+
+    # Build payload has channel and ts of the message to update and the new text.
     payload: dict = {
         "channel": channel,
         "ts": ts,
+        "text": text
     }
 
-    if text is not None:
-        payload["text"] = text
-
-    if blocks is not None:
-        payload["blocks"] = blocks
-
+    # Call the Slack API to update the message and return the response.
     response_data = _slack_api_post(
         url="https://slack.com/api/chat.update",
         bot_token=bot_token,
@@ -146,7 +133,7 @@ def _update_message(
 
 # Header text for the message. This is the main notification that appears in the channel,
 # the rest of the info is in the thread under it.
-def header_text(job_name, status):
+def build_main_text(job_name, status):
     return (
     f"A new auto-package is ready.\n"
     f"*Job Name:* `{job_name}`\n"
@@ -161,17 +148,17 @@ def handler(event, context):
     # All fields pulled from the event up front
     # ------------------------------------------------------------------
     job_name = event.get("jobName")
-    package_id = event.get("packageId")                  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
-    package_name = event.get("packageName")              # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
-    share_destination = event.get("shareDestination")    # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
+    package_id = event.get("packageId")                             # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
+    package_name = event.get("packageName")                         # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
+    share_destination = event.get("shareDestination")               # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
 
-    channel_id = event.get("channelId")                  # PACKAGE_READY (overwritten), PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
-    user_id = event.get("userId")                        # PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
-    package_ready_message_ts = event.get("packageReadyMessageTs")                  # PUSH_TRIGGERED, PUSH_COMPLETED
-    main_package_ready_message_ts = event.get("mainMessageTs")
+    channel_id = event.get("channelId")                             # PACKAGE_READY (overwritten), PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
+    user_id = event.get("userId")                                   # PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
+    package_ready_message_ts = event.get("packageReadyMessageTs")   # PUSH_TRIGGERED, PUSH_COMPLETED
+    main_message_ts = event.get("mainMessageTs")
 
-    status = event.get("status")                         # PUSH_COMPLETED
-    push_id = event.get("pushId")                        # PUSH_COMPLETED
+    status = event.get("status")                                    # PUSH_COMPLETED
+    push_id = event.get("pushId")                                   # PUSH_COMPLETED
 
     package_report_presigned_url = None
     if package_id is not None:
@@ -196,17 +183,17 @@ def handler(event, context):
         #  as is empty in the event
         channel_id = _get_slack_channel_id()
 
-        header_text = header_text(job_name, ':package: Awaiting review')
+        main_text = build_main_text(job_name, ':package: Awaiting review')
 
         post_header_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            text=header_text,
+            text=main_text,
         )
 
         # Read the main message time stamp from the response, in the following notifications both
         # for update status or post in a thread under it.
-        main_package_ready_message_ts = post_header_response.get("ts")
+        main_message_ts = post_header_response.get("ts")
 
 
         # First message in the thread with package details, report link and push button.
@@ -216,7 +203,7 @@ def handler(event, context):
                 "jobName": job_name,
                 "packageName": package_name,
                 "shareDestination": share_destination,
-                "mainMessageTs": main_package_ready_message_ts
+                "mainMessageTs": main_message_ts
             }
         )
 
@@ -251,7 +238,7 @@ def handler(event, context):
         thread_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            thread_ts=main_package_ready_message_ts,
+            thread_ts=main_message_ts,
             text=package_ready_text,
             blocks=thread_blocks,
         )
@@ -280,13 +267,13 @@ def handler(event, context):
     elif slack_notification_type == "PUSH_TRIGGERED":
 
         # Update Status in header messege to "In progress".
-        updated_header_text = header_text(job_name, ':outbox_tray: Push in progress...')
+        updated_main_text = build_main_text(job_name, ':outbox_tray: Push in progress...')
 
         _update_message(
             bot_token=bot_token,
             channel=channel_id,
-            ts=main_package_ready_message_ts,
-            text=updated_header_text,
+            ts=main_message_ts,
+            text=updated_main_text,
         )
 
         # Update package ready message in thread JUST to remove the button and prevent double push.
@@ -306,7 +293,7 @@ def handler(event, context):
         _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            thread_ts=main_package_ready_message_ts,
+            thread_ts=main_message_ts,
             text=push_in_progress_text,
         )
 
@@ -316,13 +303,13 @@ def handler(event, context):
         if status == "SUCCEEDED":
 
             # Update Status in header messege to "Completed!".
-            succeeded_updated_header_text = header_text(job_name, ':white_check_mark: Completed!')
+            succeeded_updated_main_text = build_main_text(job_name, ':white_check_mark: Completed!')
 
             _update_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                ts=main_package_ready_message_ts,
-                text=succeeded_updated_header_text,
+                ts=main_message_ts,
+                text=succeeded_updated_main_text,
             )
 
             # Post message in thread to show the push result and details.
@@ -335,7 +322,7 @@ def handler(event, context):
             _post_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                thread_ts=main_package_ready_message_ts,
+                thread_ts=main_message_ts,
                 text=push_succeeded_text,
             )
 
@@ -343,13 +330,13 @@ def handler(event, context):
         # Push NOT succeded; catch and show the issue
         else:
             # Update status in header message to "Failed".
-            failed_updated_header_text = header_text(job_name, ':warning: Push not successful.')
+            failed_updated_main_text = build_main_text(job_name, ':warning: Push not successful.')
 
             _update_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                ts=main_package_ready_message_ts,
-                text=failed_updated_header_text,
+                ts=main_message_ts,
+                text=failed_updated_main_text,
             )
             # Post message in thread to show the push result and details.
             push_failed_text = (
@@ -362,6 +349,6 @@ def handler(event, context):
             _post_message(
                 bot_token=bot_token,
                 channel=channel_id,
-                thread_ts=main_package_ready_message_ts,
+                thread_ts=main_message_ts,
                 text=push_failed_text
             )

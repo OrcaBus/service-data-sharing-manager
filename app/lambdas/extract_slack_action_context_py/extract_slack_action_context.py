@@ -26,7 +26,7 @@ def _event_from_slack_body(slack_body: str) -> dict:
 
     container = slack_payload.get("container")
     channel_id = container.get("channel_id")
-    package_ready_message_ts = container.get("package_ready_message_ts")
+    package_ready_message_ts = container.get("message_ts")
 
     action = slack_payload.get("actions")[0]
     raw_value = action.get("value")
@@ -37,17 +37,17 @@ def _event_from_slack_body(slack_body: str) -> dict:
     package_name = value.get("packageName")
     share_destination = value.get("shareDestination")
     job_name = value.get("jobName")
-    main_package_ready_message_ts = value.get("mainMessageTs")
+    main_message_ts = value.get("mainMessageTs")
 
     return {
+      "jobName": job_name,
       "packageId": package_id,
       "packageName": package_name,
       "shareDestination": share_destination,
       "userId": user_id,
       "channelId": channel_id,
-      "packageReadyMessageTs": package_ready_message_ts,
-      "jobName": job_name,
-      "mainMessageTs": main_package_ready_message_ts
+      "mainMessageTs": main_message_ts,
+      "packageReadyMessageTs": package_ready_message_ts
     }
 
 
@@ -101,7 +101,7 @@ def handler(event, context):
   channel_id = event_data.get("channelId")
   package_ready_message_ts = event_data.get("packageReadyMessageTs")
   job_name = event_data.get("jobName")
-  main_package_ready_message_ts = event_data.get("mainMessageTs")
+  main_message_ts = event_data.get("mainMessageTs")
   userAllowed = user_id in allowed_users
 
 
@@ -114,5 +114,5 @@ def handler(event, context):
       "channelId": channel_id,
       "packageReadyMessageTs": package_ready_message_ts,
       "jobName": job_name,
-      "mainMessageTs": main_package_ready_message_ts
+      "mainMessageTs": main_message_ts
   }
