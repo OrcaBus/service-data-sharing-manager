@@ -16,7 +16,9 @@ def _event_from_slack_body(slack_body: str) -> dict:
         "package_ready_message_ts": "17-digit-ts"
       }
     """
-    #
+    # We extract some of the field from the slack body.
+    # package_ready_message_ts (the time stamp of teh first message witteh in the thead in notify_slak)
+    #  is firstly read it here.
     params = parse_qs(slack_body)
     payload_str = params.get("payload", ["{}"])[0]
     slack_payload = json.loads(payload_str)
@@ -28,9 +30,9 @@ def _event_from_slack_body(slack_body: str) -> dict:
     channel_id = container.get("channel_id")
     package_ready_message_ts = container.get("message_ts")
 
+    # Extract from the slack body the values carried in the button.
     action = slack_payload.get("actions")[0]
     raw_value = action.get("value")
-
     value = json.loads(raw_value)
 
     package_id = value.get("packageId")

@@ -7,78 +7,107 @@ from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
 
 
-
-
+# Flow overview
+#
+# ============================================================
+# Auto-package flow
+# ============================================================
+#
 # ┌──────────────────────┐
 # │   Package is ready   │
 # └──────────┬───────────┘
 #            │
 #            ▼
-# ┌──────────────────────────────────────────────┐
-# │ Slack notify lambda: PACKAGE_READY           │
-# │                                              │
-# │ 1. Post main channel message                 │
-# │    - "A new auto-package is ready"           │
-# │    - includes job name + status              │
-# │                                              │
-# │ 2. Save mainMessageTs                        │
-# │                                              │
-# │ 3. Post thread message under main message    │
-# │    - package details                         │
-# │    - report link                             │
-# │    - Push button                             │
-# │                                              │
-# │ 4. Save packageReadyMessageTs                │
-# └──────────┬───────────────────────────────────┘
-#            │
-#            ▼
-# ┌──────────────────────────────────────────────┐
-# │ User clicks "Push" in Slack                  │
-# └──────────┬───────────────────────────────────┘
-#            │
-#            ▼
-# ┌──────────────────────────────────────────────┐
-# │ Authorisation / validation step              │
-# └───────┬───────────────────────────────┬──────┘
-#         │                               │
-#         │ allowed                       │ not allowed
-#         ▼                               ▼
+# ┌────────────────────────────────────────────────────────────┐
+# │ Slack notify lambda: PACKAGE_READY                         │
+# │                                                            │
+# │ 1. Post main channel message                               │
+# │    - "A new auto-package is ready"                         │
+# │    - includes job name and status                          │
+# │                                                            │
+# │ 2. Save mainMessageTs                                      │
+# │                                                            │
+# │ 3. Post thread message under the main message              │
+# │    - package details                                       │
+# │    - report link                                           │
+# │    - Push button                                           │
+# │                                                            │
+# └────────────────────────────────────────────────────────────┘
+#
+#
+# ============================================================
+# Transition: user action in Slack
+# ============================================================
+#
+#                  ┌──────────────────────────────┐
+#                  │ User clicks Push in Slack    │
+#                  └──────────────┬───────────────┘
+#                                 │
+#                                 ▼
+# ┌────────────────────────────────────────────────────────────┐
+# │ Context extracted from Slack interaction payload:          │
+# │   - userId                                                 │
+# │   - channelId                                              │
+# │   - packageReadyMessageTs  (The time stamp of the package  |
+# |                 ready message, first messahe in thread)    |
+# └────────────────────────────────────────────────────────────┘
+#                                 │
+#                                 ▼
+# ┌────────────────────────────────────────────────────────────┐
+# │ Context extracted from button value:                       │
+# │   - packageId                                              │
+# │   - packageName                                            │
+# │   - shareDestination                                       │
+# │   - jobName                                                │
+# │   - mainMessageTs                                          │
+# └────────────────────────────────────────────────────────────┘
+#
+# ============================================================
+# Auto-push flow
+# ============================================================
+#
+# ┌────────────────────────────────────────────────────────────┐
+# │ Authorisation / validation step                            │
+# └───────┬───────────────────────────────────────┬────────────┘
+#         │                                       │
+#         │ allowed                               │ not allowed
+#         ▼                                       ▼
 # ┌──────────────────────────────┐   ┌──────────────────────────────┐
 # │ Continue workflow            │   │ Slack notify lambda:         │
 # │                              │   │ PUSH_NOT_AUTHORISED          │
 # │                              │   │                              │
 # │                              │   │ - send ephemeral warning     │
-# │                              │   │   to user                    │
+# │                              │   │   to the user                │
 # └──────────┬───────────────────┘   └──────────────────────────────┘
 #            │
 #            ▼
-# ┌──────────────────────────────────────────────┐
-# │ Slack notify lambda: PUSH_TRIGGERED          │
-# │                                              │
-# │ 1. Update main channel message               │
-# │    - status => "Push in progress..."         │
-# │                                              │
-# │ 2. Update package-ready thread message       │
-# │    - remove Push button                      │
-# │    - keep package details text               │
-# │                                              │
-# │ 3. Post new thread reply                     │
-# │    - "Push triggered by <user>"              │
-# └──────────┬───────────────────────────────────┘
+# ┌────────────────────────────────────────────────────────────┐
+# │ Slack notify lambda: PUSH_TRIGGERED                        │
+# │                                                            │
+# │ 1. Update main channel message                             │
+# │    - status => "Push in progress..."                       │
+# │                                                            │
+# │ 2. Update package-ready thread message                     │
+# │    - remove Push button                                    │
+# │    - keep package details text                             │
+# │                                                            │
+# │ 3. Post new thread reply                                   │
+# │    - "Push triggered by <user>"                            │
+# └──────────┬─────────────────────────────────────────────────┘
 #            │
 #            ▼
-# ┌──────────────────────────────────────────────┐
-# │ Trigger backend push workflow                │
-# │ / state machine / push execution             │
-# └──────────┬───────────────────────────────────┘
+# ┌────────────────────────────────────────────────────────────┐
+# │ Trigger backend push workflow                              │
+# │ / state machine / push execution                           │
+# └──────────┬─────────────────────────────────────────────────┘
 #            │
 #            ▼
-# ┌──────────────────────────────────────────────┐
-# │ Slack notify lambda: PUSH_COMPLETED          │
-# └───────┬───────────────────────────────┬──────┘
-#         │                               │
-#         │ success                       │ failure
-#         ▼                               ▼
+# ┌────────────────────────────────────────────────────────────┐
+# │ Slack notify lambda: PUSH_COMPLETED                        │
+# └───────┬───────────────────────────────────────┬────────────┘
+#         │                                       │
+#         │ success                               │ failure
+#         ▼                                       ▼
 # ┌──────────────────────────────┐   ┌──────────────────────────────┐
 # │ 1. Update main message       │   │ 1. Update main message       │
 # │    - "Completed!"            │   │    - "Push not successful"   │
