@@ -112,7 +112,7 @@ def handler(event, context):
       "shareDestination": share_destination,
       "userId": user_id,
       "channelId": channel_id,
-      "packageReadyMessageTs": package_ready_message_ts,
       "jobName": job_name,
+      "packageReadyMessageTs": package_ready_message_ts,
       "mainMessageTs": main_message_ts
   }

@@ -7,6 +7,91 @@ from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
 
 
+
+
+# ┌──────────────────────┐
+# │   Package is ready   │
+# └──────────┬───────────┘
+#            │
+#            ▼
+# ┌──────────────────────────────────────────────┐
+# │ Slack notify lambda: PACKAGE_READY           │
+# │                                              │
+# │ 1. Post main channel message                 │
+# │    - "A new auto-package is ready"           │
+# │    - includes job name + status              │
+# │                                              │
+# │ 2. Save mainMessageTs                        │
+# │                                              │
+# │ 3. Post thread message under main message    │
+# │    - package details                         │
+# │    - report link                             │
+# │    - Push button                             │
+# │                                              │
+# │ 4. Save packageReadyMessageTs                │
+# └──────────┬───────────────────────────────────┘
+#            │
+#            ▼
+# ┌──────────────────────────────────────────────┐
+# │ User clicks "Push" in Slack                  │
+# └──────────┬───────────────────────────────────┘
+#            │
+#            ▼
+# ┌──────────────────────────────────────────────┐
+# │ Authorisation / validation step              │
+# └───────┬───────────────────────────────┬──────┘
+#         │                               │
+#         │ allowed                       │ not allowed
+#         ▼                               ▼
+# ┌──────────────────────────────┐   ┌──────────────────────────────┐
+# │ Continue workflow            │   │ Slack notify lambda:         │
+# │                              │   │ PUSH_NOT_AUTHORISED          │
+# │                              │   │                              │
+# │                              │   │ - send ephemeral warning     │
+# │                              │   │   to user                    │
+# └──────────┬───────────────────┘   └──────────────────────────────┘
+#            │
+#            ▼
+# ┌──────────────────────────────────────────────┐
+# │ Slack notify lambda: PUSH_TRIGGERED          │
+# │                                              │
+# │ 1. Update main channel message               │
+# │    - status => "Push in progress..."         │
+# │                                              │
+# │ 2. Update package-ready thread message       │
+# │    - remove Push button                      │
+# │    - keep package details text               │
+# │                                              │
+# │ 3. Post new thread reply                     │
+# │    - "Push triggered by <user>"              │
+# └──────────┬───────────────────────────────────┘
+#            │
+#            ▼
+# ┌──────────────────────────────────────────────┐
+# │ Trigger backend push workflow                │
+# │ / state machine / push execution             │
+# └──────────┬───────────────────────────────────┘
+#            │
+#            ▼
+# ┌──────────────────────────────────────────────┐
+# │ Slack notify lambda: PUSH_COMPLETED          │
+# └───────┬───────────────────────────────┬──────┘
+#         │                               │
+#         │ success                       │ failure
+#         ▼                               ▼
+# ┌──────────────────────────────┐   ┌──────────────────────────────┐
+# │ 1. Update main message       │   │ 1. Update main message       │
+# │    - "Completed!"            │   │    - "Push not successful"   │
+# │                              │   │                              │
+# │ 2. Post thread reply         │   │ 2. Post thread reply         │
+# │    - push status             │   │    - failed status           │
+# │    - push id                 │   │    - push id                 │
+# │    - share destination       │   │    - share destination       │
+# └──────────────────────────────┘   │    - check SFN for details   │
+#                                    └──────────────────────────────┘
+
+
+
 def _get_slack_bot_token():
     _sm = boto3.client("secretsmanager")
     return _sm.get_secret_value(SecretId="auto-data-sharing-slack-bot-token")["SecretString"] # pragma: allowlist secret
