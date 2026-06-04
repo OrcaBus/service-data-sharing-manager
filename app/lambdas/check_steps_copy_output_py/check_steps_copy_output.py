@@ -29,7 +29,7 @@ L2300950_S11_L002_R2_001.fastq.ora,COPIED,79.82039818880112,,s3://umccr-test-des
 # Standard imports
 import pandas as pd
 import typing
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, Literal
 import boto3
 from tempfile import NamedTemporaryFile
 
@@ -37,6 +37,19 @@ if typing.TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 
+# Globals
+TransferStatusType = Literal[
+    'ERROR',
+    'ALREADYCOPIED',
+    'COPIED'
+]
+
+VALID_TRANSFER_STATUSES: tuple[TransferStatusType, ...] = (
+    'ALREADYCOPIED',
+    'COPIED'
+)
+
+# Functions
 def get_s3_client() -> 'S3Client':
     return boto3.client('s3')
 
@@ -74,7 +87,10 @@ def handler(event, context) -> Dict[str, Union[bool, Optional[str]]]:
         raise ValueError("Could not download or read csv file")
 
     # Find failed copies
-    failed_df = df.query("TRANSFERSTATUS != 'COPIED'")
+    failed_df = df.query(
+        "TRANSFERSTATUS not in @VALID_TRANSFER_STATUSES",
+        engine="python"
+    )
 
     if not failed_df.empty:
         return {
