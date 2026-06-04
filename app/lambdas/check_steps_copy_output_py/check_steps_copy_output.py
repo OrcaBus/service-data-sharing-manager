@@ -40,12 +40,12 @@ if typing.TYPE_CHECKING:
 # Globals
 TransferStatusType = Literal[
     'ERROR',
-    'ALREADY_COPIED',
+    'ALREADYCOPIED',
     'COPIED'
 ]
 
 VALID_TRANSFER_STATUSES: List[TransferStatusType] = [
-    'ALREADY_COPIED',
+    'ALREADYCOPIED',
     'COPIED'
 ]
 
