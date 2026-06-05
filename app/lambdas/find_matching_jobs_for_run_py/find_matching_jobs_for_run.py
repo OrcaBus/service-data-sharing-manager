@@ -10,7 +10,7 @@ from orcabus_api_tools.sequence import get_libraries_from_instrument_run_id
 
 
 # ========================= COMMON ANCILLARY FUNCTIONS =========================
-# This functions are already used in other lambdas (get_workflow_runs_for_portal_run
+# These functions are already used in other lambdas (get_workflow_runs_for_portal_run
 # and list_portal_run_ids_in_library) and are general enough for moving them into a
 #  common module (?)
 
@@ -115,7 +115,7 @@ def get_owner_id_and_project_ids_for_library_ids(library_ids: List[str]) -> pd.D
 
 def handler(event, context):
     """
-    Check if there are libraues matching the owner and project criteria
+    Check if there are libraries matching the owner and project criteria
     specified in any of the job definitions.
     """
     instrument_run_id = event["instrumentRunId"]
@@ -123,38 +123,16 @@ def handler(event, context):
     jobs_config_key = event["jobsConfigKey"]
 
 
-    # Libraries includede in the instrument run and their associated owner and project IDs from mart.lims
+    # Libraries included in the instrument run and their associated owner and project IDs from mart.lims
     lib_ids_in_run = get_libraries_from_instrument_run_id(instrument_run_id)
     lib_owner_proj_df = get_owner_id_and_project_ids_for_library_ids(lib_ids_in_run)
 
-
-    # # =============================== TESTING ONLY: HARDCODED LIBRARY-OWNER-PROJECT MAPPING ===============================
-    # # The following faked the metadata for existing, real test libraries in order to test diferen matchin scenarios.
-    # # The job definition we are usinf for testing is:
-    # # {
-    # # "jobName": "ADS-UMCCR",
-    # # "enabled": true,
-    # # "ownerId": "UMCCR",
-    # # "projectIdList": ["Control", "Validation"],
-    # # "dataTypeList": ["fastq"],
-    # # "shareDestination": "s3://project-data-491085415398-ap-southeast-2/byob-icav2/project-tothill-main/fastq/"
-    # # }
-    # # That means that  in the pacakge shoul be ONLY included libraris L2300950 and L2301217, which are the ones
-    # # matching ownerId and projectId
-
-    # lib_owner_proj_df = pd.DataFrame([
-    #     {"library_id": "L2300943", "owner_id": "Fake-Owrner-Id", "project_id": "Control"},
-    #     {"library_id": "L2300950", "owner_id": "UMCCR", "project_id": "Validation"},
-    #     {"library_id": "L2301217", "owner_id": "UMCCR", "project_id": "Control"},
-    #     {"library_id": "L2301218", "owner_id": "UMCCR", "project_id": "Fake-Study-Id"},
-    # ])
-    # # =============================================== END TESTING ONLY ===============================================
 
     #  Job definitions from the jobs definitions JSON file in S3.
     job_definitions_df = load_job_definitions_from_s3(jobs_config_bucket, jobs_config_key)
 
 
-    # Check the libreries in the run match owers and projects
+    # Check the libraries in the run match owners and projects
     # in the job definitions
     job_library_map = {}
 
@@ -165,7 +143,7 @@ def handler(event, context):
             (lib_owner_proj_df['owner_id'] == owner) &
             (lib_owner_proj_df['project_id'].isin(project_ids))
         ]['library_id'].tolist()
-        if matching_libs:  # Only add if list is not emptys
+        if matching_libs:  # Only add if list is not empty
             job_library_map[job_name] = matching_libs
 
 

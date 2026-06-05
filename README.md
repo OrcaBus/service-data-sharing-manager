@@ -275,7 +275,7 @@ Automatic Data Sharing extends the core service by automatically packaging data 
 
 Upon completion of a sequencing run, the following process is triggered:
 
-- Check the owner and project IDs in the labriries in sequencing run against the job definitions (see [Job Definitions](#job-definitions) below) to identify if any automatic sharing jobs apply.
+- Check the owner and project IDs of the libraries in the sequencing run against the job definitions (see [Job Definitions](#job-definitions) below) to identify if any automatic sharing jobs apply.
 
 - If there’s a match, performs packaging fully unattended.
 
