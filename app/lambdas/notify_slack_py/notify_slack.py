@@ -176,8 +176,7 @@ def _post_message(
     blocks: list | None = None,
     ephemeral: bool = False,
     user: str | None = None,
-    ts: str | None = None,
-    thread_ts: str | None = None
+    thread_ts: str | None = None,
 ):
     """
     Post a message to Slack via chat.postMessage or chat.postEphemeral (if ephemeral=True).
@@ -218,18 +217,24 @@ def _update_message(
     bot_token: str,
     channel: str,
     ts: str,
-    text: str,
+    text: str | None = None,
+    blocks: list | None = None,
 ) -> dict:
     """
     Update an existing Slack message via chat.update.
     """
 
-    # Build payload has channel and ts of the message to update and the new text.
+    # Base payload always has channel and ts
     payload: dict = {
         "channel": channel,
         "ts": ts,
-        "text": text
     }
+    # Build payload depending on the case
+    if text is not None:
+        payload["text"] = text
+    if blocks is not None:
+        payload["blocks"] = blocks
+
 
     # Call the Slack API to update the message and return the response.
     response_data = _slack_api_post(
@@ -243,45 +248,68 @@ def _update_message(
         "error": response_data.get("error"),
     }
 
-# ----------------------------------------------------------------------
 
-# Header text for the message. This is the main notification that appears in the channel,
-# the rest of the info is in the thread under it.
-def build_main_text(job_name, status):
-    return (
-    f"A new auto-package is ready.\n"
-    f"*Job Name:* `{job_name}`\n"
-    f"{status}"
-    )
+
+def _build_main_message_blocks(job_name, package_name, status):
+    return [
+        {
+            "type": "card",
+            "title": {
+                "type": "mrkdwn",
+                "text": "New auto-package ready.",
+            },
+            "body": {
+                "type": "mrkdwn",
+                "text": f"Job Name: `{job_name}`\nPackage Name: `{package_name}`",
+            },
+            "subtext": {
+                "type": "mrkdwn",
+                "text": status,
+            }
+        }
+    ]
 
 def handler(event, context):
     bot_token = _get_slack_bot_token()
     slack_notification_type = event.get("slackNotificationType")
 
     # ------------------------------------------------------------------
-    # All fields pulled from the event up front
+    # All fields pulled from the event up front. Will be None if not
+    # present, but it's easier to read up front instead of pulling them
+    # from the event in the middle of the code.
     # ------------------------------------------------------------------
-    job_name = event.get("jobName")
-    package_id = event.get("packageId")                             # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
-    package_name = event.get("packageName")                         # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
-    share_destination = event.get("shareDestination")               # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
 
-    channel_id = event.get("channelId")                             # PACKAGE_READY (overwritten), PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
-    user_id = event.get("userId")                                   # PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
-    package_ready_message_ts = event.get("packageReadyMessageTs")   # PUSH_TRIGGERED, PUSH_COMPLETED
+    # Package context
+    # Used in: PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
+    job_name = event.get("jobName")
+    package_id = event.get("packageId")
+    package_name = event.get("packageName")
+    share_destination = event.get("shareDestination")
+
+    # Slack message context
+    # Used in: PUSH_NOT_AUTHORISED, PUSH_TRIGGERED, PUSH_COMPLETED
+    channel_id = event.get("channelId")
     main_message_ts = event.get("mainMessageTs")
 
-    status = event.get("status")                                    # PUSH_COMPLETED
-    push_id = event.get("pushId")                                   # PUSH_COMPLETED
+    # Slack interaction context
+    # Used in: PUSH_NOT_AUTHORISED, PUSH_TRIGGERED
+    user_id = event.get("userId")
+    package_ready_message_ts = event.get("packageReadyMessageTs")  # Used in: PUSH_TRIGGERED
 
+    # Push result context
+    # Used in: PUSH_COMPLETED
+    status = event.get("status")
+    push_id = event.get("pushId")
+
+    # Report link
+    # Used in: PACKAGE_READY, PUSH_TRIGGERED
     package_report_presigned_url = None
     if package_id is not None:
-        package_report_presigned_url = _get_package_report(package_id).strip('"')  # PACKAGE_READY, PUSH_TRIGGERED, PUSH_COMPLETED
+        package_report_presigned_url = _get_package_report(package_id).strip('"')
 
-
-
+    # Text for the first message in the thread, with package details and report link.
+    #  Used in: PACKAGE_READY, PUSH_TRIGGERED (to update the message and remove the button).
     package_ready_text = (
-        f"*Package Name:* `{package_name}`\n"
         f"*Package ID:* `{package_id}`\n"
         f"*Share Destination:* `{share_destination}`\n"
         f"Review the packaging report <{package_report_presigned_url}|here>.\n"
@@ -297,17 +325,19 @@ def handler(event, context):
         #  as is empty in the event
         channel_id = _get_slack_channel_id()
 
-        main_text = build_main_text(job_name, ':package: Awaiting review')
+        # The first message posted in the channel when the package is ready, with the job name and status.
+        # The rest of the details are in the thread under it.
+        card_blocks = _build_main_message_blocks(job_name, package_name, ':package: Awaiting review')
 
-        post_header_response = _post_message(
+        main_message_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
-            text=main_text,
+            blocks=card_blocks,
         )
 
         # Read the main message time stamp from the response, in the following notifications both
         # for update status or post in a thread under it.
-        main_message_ts = post_header_response.get("ts")
+        main_message_ts = main_message_response.get("ts")
 
 
         # First message in the thread with package details, report link and push button.
@@ -321,8 +351,8 @@ def handler(event, context):
             }
         )
 
-        # Needs a block for set the button.
-        thread_blocks = [
+        # Use blocks here so the message can include the Push button.
+        push_button_blocks = [
             {
                 "type": "section",
                 "text": {
@@ -337,11 +367,11 @@ def handler(event, context):
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": f"Push",
+                            "text": "Push",
                             "emoji": True,
                         },
                         "style": "primary",
-                        "action_id": "auto_push_package",
+                            "action_id": "auto_push_package",
                         "value": button_value,
                     }
                 ],
@@ -349,62 +379,68 @@ def handler(event, context):
         ]
 
         # Post the message in the thread with the button to trigger the push and package details.
-        thread_response = _post_message(
+        push_button_message_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
             thread_ts=main_message_ts,
             text=package_ready_text,
-            blocks=thread_blocks,
+            blocks=push_button_blocks,
         )
 
+        # Return the response from both API calls for observability.
         return {
-            "ok": thread_response.get("ok"),
-            "error": thread_response.get("error"),
+            "mainMessageOk": main_message_response.get("ok"),
+            "mainMessageError": main_message_response.get("error"),
+            "mainMessageTs": main_message_ts,
+            "pushButtonMessageOk": push_button_message_response.get("ok"),
+            "pushButtonMessageError": push_button_message_response.get("error"),
         }
-
 
     # ----------------------------------------------------
     # Push notifications
     # ----------------------------------------------------
 
     elif slack_notification_type == "PUSH_NOT_AUTHORISED":
-        text = ":warning: You’re not authorised to trigger push."
+        unauthorized_text = ":no_entry: You’re not authorised to trigger push."
 
         return _post_message(
             bot_token=bot_token,
             channel=channel_id,
             user=user_id,
-            text=text,
+            text=unauthorized_text,
+            thread_ts=main_message_ts,
             ephemeral=True
         )
 
     elif slack_notification_type == "PUSH_TRIGGERED":
 
-        # Update Status in header messege to "In progress".
-        updated_main_text = build_main_text(job_name, ':outbox_tray: Push in progress...')
+        # Update the main message status to "Push in progress..."
+        in_progress_card_blocks = _build_main_message_blocks(job_name, package_name, ':outbox_tray: Push in progress...')
 
-        _update_message(
+        main_message_update_response =_update_message(
             bot_token=bot_token,
             channel=channel_id,
             ts=main_message_ts,
-            text=updated_main_text,
+            blocks=in_progress_card_blocks,
         )
 
-        # Update package ready message in thread JUST to remove the button and prevent double push.
+        # Update push_button_message. We are not passing a blocks payload which means
+        # the blocks (and thus the button) will be removed for preventing multiple push
+        # triggers .The text will remain the same with package details and report link.
 
-        _update_message(
+        package_ready_message_update_response = _update_message(
             bot_token=bot_token,
             channel=channel_id,
             ts=package_ready_message_ts,
             text=package_ready_text,
         )
 
-        # Post message in thread to show the push is in progress and who triggered it.
+        # Post a thread reply showing who triggered the push.
         push_in_progress_text = (
             f"*Push triggered* by <@{user_id}>."
         )
 
-        _post_message(
+        push_triggered_message_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
             thread_ts=main_message_ts,
@@ -412,18 +448,28 @@ def handler(event, context):
         )
 
 
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
+            "packageReadyMessageError": package_ready_message_update_response.get("error"),
+            "pushTriggeredMessageOk": push_triggered_message_response.get("ok"),
+            "pushTriggeredMessageError": push_triggered_message_response.get("error"),
+        }
+
+
     elif slack_notification_type == "PUSH_COMPLETED":
         # Push succeded
         if status == "SUCCEEDED":
 
-            # Update Status in header messege to "Completed!".
-            succeeded_updated_main_text = build_main_text(job_name, ':white_check_mark: Completed!')
+            # Update Status in main messege to "Completed!".
+            succeeded_card_blocks = _build_main_message_blocks(job_name, package_name, ':white_check_mark: Completed!')
 
-            _update_message(
+            main_message_update_response = _update_message(
                 bot_token=bot_token,
                 channel=channel_id,
                 ts=main_message_ts,
-                text=succeeded_updated_main_text,
+                blocks=succeeded_card_blocks,
             )
 
             # Post message in thread to show the push result and details.
@@ -433,7 +479,7 @@ def handler(event, context):
                 f"*Share Destination:* `{share_destination}`"
             )
 
-            _post_message(
+            push_result_message_response = _post_message(
                 bot_token=bot_token,
                 channel=channel_id,
                 thread_ts=main_message_ts,
@@ -443,14 +489,14 @@ def handler(event, context):
 
         # Push NOT succeded; catch and show the issue
         else:
-            # Update status in header message to "Failed".
-            failed_updated_main_text = build_main_text(job_name, ':warning: Push not successful.')
+            # Update status in main message to "Failed".
+            failed_card_blocks = _build_main_message_blocks(job_name, package_name, ':warning: Push not successful.')
 
-            _update_message(
+            main_message_update_response = _update_message(
                 bot_token=bot_token,
                 channel=channel_id,
                 ts=main_message_ts,
-                text=failed_updated_main_text,
+                blocks=failed_card_blocks,
             )
             # Post message in thread to show the push result and details.
             push_failed_text = (
@@ -460,9 +506,21 @@ def handler(event, context):
                 f"Please check `data-sharing--autoPush` state machine for more details."
             )
 
-            _post_message(
+            push_result_message_response = _post_message(
                 bot_token=bot_token,
                 channel=channel_id,
                 thread_ts=main_message_ts,
                 text=push_failed_text
             )
+
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "pushResultMessageOk": push_result_message_response.get("ok"),
+            "pushResultMessageError": push_result_message_response.get("error"),
+        }
+    else:
+        return {
+            "ok": False,
+            "error": f"Unknown slackNotificationType: {slack_notification_type}",
+        }
