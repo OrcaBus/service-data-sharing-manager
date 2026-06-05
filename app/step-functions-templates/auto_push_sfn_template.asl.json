@@ -145,7 +145,8 @@
         "Payload": {
           "slackNotificationType": "PUSH_NOT_AUTHORISED",
           "userId": "{% $states.input.userId %}",
-          "channelId": "{% $states.input.channelId %}"
+          "channelId": "{% $states.input.channelId %}",
+          "mainMessageTs": "{% $states.input.mainMessageTs %}"
         }
       },
       "Retry": [
