@@ -1,5 +1,4 @@
-from os import environ
-from io import BytesIO
+import typing
 from typing import List, Tuple
 from urllib.parse import urlparse
 from time import sleep
@@ -7,24 +6,14 @@ import json
 import pandas as pd
 import boto3
 from orcabus_api_tools.sequence import get_libraries_from_instrument_run_id
+from orcabus_api_tools.mart import run_athena_sql_query
 
 
-# ========================= COMMON ANCILLARY FUNCTIONS =========================
-# These functions are already used in other lambdas (get_workflow_runs_for_portal_run
-# and list_portal_run_ids_in_library) and are general enough for moving them into a
-#  common module (?)
+if typing.TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 
-WORKGROUP_ENV_VAR = 'ATHENA_WORKGROUP_NAME'
-DATA_SOURCE_ENV_VAR = 'ATHENA_DATASOURCE_NAME'
-DATABASE_ENV_VAR = 'ATHENA_DATABASE_NAME'
-
-
-def get_athena_client():
-    return boto3.client('athena')
-
-
-def get_s3_client():
+def get_s3_client() -> 'S3Client':
     return boto3.client('s3')
 
 def get_bucket_key_tuple_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
@@ -32,58 +21,13 @@ def get_bucket_key_tuple_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
     return urlobj.netloc, urlobj.path.lstrip('/')
 
 
-def run_athena_sql_query(sql_query: str) -> pd.DataFrame:
-    athena_query_execution_id = get_athena_client().start_query_execution(
-        QueryString=sql_query,
-        QueryExecutionContext={
-            "Database": environ[DATABASE_ENV_VAR],
-            "Catalog": environ[DATA_SOURCE_ENV_VAR]
-        },
-        WorkGroup=environ[WORKGROUP_ENV_VAR],
-    )['QueryExecutionId']
 
-    while True:
-        status = get_athena_client().get_query_execution(
-            QueryExecutionId=athena_query_execution_id
-        )['QueryExecution']['Status']['State']
-
-        if status in ['SUCCEEDED', 'FAILED', 'CANCELLED']:
-            break
-
-        sleep(5)
-
-    if status in ['FAILED', 'CANCELLED']:
-        raise RuntimeError(f"Query failed: {status}")
-
-    # Get the results
-    result_location = get_athena_client().get_query_execution(
-        QueryExecutionId=athena_query_execution_id
-    )['QueryExecution']['ResultConfiguration']['OutputLocation']
-
-    bucket, key = get_bucket_key_tuple_from_s3_uri(result_location)
-
-    return pd.read_csv(
-        BytesIO(
-            get_s3_client().get_object(
-                Bucket=bucket,
-                Key=key
-            )['Body'].read()
-        ),
-        dtype={
-            "portalRunId": "object"
-        }
-    )
-
-# ==============================================================================
-
-
-def load_job_definitions_from_s3(bucket, key):
+def load_job_definitions_from_s3(bucket: str, key: str) -> pd.DataFrame:
     """
     Reads the jobs configuration JSON file from S3 and
     returns as a Pandas DataFrame with 'jobName' as index.
     """
-    s3 = boto3.client("s3")
-    obj = s3.get_object(Bucket=bucket, Key=key)
+    obj =  get_s3_client().get_object(Bucket=bucket, Key=key)
     content = obj['Body'].read()  # bytes
     json_data = json.loads(content)
     return pd.DataFrame(json_data)
