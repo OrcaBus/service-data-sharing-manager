@@ -86,7 +86,7 @@ def load_job_definitions_from_s3(bucket, key):
     obj = s3.get_object(Bucket=bucket, Key=key)
     content = obj['Body'].read()  # bytes
     json_data = json.loads(content)
-    return pd.DataFrame(json_data).set_index("jobName")
+    return pd.DataFrame(json_data)
 
 
 
@@ -132,39 +132,33 @@ def handler(event, context):
     job_definitions_df = load_job_definitions_from_s3(jobs_config_bucket, jobs_config_key)
 
 
-    # Check the libraries in the run match owners and projects
-    # in the job definitions
-    job_library_map = {}
-
-    for job_name, job in job_definitions_df.iterrows():
-        owner = job['ownerId']
-        project_ids = set(job['projectIdList'])
-        matching_libs = lib_owner_proj_df[
-            (lib_owner_proj_df['owner_id'] == owner) &
-            (lib_owner_proj_df['project_id'].isin(project_ids))
-        ]['library_id'].tolist()
-        if matching_libs:  # Only add if list is not empty
-            job_library_map[job_name] = matching_libs
-
-
-    # Generates the list of jobs (provided they are set as enabled)
+    # Iterate over job definitions and check for matches with the libraries in the instrument run.
+    # If a job definition is enabled and has matching libraries based on owner and project criteria,
+    # add it to the list of jobs to be triggered downstream.
     job_list = []
-    for job_name in job_library_map:
 
-        if job_definitions_df.loc[job_name, 'enabled']:
+    for _, job in job_definitions_df.iterrows():
+        if not job["enabled"]:
+            continue
 
-            package_name = job_name + "-" + instrument_run_id
-            package_request = {
-                "libraryIdList": job_library_map[job_name],
-                "dataTypeList": job_definitions_df.loc[job_name, 'dataTypeList']
-            }
-            share_destination = job_definitions_df.loc[job_name, 'shareDestination']
+        job_name = job["jobName"]
 
-            job_list.append({
-                "packageName": package_name,
-                "packageRequest": package_request,
-                "shareDestination": share_destination
-            })
+        matching_libs = lib_owner_proj_df[
+            (lib_owner_proj_df["owner_id"] == job["ownerId"]) &
+            (lib_owner_proj_df["project_id"].isin(job["projectIdList"]))
+        ]["library_id"].unique().tolist()
+
+        if not matching_libs:
+            continue
+
+        job_list.append({
+            "packageName": f"{job_name}-{instrument_run_id}",
+            "packageRequest": {
+                "libraryIdList": matching_libs,
+                "dataTypeList": job["dataTypeList"],
+            },
+            "shareDestination": job["shareDestination"],
+        })
 
 
     return {
