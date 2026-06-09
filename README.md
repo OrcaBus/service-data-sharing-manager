@@ -275,7 +275,7 @@ Automatic Data Sharing extends the core service by automatically packaging data 
 
 Upon completion of a sequencing run, the following process is triggered:
 
-- Check the projects in the sequencing run against the job definitions (see [Job Definitions](#job-definitions) below) to identify if any automatic sharing jobs apply.
+- Check the owner and project IDs of the libraries in the sequencing run against the job definitions (see [Job Definitions](#job-definitions) below) to identify if any automatic sharing jobs apply.
 
 - If there’s a match, performs packaging fully unattended.
 
@@ -293,22 +293,25 @@ Multiple jobs can be defined within a single JSON array. Below is a template for
 {
   "jobName": "project-shortname",
   "enabled": true,
-  "projectIdList": ["PROJECT1"],
+  "ownerId": "OWNER-ID",
+  "projectIdList": ["PROJECT1", "PROJECT2"],
   "dataTypeList": ["fastq"],
   "shareDestination": "s3://target-bucket/path/"
 }
 ```
 
 
-`jobName` (str) – short name for the job. Used in logs and Step Functions.
+`jobName` (str, required) – short name for the job. Used in logs and Step Functions.
 
-`enabled` (bool) – set to true to activate the job; disabled jobs are ignored.
+`enabled` (bool, required) – set to true to activate the job; disabled jobs are ignored.
 
-`projectIdList` (list[str]) – list of project IDs; run must match at least one.
+`ownerId` (str, required) – owner ID used to match libraries for the job.
 
-`dataTypeList` (list[str]) – which data types to include (e.g. `fastq`).
+`projectIdList` (list[str], required) – list of project IDs used to match libraries for the job; at least one must match.
 
-`shareDestination` (str) – destination S3 path where the data will be pushed.
+`dataTypeList` (list[str], required) – which data types to include (e.g. `fastq`).
+
+`shareDestination` (str, required) – destination S3 path where the data will be pushed.
 
 
 ### Slack Integration
