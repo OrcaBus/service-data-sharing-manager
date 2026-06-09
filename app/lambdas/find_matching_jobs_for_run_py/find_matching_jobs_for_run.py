@@ -32,24 +32,22 @@ def load_job_definitions_from_s3(bucket: str, key: str) -> pd.DataFrame:
 def get_owner_id_and_project_ids_for_library_ids(library_ids: List[str]) -> pd.DataFrame:
     """
     Query the mart.lims to retrieve owner_id and project_id
-    for the given list of library_ids .
+    for the given list of library_ids.
 
     Args:
         library_ids (List[str]): List of library IDs to query.
 
     Returns:
-        pd.DataFrame: DataFrame with columns: library_id, owner_id, project_id.
+        pd.DataFrame: DataFrame with columns: libraryId, ownerId, projectId.
     """
-    # Prepare SQL IN clause for the list of library IDs
     library_ids_in = ", ".join([f"'{lib_id}'" for lib_id in library_ids])
     sql = f"""
-        SELECT library_id, owner_id, project_id
+        SELECT library_id as libraryId, owner_id as ownerId, project_id as projectId
         FROM lims
         WHERE library_id IN ({library_ids_in})
     """
     result_df = run_athena_sql_query(sql)
     return result_df
-
 
 
 def handler(event, context):
@@ -71,34 +69,36 @@ def handler(event, context):
     job_definitions_df = load_job_definitions_from_s3(jobs_config_bucket, jobs_config_key)
 
 
-    # Iterate over job definitions and check for matches with the libraries in the instrument run.
-    # If a job definition is enabled and has matching libraries based on owner and project criteria,
-    # add it to the list of jobs to be triggered downstream.
-    job_list = []
+    # Convert projectIdList to projectid
+    job_definitions_df = (
+    job_definitions_df.explode("projectIdList").rename(
+        columns={
+        "projectIdList": "projectId"
+        }
+    )
+    )
 
-    for _, job in job_definitions_df.iterrows():
-        if not job["enabled"]:
-            continue
+    # Merge dataframes on ownerId and projectId
+    merged_df = pd.merge(
+    lib_owner_proj_df,
+    job_definitions_df,
+    how='inner',  # Keep only matching in both tables
+    on=['ownerId', 'projectId'],  # Must match both ownerId and projectId
+    )
 
-        job_name = job["jobName"]
 
-        matching_libs = lib_owner_proj_df[
-            (lib_owner_proj_df["owner_id"] == job["ownerId"]) &
-            (lib_owner_proj_df["project_id"].isin(job["projectIdList"]))
-        ]["library_id"].unique().tolist()
-
-        if not matching_libs:
-            continue
-
-        job_list.append({
-            "packageName": f"{job_name}-{instrument_run_id}",
+    job_list = [
+        {
+            "packageName": merged_df_group_iter_['jobName'].unique().item(),
             "packageRequest": {
-                "libraryIdList": matching_libs,
-                "dataTypeList": job["dataTypeList"],
+                "libraryIdList": merged_df_group_iter_['libraryId'].tolist(),
+                "dataTypeList": merged_df_group_iter_["dataTypeList"],
                 "instrumentRunIdList": [instrument_run_id],
             },
-            "shareDestination": job["shareDestination"],
-        })
+        }
+        for ownerId, merged_df_group_iter_ in merged_df.groupby('ownerId')
+    ]
+
 
 
     return {
