@@ -11,46 +11,27 @@ that are in the exclusion list.
 """
 
 import typing
-from io import BytesIO
-from os import environ
 from textwrap import dedent
-from time import sleep
 from typing import List, Dict, Tuple
 from urllib.parse import urlparse
-
 import pandas as pd
-
-import boto3
 import ulid
 
 from data_sharing_tools.utils.models import WorkflowRunModelSlim
 from orcabus_api_tools.workflow import (
     get_workflows_from_library_id
 )
+from orcabus_api_tools.mart import run_athena_sql_query
 
 if typing.TYPE_CHECKING:
     from orcabus_api_tools.metadata import Library
-    from mypy_boto3_athena import AthenaClient
-    from mypy_boto3_s3 import S3Client
 
 # Globals
-# ATHENA
-WORKGROUP_ENV_VAR = 'ATHENA_WORKGROUP_NAME'
-DATA_SOURCE_ENV_VAR = 'ATHENA_DATASOURCE_NAME'
-DATABASE_ENV_VAR = 'ATHENA_DATABASE_NAME'
-
 WORKFLOW_NAME_CONVERSION_MAP = {
     "tumor-normal": "WGS_TUMOR_NORMAL",
     "oncoanalyser_wgs": "oncoanalyser-wgts-dna",
 }
 
-
-def get_athena_client() -> 'AthenaClient':
-    return boto3.client('athena')
-
-
-def get_s3_client() -> 'S3Client':
-    return boto3.client('s3')
 
 
 def get_bucket_key_tuple_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
@@ -58,48 +39,6 @@ def get_bucket_key_tuple_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
 
     return urlobj.netloc, urlobj.path.lstrip('/')
 
-
-def run_athena_sql_query(sql_query: str) -> pd.DataFrame:
-    athena_query_execution_id = get_athena_client().start_query_execution(
-        QueryString=sql_query,
-        QueryExecutionContext={
-            "Database": environ[DATABASE_ENV_VAR],
-            "Catalog": environ[DATA_SOURCE_ENV_VAR]
-        },
-        WorkGroup=environ[WORKGROUP_ENV_VAR],
-    )['QueryExecutionId']
-
-    while True:
-        status = get_athena_client().get_query_execution(
-            QueryExecutionId=athena_query_execution_id
-        )['QueryExecution']['Status']['State']
-
-        if status in ['SUCCEEDED', 'FAILED', 'CANCELLED']:
-            break
-
-        sleep(5)
-
-    if status in ['FAILED', 'CANCELLED']:
-        raise RuntimeError(f"Query failed: {status}")
-
-    # Get the results
-    result_location = get_athena_client().get_query_execution(
-        QueryExecutionId=athena_query_execution_id
-    )['QueryExecution']['ResultConfiguration']['OutputLocation']
-
-    bucket, key = get_bucket_key_tuple_from_s3_uri(result_location)
-
-    return pd.read_csv(
-        BytesIO(
-            get_s3_client().get_object(
-                Bucket=bucket,
-                Key=key
-            )['Body'].read()
-        ),
-        dtype={
-            "portalRunId": "object"
-        }
-    )
 
 
 def get_legacy_workflows_from_library_id_legacy(library_id: str) -> List[WorkflowRunModelSlim]:
