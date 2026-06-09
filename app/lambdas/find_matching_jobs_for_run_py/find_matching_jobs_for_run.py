@@ -1,7 +1,5 @@
 import typing
 from typing import List, Tuple
-from urllib.parse import urlparse
-from time import sleep
 import json
 import pandas as pd
 import boto3
@@ -16,16 +14,13 @@ if typing.TYPE_CHECKING:
 def get_s3_client() -> 'S3Client':
     return boto3.client('s3')
 
-def get_bucket_key_tuple_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
-    urlobj = urlparse(s3_uri)
-    return urlobj.netloc, urlobj.path.lstrip('/')
-
 
 
 def load_job_definitions_from_s3(bucket: str, key: str) -> pd.DataFrame:
     """
     Reads the jobs configuration JSON file from S3 and
-    returns as a Pandas DataFrame with 'jobName' as index.
+    returns as a Pandas DataFrame.Each row corresponds
+    to one job definition from the JSON array.
     """
     obj =  get_s3_client().get_object(Bucket=bucket, Key=key)
     content = obj['Body'].read()  # bytes
@@ -100,6 +95,7 @@ def handler(event, context):
             "packageRequest": {
                 "libraryIdList": matching_libs,
                 "dataTypeList": job["dataTypeList"],
+                "instrumentRunIdList": [instrument_run_id],
             },
             "shareDestination": job["shareDestination"],
         })

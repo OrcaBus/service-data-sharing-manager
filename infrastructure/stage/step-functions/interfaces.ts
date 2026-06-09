@@ -79,7 +79,6 @@ export interface StepFunctionRequirements {
   needsNestedSfnPermissions?: boolean;
   needsDistributedMapPermissions?: boolean;
   isExpressSfn?: boolean;
-  needsJobsConfigReadPermissions?: boolean;
   needsSsmPermissions?: boolean;
 }
 
@@ -115,7 +114,6 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
     needsNestedSfnPermissions: true,
     needsEventPutPermissions: true,
     needsDistributedMapPermissions: true,
-    needsJobsConfigReadPermissions: true,
   },
   autoPackage: {
     needsEventPutPermissions: true,
