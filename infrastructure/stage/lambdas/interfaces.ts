@@ -78,6 +78,7 @@ export interface Requirements {
   needsStepsS3UploadPermissions?: boolean;
   needsStepsS3DownloadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
+  needsHigherMemory?: boolean;
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
@@ -111,10 +112,12 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsDataSharingToolsLayer: true,
     needsOrcabusApiToolsLayer: true,
     needsDbPermissions: true,
+    needsHigherMemory: true,
   },
   getWorkflowFromPortalRunId: {
     needsOrcabusApiToolsLayer: true,
     needsMartLayer: true,
+    needsHigherMemory: true,
   },
   handleWorkflowInputs: {
     needsOrcabusApiToolsLayer: true,
@@ -132,18 +135,22 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsOrcabusApiToolsLayer: true,
     needsDataSharingToolsLayer: true,
     needsDbPermissions: true,
+    needsHigherMemory: true,
   },
   listPortalRunIdsInLibrary: {
     needsOrcabusApiToolsLayer: true,
+    needsHigherMemory: true,
   },
   packageFileToJsonlData: {
     needsDbPermissions: true,
     needsStepsS3UploadPermissions: true,
     needsDataSharingToolsLayer: true,
     needsOrcabusApiToolsLayer: true,
+    needsHigherMemory: true,
   },
   checkStepsCopyOutput: {
     needsStepsS3DownloadPermissions: true,
+    needsHigherMemory: true,
   },
   updatePackagingJobApi: {
     needsOrcabusApiToolsLayer: true,
@@ -154,12 +161,14 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   uploadArchiveFileListAsCsv: {
     needsDataSharingToolsLayer: true,
     needsOrcabusApiToolsLayer: true,
+    needsHigherMemory: true,
   },
   uploadPushJobToS3: {
     needsDbPermissions: true,
     needsDataSharingToolsLayer: true,
     needsPackagingBucketPermissions: true,
     needsOrcabusApiToolsLayer: true,
+    needsHigherMemory: true,
   },
   getDynamodbEvaluatedKeyList: {
     needsDbPermissions: true,
@@ -188,6 +197,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsDataSharingToolsLayer: true,
     needsOrcabusApiToolsLayer: true,
     needsDbPermissions: true,
+    needsHigherMemory: true,
   },
   extractSlackActionContext: {},
   verifySlackRequest: {},

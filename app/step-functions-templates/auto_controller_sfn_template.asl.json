@@ -75,7 +75,7 @@
         }
       },
       "End": true,
-      "Items": "{% $states.input.jobList%}"
+      "Items": "{% $states.input.jobList %}"
     },
     "Skip": {
       "Type": "Succeed"

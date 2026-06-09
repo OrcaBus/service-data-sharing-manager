@@ -272,15 +272,6 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
     );
   }
 
-  if (sfnRequirements.needsJobsConfigReadPermissions) {
-    props.stateMachineObj.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['s3:GetObject'],
-        resources: [`arn:aws:s3:::${props.dataSharingBucketName}/${AUTO_PACKAGE_PUSH_JOBS_KEY}`],
-      })
-    );
-  }
-
   // Nested SFN Permissions
   if (sfnRequirements.needsNestedSfnPermissions) {
     // For push data case
