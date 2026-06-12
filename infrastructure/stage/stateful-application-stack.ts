@@ -10,6 +10,7 @@ import {
 import { createSlackSecret } from './secrets';
 import { buildSsmParameters } from './ssm';
 import { NagSuppressions } from 'cdk-nag';
+import { GitStack } from '@orcabus/platform-cdk-constructs/deployment-stack-pipeline';
 
 export type StatefulApplicationStackProps = cdk.StackProps & StatefulApplicationStackConfig;
 
