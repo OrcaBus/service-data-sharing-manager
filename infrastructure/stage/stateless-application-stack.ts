@@ -24,7 +24,7 @@ import { buildAllEventBridgeTargets } from './event-targets';
 
 export type StatelessApplicationStackProps = cdk.StackProps & StatelessApplicationStackConfig;
 
-export class StatelessApplicationStack extends cdk.Stack {
+export class StatelessApplicationStack extends GitStack {
   public readonly stageName: StageName;
 
   constructor(scope: Construct, id: string, props: StatelessApplicationStackProps) {
