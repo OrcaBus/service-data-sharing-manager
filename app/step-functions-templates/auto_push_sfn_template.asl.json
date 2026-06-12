@@ -6,10 +6,16 @@
     "Verify Slack Request": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "Output": "{% $states.result.Payload %}",
       "Arguments": {
         "FunctionName": "${__verify_slack_request_lambda_function_arn__}",
-        "Payload": "{% $states.input %}"
+        "Payload": {
+          "slackBody": "{% $states.input.slackBody %}",
+          "headers": "{% $states.input.headers %}"
+        }
+      },
+      "Output": {
+        "verified": "{% $states.result.Payload.verified %}",
+        "slackBody": "{% $states.input.slackBody %}"
       },
       "Retry": [
         {
@@ -51,7 +57,17 @@
           "slackBody": "{% $states.input.slackBody %}"
         }
       },
-      "Output": "{% $states.result.Payload %}",
+      "Output": {
+        "userAllowed": "{% $states.result.Payload.userAllowed %}",
+        "packageId": "{% $states.result.Payload.packageId %}",
+        "packageName": "{% $states.result.Payload.packageName %}",
+        "shareDestination": "{% $states.result.Payload.shareDestination %}",
+        "userId": "{% $states.result.Payload.userId %}",
+        "channelId": "{% $states.result.Payload.channelId %}",
+        "jobName": "{% $states.result.Payload.jobName %}",
+        "packageReadyMessageTs": "{% $states.result.Payload.packageReadyMessageTs %}",
+        "mainMessageTs": "{% $states.result.Payload.mainMessageTs %}"
+      },
       "Retry": [
         {
           "ErrorEquals": [
@@ -85,20 +101,25 @@
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
           "slackNotificationType": "PUSH_TRIGGERED",
+          "jobName": "{% $states.input.jobName %}",
           "packageId": "{% $states.input.packageId %}",
           "packageName": "{% $states.input.packageName %}",
           "shareDestination": "{% $states.input.shareDestination %}",
           "userId": "{% $states.input.userId %}",
           "channelId": "{% $states.input.channelId %}",
-          "messageTs": "{% $states.input.messageTs %}"
+          "mainMessageTs": "{% $states.input.mainMessageTs %}",
+          "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
         }
       },
       "Output": {
         "shareDestination": "{% $states.input.shareDestination %}",
+        "jobName": "{% $states.input.jobName %}",
         "packageId": "{% $states.input.packageId %}",
+        "packageName": "{% $states.input.packageName %}",
         "userId": "{% $states.input.userId %}",
         "channelId": "{% $states.input.channelId %}",
-        "messageTs": "{% $states.input.messageTs %}"
+        "mainMessageTs": "{% $states.input.mainMessageTs %}",
+        "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
       },
       "Retry": [
         {
@@ -124,10 +145,10 @@
         "Payload": {
           "slackNotificationType": "PUSH_NOT_AUTHORISED",
           "userId": "{% $states.input.userId %}",
-          "channelId": "{% $states.input.channelId %}"
+          "channelId": "{% $states.input.channelId %}",
+          "mainMessageTs": "{% $states.input.mainMessageTs %}"
         }
       },
-      "Output": "{% $states.result.Payload %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -157,11 +178,14 @@
       "Output": {
         "id": "{% $states.result.Payload.pushRequestObject.id %}",
         "status": "{% $states.result.Payload.pushRequestObject.status %}",
+        "jobName": "{% $states.input.jobName %}",
+        "packageName": "{% $states.input.packageName %}",
         "packageId": "{% $states.result.Payload.pushRequestObject.packageId %}",
         "shareDestination": "{% $states.result.Payload.pushRequestObject.shareDestination %}",
         "userId": "{% $states.input.userId %}",
         "channelId": "{% $states.input.channelId %}",
-        "messageTs": "{% $states.input.messageTs %}"
+        "mainMessageTs": "{% $states.input.mainMessageTs %}",
+        "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
       },
       "Retry": [
         {
@@ -195,12 +219,15 @@
       },
       "Output": {
         "id": "{% $states.input.id %}",
+        "status": "{% $states.result.Payload %}",
+        "jobName": "{% $states.input.jobName %}",
+        "packageName": "{% $states.input.packageName %}",
         "packageId": "{% $states.input.packageId %}",
         "shareDestination": "{% $states.input.shareDestination %}",
         "userId": "{% $states.input.userId %}",
         "channelId": "{% $states.input.channelId %}",
-        "messageTs": "{% $states.input.messageTs %}",
-        "status": "{% $states.result.Payload %}"
+        "mainMessageTs": "{% $states.input.mainMessageTs %}",
+        "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
       },
       "Retry": [
         {
@@ -222,7 +249,7 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Comment": "Push Failed or Cancelled",
+          "Comment": "Push reached a terminal state: Succeeded, Failed, or Cancelled",
           "Condition": "{% $states.input.status in [ 'SUCCEEDED', 'FAILED', 'CANCELLED' ] %}",
           "Next": "NotifySlack: Push Completed"
         }
@@ -238,14 +265,16 @@
           "slackNotificationType": "PUSH_COMPLETED",
           "pushId": "{% $states.input.id %}",
           "status": "{% $states.input.status %}",
+          "packageName": "{% $states.input.packageName %}",
           "packageId": "{% $states.input.packageId %}",
           "shareDestination": "{% $states.input.shareDestination %}",
           "userId": "{% $states.input.userId %}",
           "channelId": "{% $states.input.channelId %}",
-          "messageTs": "{% $states.input.messageTs %}"
+          "jobName": "{% $states.input.jobName %}",
+          "mainMessageTs": "{% $states.input.mainMessageTs %}",
+          "packageReadyMessageTs": "{% $states.input.packageReadyMessageTs %}"
         }
       },
-      "Output": "{% $states.input %}",
       "Retry": [
         {
           "ErrorEquals": [

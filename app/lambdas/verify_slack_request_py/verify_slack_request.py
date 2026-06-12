@@ -33,7 +33,6 @@ def handler(event, context):
       - slackBody: raw body of the Slack request
       Returns dict with:
       - verified: bool
-      - slackBody: raw body of the Slack request (if verified)
 
     """
 
@@ -53,23 +52,21 @@ def handler(event, context):
     # Check is signature valid
     signing_secret = _get_signing_secret()
     if not _verify_slack_signature(signing_secret, timestamp, slack_body, sig):
-        print("Invalid Slack signature")
-        return {"verified": False, "slackBody": None}
+        message = "Invalid Slack signature"
+        return {"verified": False, "message": message}
 
     # Replay protection: max age of request
     MAX_AGE_SECONDS = 60 * 5  # 5 minutes
     try:
         timestamp_int = int(timestamp)
     except ValueError:
-        print("Invalid timestamp")
-        return {"verified": False, "slackBody": None}
+        message = "Invalid timestamp"
+        return {"verified": False, "message": message}
 
     now = int(time.time())
     if abs(now - timestamp_int) > MAX_AGE_SECONDS:
-        print("Request timestamp too old")
-        return {"verified": False, "slackBody": None}
+        message = "Request timestamp too old"
+        return {"verified": False, "message": message}
 
 
-
-    # Success: pass slack_body through
-    return {"verified": True, "slackBody": slack_body}
+    return {"verified": True, "message": "OK"}

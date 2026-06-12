@@ -13,10 +13,12 @@ def _event_from_slack_body(slack_body: str) -> dict:
         "shareDestination": "s3://...",
         "user_id": "U…",
         "channel_id": "C…",
-        "message_ts": "17-digit-ts"
+        "package_ready_message_ts": "17-digit-ts"
       }
     """
-    #
+    # We extract some of the field from the slack body.
+    # package_ready_message_ts (the time stamp of teh first message witteh in the thead in notify_slak)
+    #  is firstly read it here.
     params = parse_qs(slack_body)
     payload_str = params.get("payload", ["{}"])[0]
     slack_payload = json.loads(payload_str)
@@ -26,24 +28,28 @@ def _event_from_slack_body(slack_body: str) -> dict:
 
     container = slack_payload.get("container")
     channel_id = container.get("channel_id")
-    message_ts = container.get("message_ts")
+    package_ready_message_ts = container.get("message_ts")
 
+    # Extract from the slack body the values carried in the button.
     action = slack_payload.get("actions")[0]
     raw_value = action.get("value")
-
     value = json.loads(raw_value)
 
     package_id = value.get("packageId")
     package_name = value.get("packageName")
     share_destination = value.get("shareDestination")
+    job_name = value.get("jobName")
+    main_message_ts = value.get("mainMessageTs")
 
     return {
+      "jobName": job_name,
       "packageId": package_id,
       "packageName": package_name,
       "shareDestination": share_destination,
       "userId": user_id,
       "channelId": channel_id,
-      "messageTs": message_ts
+      "mainMessageTs": main_message_ts,
+      "packageReadyMessageTs": package_ready_message_ts
     }
 
 
@@ -95,7 +101,9 @@ def handler(event, context):
   share_destination = event_data.get("shareDestination")
   user_id = event_data.get("userId")
   channel_id = event_data.get("channelId")
-  message_ts = event_data.get("messageTs")
+  package_ready_message_ts = event_data.get("packageReadyMessageTs")
+  job_name = event_data.get("jobName")
+  main_message_ts = event_data.get("mainMessageTs")
   userAllowed = user_id in allowed_users
 
 
@@ -106,5 +114,7 @@ def handler(event, context):
       "shareDestination": share_destination,
       "userId": user_id,
       "channelId": channel_id,
-      "messageTs": message_ts,
+      "jobName": job_name,
+      "packageReadyMessageTs": package_ready_message_ts,
+      "mainMessageTs": main_message_ts
   }
