@@ -6,7 +6,6 @@ import boto3
 from orcabus_api_tools.sequence import get_libraries_from_instrument_run_id
 from orcabus_api_tools.mart import run_athena_sql_query
 
-
 if typing.TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
@@ -15,18 +14,16 @@ def get_s3_client() -> 'S3Client':
     return boto3.client('s3')
 
 
-
 def load_job_definitions_from_s3(bucket: str, key: str) -> pd.DataFrame:
     """
     Reads the jobs configuration JSON file from S3 and
     returns as a Pandas DataFrame.Each row corresponds
     to one job definition from the JSON array.
     """
-    obj =  get_s3_client().get_object(Bucket=bucket, Key=key)
+    obj = get_s3_client().get_object(Bucket=bucket, Key=key)
     content = obj['Body'].read()  # bytes
     json_data = json.loads(content)
     return pd.DataFrame(json_data)
-
 
 
 def get_owner_id_and_project_ids_for_library_ids(library_ids: List[str]) -> pd.DataFrame:
@@ -59,47 +56,47 @@ def handler(event, context):
     jobs_config_bucket = event["jobsConfigBucket"]
     jobs_config_key = event["jobsConfigKey"]
 
-
     # Libraries included in the instrument run and their associated owner and project IDs from mart.lims
     lib_ids_in_run = get_libraries_from_instrument_run_id(instrument_run_id)
     lib_owner_proj_df = get_owner_id_and_project_ids_for_library_ids(lib_ids_in_run)
 
-
     #  Job definitions from the jobs definitions JSON file in S3.
     job_definitions_df = load_job_definitions_from_s3(jobs_config_bucket, jobs_config_key)
 
-
-    # Convert projectIdList to projectid
+    # Convert projectIdList to projectId
     job_definitions_df = (
-    job_definitions_df.explode("projectIdList").rename(
-        columns={
-        "projectIdList": "projectId"
-        }
-    )
+        (
+            job_definitions_df
+            .explode("projectIdList")
+            .explode('dataTypeList')
+        ).rename(
+            columns={
+                "projectIdList": "projectId",
+                "dataTypeList": "dataType"
+            }
+        )
     )
 
     # Merge dataframes on ownerId and projectId
     merged_df = pd.merge(
-    lib_owner_proj_df,
-    job_definitions_df,
-    how='inner',  # Keep only matching in both tables
-    on=['ownerId', 'projectId'],  # Must match both ownerId and projectId
+        lib_owner_proj_df,
+        job_definitions_df,
+        how='inner',  # Keep only matching in both tables
+        on=['ownerId', 'projectId'],  # Must match both ownerId and projectId
     )
-
 
     job_list = [
         {
+            "jobName": merged_df_group_iter_['jobName'].unique().item(),
             "packageName": f"{merged_df_group_iter_['jobName'].unique().item()}-{instrument_run_id}",
             "packageRequest": {
-                "libraryIdList": merged_df_group_iter_['libraryId'].tolist(),
-                "dataTypeList": merged_df_group_iter_["dataTypeList"].tolist(),
+                "libraryIdList": merged_df_group_iter_['libraryId'].unique().tolist(),
+                "dataTypeList": merged_df_group_iter_["dataType"].unique().tolist(),
                 "instrumentRunIdList": [instrument_run_id],
             },
         }
         for ownerId, merged_df_group_iter_ in merged_df.groupby('ownerId')
     ]
-
-
 
     return {
         "matchingJobsFound": bool(job_list),

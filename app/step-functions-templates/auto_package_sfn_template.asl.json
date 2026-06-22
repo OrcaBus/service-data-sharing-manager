@@ -1,21 +1,29 @@
 {
   "QueryLanguage": "JSONata",
-  "StartAt": "Trigger Package",
+  "StartAt": "Set vars",
   "TimeoutSeconds": 86400,
   "States": {
+    "Set vars": {
+      "Type": "Pass",
+      "Next": "Trigger Package",
+      "Assign": {
+        "jobName": "{% $states.input.jobName %}",
+        "packageName": "{% $states.input.packageName %}",
+        "packageRequest": "{% $states.input.packageRequest %}",
+        "shareDestination": "{% $states.input.shareDestination %}"
+      },
+      "Output": {}
+    },
     "Trigger Package": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__trigger_packaging_lambda_function_arn__}",
         "Payload": {
-          "jobName": "{% $states.input.jobName %}",
-          "packageName": "{% $states.input.packageName %}",
-          "packageRequest": "{% $states.input.packageRequest %}",
-          "shareDestination": "{% $states.input.shareDestination %}"
+          "packageName": "{% $packageName %}",
+          "packageRequest": "{% $packageRequest %}"
         }
       },
-      "Output": "{% $merge([$states.result.Payload.packagingRequestObject, {'shareDestination': $states.input.shareDestination}, {'jobName': $states.input.jobName}, {'packageName': $states.input.packageName}]) %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -30,7 +38,11 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Wait For Package"
+      "Next": "Wait For Package",
+      "Output": {},
+      "Assign": {
+        "id": "{% $states.result.Payload.packagingRequestObject.id %}"
+      }
     },
     "Wait For Package": {
       "Type": "Wait",
@@ -43,10 +55,9 @@
       "Arguments": {
         "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
         "Payload": {
-          "id": "{% $states.input.id %}"
+          "id": "{% $id %}"
         }
       },
-      "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -61,23 +72,32 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Is Package Complete"
+      "Next": "Is Package Complete",
+      "Output": {},
+      "Assign": {
+        "status": "{% $states.result.Payload %}"
+      }
     },
     "Is Package Complete": {
       "Type": "Choice",
       "Choices": [
         {
           "Comment": "Package Succeeded",
-          "Condition": "{% $states.input.status = 'SUCCEEDED' %}",
+          "Condition": "{% $status = 'SUCCEEDED' %}",
           "Next": "Notify Slack: Packaging Complete"
         },
         {
           "Comment": "Package Failed or Cancelled",
-          "Condition": "{% $states.input.status in [ 'FAILED', 'CANCELLED' ] %}",
+          "Condition": "{% $status in [ 'FAILED', 'CANCELLED' ] %}",
           "Next": "Auto Package Failed"
         }
       ],
-      "Default": "Wait For Package"
+      "Default": "Wait 5 seconds"
+    },
+    "Wait 5 seconds": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Wait For Package"
     },
     "Notify Slack: Packaging Complete": {
       "Type": "Task",
@@ -85,14 +105,13 @@
       "Arguments": {
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
-          "jobName": "{% $states.input.jobName %}",
-          "packageId": "{% $states.input.id %}",
-          "packageName": "{% $states.input.packageName %}",
-          "shareDestination": "{% $states.input.shareDestination %}",
+          "jobName": "{% $jobName %}",
+          "packageId": "{% $id %}",
+          "packageName": "{% $packageName %}",
+          "shareDestination": "{% $shareDestination %}",
           "slackNotificationType": "PACKAGE_READY"
         }
       },
-      "Output": "{% $states.input %}",
       "Retry": [
         {
           "ErrorEquals": [
@@ -107,7 +126,8 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Auto Package Succeeded"
+      "Next": "Auto Package Succeeded",
+      "Output": {}
     },
     "Auto Package Succeeded": {
       "Type": "Succeed"
