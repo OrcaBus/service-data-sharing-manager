@@ -93,7 +93,7 @@ def handler(event, context):
             "packageName": f"{merged_df_group_iter_['jobName'].unique().item()}-{instrument_run_id}",
             "packageRequest": {
                 "libraryIdList": merged_df_group_iter_['libraryId'].tolist(),
-                "dataTypeList": merged_df_group_iter_["dataTypeList"].tolist(),
+                   "dataTypeList": merged_df_group_iter_["dataTypeList"].unique().item(),
                 "instrumentRunIdList": [instrument_run_id],
             },
         }
