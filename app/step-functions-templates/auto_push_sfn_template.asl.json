@@ -213,7 +213,7 @@
       },
       "Output": {
         "id": "{% $states.input.id %}",
-        "status": "{% $states.result.Payload %}"
+        "status": "{% $states.result.Payload.status %}"
       },
       "Retry": [
         {
