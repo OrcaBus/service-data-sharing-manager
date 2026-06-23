@@ -28,14 +28,17 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Output": "{% $merge([$states.input, $states.result.Payload]) %}",
+      "Output": {},
+      "Assign": {
+        "jobList": "{% $states.result.Payload.jobList %}"
+      },
       "Next": "Matching Jobs Found in Run?"
     },
     "Matching Jobs Found in Run?": {
       "Type": "Choice",
       "Choices": [
         {
-          "Condition": "{% $states.input.matchingJobsFound %}",
+          "Condition": "{% $jobList ? true : false %}",
           "Next": "Map"
         }
       ],
@@ -75,7 +78,7 @@
         }
       },
       "End": true,
-      "Items": "{% $states.input.jobList %}"
+      "Items": "{% $jobList %}"
     },
     "Skip": {
       "Type": "Succeed"

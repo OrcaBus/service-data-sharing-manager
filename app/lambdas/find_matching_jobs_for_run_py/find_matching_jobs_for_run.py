@@ -94,11 +94,11 @@ def handler(event, context):
                 "dataTypeList": merged_df_group_iter_["dataType"].unique().tolist(),
                 "instrumentRunIdList": [instrument_run_id],
             },
+            "shareDestination": merged_df_group_iter_['shareDestination'].unique().item(),
         }
-        for ownerId, merged_df_group_iter_ in merged_df.groupby('ownerId')
+        for owner_id, merged_df_group_iter_ in merged_df.groupby('ownerId')
     ]
 
     return {
-        "matchingJobsFound": bool(job_list),
         "jobList": job_list
     }
