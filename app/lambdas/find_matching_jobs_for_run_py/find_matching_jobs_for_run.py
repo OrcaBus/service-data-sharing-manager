@@ -100,6 +100,5 @@ def handler(event, context):
     ]
 
     return {
-        "matchingJobsFound": bool(job_list),
         "jobList": job_list
     }
