@@ -75,7 +75,7 @@
       "Next": "Is Package Complete",
       "Output": {},
       "Assign": {
-        "status": "{% $states.result.Payload %}"
+        "status": "{% $states.result.Payload.status %}"
       }
     },
     "Is Package Complete": {

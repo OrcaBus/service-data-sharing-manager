@@ -19,4 +19,6 @@ def handler(event, context=None):
     if job_id.startswith(("pkg.")):
         status = get_package(job_id)["status"]
 
-    return status
+    return {
+        "status": status
+    }

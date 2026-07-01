@@ -298,7 +298,7 @@ def handler(event, context):
 
     # Push result context
     # Used in: PUSH_COMPLETED
-    status = event.get("status")
+    push_status = event.get("pushStatus")
     push_id = event.get("pushId")
 
     # Report link
@@ -460,7 +460,7 @@ def handler(event, context):
 
     elif slack_notification_type == "PUSH_COMPLETED":
         # Push succeded
-        if status == "SUCCEEDED":
+        if push_status == "SUCCEEDED":
 
             # Update Status in main messege to "Completed!".
             succeeded_card_blocks = _build_main_message_blocks(job_name, package_name, ':white_check_mark: Completed!')
@@ -474,7 +474,7 @@ def handler(event, context):
 
             # Post message in thread to show the push result and details.
             push_succeeded_text = (
-                f"*Push Completed:* {status}.\n"
+                f"*Push Completed:* {push_status}.\n"
                 f"*Push ID:* {push_id}\n"
                 f"*Share Destination:* `{share_destination}`"
             )
@@ -500,7 +500,7 @@ def handler(event, context):
             )
             # Post message in thread to show the push result and details.
             push_failed_text = (
-                f"*Push completed, but was NOT successful:* {status}\n"
+                f"*Push completed, but was NOT successful:* {push_status}\n"
                 f"*Push ID:* {push_id}\n"
                 f"*Share Destination:* `{share_destination}`\n"
                 f"Please check `data-sharing--autoPush` state machine for more details."
