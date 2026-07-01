@@ -74,11 +74,10 @@
         "shareDestination": "{% $states.result.Payload.shareDestination %}",
         "jobName": "{% $states.result.Payload.jobName %}",
         "packageReadyMessageTs": "{% $states.result.Payload.packageReadyMessageTs %}",
-        "mainMessageTs": "{% $states.result.Payload.mainMessageTs %}"
-      },
-      "Output": {
+        "mainMessageTs": "{% $states.result.Payload.mainMessageTs %}",
         "userAllowed": "{% $states.result.Payload.userAllowed %}"
       },
+      "Output": {},
       "Retry": [
         {
           "ErrorEquals": [
@@ -99,7 +98,7 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Condition": "{% $states.input.userAllowed = false %}",
+          "Condition": "{% $userAllowed = false %}",
           "Next": "Notify Slack: Push Not Authorised"
         }
       ],
@@ -177,10 +176,11 @@
           "shareDestination": "{% $shareDestination %}"
         }
       },
-      "Output": {
-        "id": "{% $states.result.Payload.pushRequestObject.id %}",
-        "status": "{% $states.result.Payload.pushRequestObject.status %}"
+      "Assign": {
+        "pushId": "{% $states.result.Payload.pushRequestObject.id %}",
+        "pushStatus": "{% $states.result.Payload.pushRequestObject.status %}"
       },
+      "Output": {},
       "Retry": [
         {
           "ErrorEquals": [
@@ -208,13 +208,13 @@
       "Arguments": {
         "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
         "Payload": {
-          "id": "{% $states.input.id %}"
+          "id": "{% $pushId %}"
         }
       },
-      "Output": {
-        "id": "{% $states.input.id %}",
-        "status": "{% $states.result.Payload.status %}"
+      "Assign": {
+        "pushStatus": "{% $states.result.Payload.status %}"
       },
+      "Output": {},
       "Retry": [
         {
           "ErrorEquals": [
@@ -236,7 +236,7 @@
       "Choices": [
         {
           "Comment": "Push reached a terminal state: Succeeded, Failed, or Cancelled",
-          "Condition": "{% $states.input.status in [ 'SUCCEEDED', 'FAILED', 'CANCELLED' ] %}",
+          "Condition": "{% $pushStatus in [ 'SUCCEEDED', 'FAILED', 'CANCELLED' ] %}",
           "Next": "NotifySlack: Push Completed"
         }
       ],
@@ -249,8 +249,8 @@
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
           "slackNotificationType": "PUSH_COMPLETED",
-          "pushId": "{% $states.input.id %}",
-          "status": "{% $states.input.status %}",
+          "pushId": "{% $pushId %}",
+          "pushStatus": "{% $pushStatus %}",
           "packageName": "{% $packageName %}",
           "packageId": "{% $packageId %}",
           "shareDestination": "{% $shareDestination %}",
