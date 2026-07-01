@@ -59,7 +59,9 @@
           "destinationPrefix": "{% $states.input.destinationPrefix %}",
           "startMarkerKey": "{% 'STARTED_COPY__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $pushJobId & '.txt' %}",
           "summaryCsvKey": "{% 'ENDED_COPY__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $pushJobId & '.csv' %}",
-          "retainSummaryCsv": true
+          "retainSummaryCsv": true,
+          "htmlReport": true,
+          "retainHtmlReport": true
         }
       },
       "Output": {
