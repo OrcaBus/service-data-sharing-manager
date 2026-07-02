@@ -50,7 +50,7 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │   - userId                                                 │
 # │   - channelId                                              │
 # │   - packageReadyMessageTs  (The time stamp of the package  |
-# |                 ready message, first messahe in thread)    |
+# |                 ready message, first message in thread)    |
 # └────────────────────────────────────────────────────────────┘
 #                                 │
 #                                 ▼
@@ -438,8 +438,8 @@ def handler(event, context):
         )
 
         # Update push_button_message. We are not passing a blocks payload which means
-        # the blocks (and thus the button) will be removed for preventing multiple push
-        # triggers .The text will remain the same with package details and report link.
+        # the blocks (and thus the button) will be removed to prevent multiple push
+        # triggers. The text remains the same with package details and report link.
 
         package_ready_message_update_response = _update_message(
             bot_token=bot_token,
@@ -473,7 +473,7 @@ def handler(event, context):
 
     elif slack_notification_type == "PUSH_COMPLETED":
 
-        # Generate the presigned URL for the copy report in the Stepes-S3-Copy working bucket.
+        # Generate the presigned URL for the copy report in the Steps-S3-Copy working bucket.
         steps_s3_copy_bucket_name = os.environ["STEPS_S3_COPY_BUCKET_NAME"]
         steps_s3_copy_midfix = os.environ["STEPS_S3_COPY_MIDFIX"]
         steps_s3_copy_prefix = os.environ["STEPS_S3_COPY_PREFIX"]
@@ -485,10 +485,10 @@ def handler(event, context):
         )
 
 
-        # Push succeded
+        # Push succeeded
         if push_status == "SUCCEEDED":
 
-            # Update Status in main messege to "Completed!".
+            # Update status in main message to "Completed!".
             succeeded_card_blocks = _build_main_message_blocks(job_name, package_name, ':white_check_mark: Completed!')
 
             main_message_update_response = _update_message(
@@ -514,7 +514,7 @@ def handler(event, context):
             )
 
 
-        # Push NOT succeded; catch and show the issue
+        # Push NOT succeeded; catch and show the issue
         else:
             # Update status in main message to "Failed".
             failed_card_blocks = _build_main_message_blocks(job_name, package_name, ':warning: Push not successful.')
@@ -530,7 +530,8 @@ def handler(event, context):
                 f"*Push completed, but was NOT successful:* {push_status}\n"
                 f"*Push ID:* {push_id}\n"
                 f"*Share Destination:* `{share_destination}`\n"
-                f"Review the *copy report* <{copy_report_url}|here>."
+                f"Review the *copy report* <{copy_report_url}|here>.\n"
+                f"Please check `data-sharing--autoPush` state machine for more details."
             )
 
             push_result_message_response = _post_message(
