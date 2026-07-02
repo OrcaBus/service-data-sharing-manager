@@ -179,7 +179,7 @@
       "Assign": {
         "pushId": "{% $states.result.Payload.pushRequestObject.id %}",
         "pushStatus": "{% $states.result.Payload.pushRequestObject.status %}",
-        "pushDate": "{% $fromMillis($toMillis($now()), \"[Y0001]__[M01]__[D01]\") %}"
+        "copyReportKey": "{% 'COPY_REPORT__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $pushId & '.html' %}"
       },
       "Output": {},
       "Retry": [
@@ -251,7 +251,7 @@
         "Payload": {
           "slackNotificationType": "PUSH_COMPLETED",
           "pushId": "{% $pushId %}",
-          "pushDate": "{% $pushDate %}",
+          "copyReportKey": "{% $copyReportKey %}",
           "pushStatus": "{% $pushStatus %}",
           "packageName": "{% $packageName %}",
           "packageId": "{% $packageId %}",

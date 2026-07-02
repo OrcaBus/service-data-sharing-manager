@@ -2,7 +2,7 @@ import json
 import os
 import urllib.request
 import boto3
-
+import posixpath
 
 from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
@@ -313,7 +313,7 @@ def handler(event, context):
     # Used in: PUSH_COMPLETED
     push_status = event.get("pushStatus")
     push_id = event.get("pushId")
-    push_date = event.get("pushDate")
+    copy_report_key = event.get("copyReportKey")
 
     # Report link
     # Used in: PACKAGE_READY, PUSH_TRIGGERED
@@ -475,13 +475,15 @@ def handler(event, context):
 
         # Generate the presigned URL for the copy report in the Steps-S3-Copy working bucket.
         steps_s3_copy_bucket_name = os.environ["STEPS_S3_COPY_BUCKET_NAME"]
-        steps_s3_copy_midfix = os.environ["STEPS_S3_COPY_MIDFIX"]
         steps_s3_copy_prefix = os.environ["STEPS_S3_COPY_PREFIX"]
-        copy_report_key = f"{steps_s3_copy_prefix}{steps_s3_copy_midfix}{push_date}/{push_id}/COPY_REPORT__{push_date.replace('__','_')}__{push_id}.html"
+        steps_s3_copy_midfix = os.environ["STEPS_S3_COPY_MIDFIX"]
+        full_copy_report_key = posixpath.join(
+            steps_s3_copy_prefix, steps_s3_copy_midfix, copy_report_key
+        )
 
         copy_report_url = _generate_presigned_url(
             bucket=steps_s3_copy_bucket_name,
-            key=copy_report_key
+            key=full_copy_report_key
         )
 
 
