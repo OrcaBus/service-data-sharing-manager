@@ -1,10 +1,12 @@
 import json
+import os
 import urllib.request
 import boto3
 
 
 from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
+
 
 
 # Flow overview
@@ -133,6 +135,23 @@ def _get_slack_channel_id() -> str:
 
     data = json.loads(secret_str)
     return data["channel_id"]
+
+
+
+def _generate_presigned_url(
+    bucket: str,
+    key: str,
+    expiration: int = 604800,
+) -> str:
+    s3_client = boto3.client("s3")
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expiration,
+    )
 
 
 def _get_package_report(package_id):
@@ -300,6 +319,7 @@ def handler(event, context):
     # Used in: PUSH_COMPLETED
     push_status = event.get("pushStatus")
     push_id = event.get("pushId")
+    push_date = event.get("pushDate")
 
     # Report link
     # Used in: PACKAGE_READY, PUSH_TRIGGERED
@@ -312,9 +332,8 @@ def handler(event, context):
     package_ready_text = (
         f"*Package ID:* `{package_id}`\n"
         f"*Share Destination:* `{share_destination}`\n"
-        f"Review the packaging report <{package_report_presigned_url}|here>.\n"
+        f"Review the *package report* <{package_report_presigned_url}|here>.\n"
     )
-
 
     # ----------------------------------------------------
     # Package notifications
@@ -459,6 +478,19 @@ def handler(event, context):
 
 
     elif slack_notification_type == "PUSH_COMPLETED":
+
+        # Generate the presigned URL for the copy report in the Stepes-S3-Copy working bucket.
+        steps_s3_copy_bucket_name = os.environ["STEPS_S3_COPY_BUCKET_NAME"]
+        steps_s3_copy_midfix = os.environ["STEPS_S3_COPY_MIDFIX"]
+        steps_s3_copy_prefix = os.environ["STEPS_S3_COPY_PREFIX"]
+        copy_report_key = f"{steps_s3_copy_prefix}{steps_s3_copy_midfix}{push_date}/{push_id}/COPY_REPORT__{push_date.replace('__','_')}__{push_id}.html"
+
+        copy_report_url = _generate_presigned_url(
+            bucket=steps_s3_copy_bucket_name,
+            key=copy_report_key
+        )
+
+
         # Push succeded
         if push_status == "SUCCEEDED":
 
@@ -476,7 +508,8 @@ def handler(event, context):
             push_succeeded_text = (
                 f"*Push Completed:* {push_status}.\n"
                 f"*Push ID:* {push_id}\n"
-                f"*Share Destination:* `{share_destination}`"
+                f"*Share Destination:* `{share_destination}`\n"
+                f"Review the *copy report* <{copy_report_url}|here>.\n"
             )
 
             push_result_message_response = _post_message(
@@ -503,7 +536,7 @@ def handler(event, context):
                 f"*Push completed, but was NOT successful:* {push_status}\n"
                 f"*Push ID:* {push_id}\n"
                 f"*Share Destination:* `{share_destination}`\n"
-                f"Please check `data-sharing--autoPush` state machine for more details."
+                f"Review the *copy report* <{copy_report_url}|here>."
             )
 
             push_result_message_response = _post_message(
