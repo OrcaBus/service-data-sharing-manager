@@ -31,11 +31,10 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │                                                            │
 # │ 3. Post thread message under the main message              │
 # │    - package details                                       │
-# │    - report link                                           │
+# │    - package report link                                   │
 # │    - Push button                                           │
 # │                                                            │
 # └────────────────────────────────────────────────────────────┘
-#
 #
 # ============================================================
 # Transition: user action in Slack
@@ -118,8 +117,9 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │    - push status             │   │    - failed status           │
 # │    - push id                 │   │    - push id                 │
 # │    - share destination       │   │    - share destination       │
-# └──────────────────────────────┘   │    - check SFN for details   │
-#                                    └──────────────────────────────┘
+# │    - package report link     │   │    - package report link     │
+# └──────────────────────────────┘   └──────────────────────────────┘
+#
 
 
 
@@ -136,8 +136,6 @@ def _get_slack_channel_id() -> str:
     data = json.loads(secret_str)
     return data["channel_id"]
 
-
-
 def _generate_presigned_url(
     bucket: str,
     key: str,
@@ -153,7 +151,6 @@ def _generate_presigned_url(
         ExpiresIn=expiration,
     )
 
-
 def _get_package_report(package_id):
 
     packaging_report_api_url = get_data_sharing_url(f"/api/v1/package/{package_id}:getSummaryReport")
@@ -161,7 +158,6 @@ def _get_package_report(package_id):
     return get_request(
         url=packaging_report_api_url,
     )
-
 
 def _slack_api_post(url: str, bot_token: str, payload: dict) -> dict:
     """
@@ -231,7 +227,6 @@ def _post_message(
         "ts": response_data.get("ts")
     }
 
-
 def _update_message(
     bot_token: str,
     channel: str,
@@ -266,7 +261,6 @@ def _update_message(
         "ok": response_data.get("ok"),
         "error": response_data.get("error"),
     }
-
 
 
 def _build_main_message_blocks(job_name, package_name, status):
