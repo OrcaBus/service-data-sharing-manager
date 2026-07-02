@@ -313,7 +313,13 @@ def handler(event, context):
     # Used in: PUSH_COMPLETED
     push_status = event.get("pushStatus")
     push_id = event.get("pushId")
-    copy_report_key = event.get("copyReportKey")
+    steps_s3_copy_bucket = event.get("stepsS3CopyBucket")
+    steps_s3_copy_html_report_prefix = event.get("stepsS3CopyHtmlReportPrefix")
+    html_report_key = event.get("htmlReportKey")
+
+
+
+
 
     # Report link
     # Used in: PACKAGE_READY, PUSH_TRIGGERED
@@ -474,15 +480,16 @@ def handler(event, context):
     elif slack_notification_type == "PUSH_COMPLETED":
 
         # Generate the presigned URL for the copy report in the Steps-S3-Copy working bucket.
-        steps_s3_copy_bucket_name = os.environ["STEPS_S3_COPY_BUCKET_NAME"]
-        steps_s3_copy_prefix = os.environ["STEPS_S3_COPY_PREFIX"]
-        steps_s3_copy_midfix = os.environ["STEPS_S3_COPY_MIDFIX"]
+        steps_s3_copy_bucket = event.get("stepsS3CopyBucket")
+        steps_s3_copy_html_report_prefix = event.get("stepsS3CopyHtmlReportPrefix")
+        html_report_key = event.get("htmlReportKey")
+
         full_copy_report_key = posixpath.join(
-            steps_s3_copy_prefix, steps_s3_copy_midfix, copy_report_key
+            steps_s3_copy_html_report_prefix, html_report_key
         )
 
         copy_report_url = _generate_presigned_url(
-            bucket=steps_s3_copy_bucket_name,
+            bucket=steps_s3_copy_bucket,
             key=full_copy_report_key
         )
 

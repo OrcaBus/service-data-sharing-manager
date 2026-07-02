@@ -149,10 +149,6 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
   // Allow the notifier Lambda to read the Slack bot token and config secrets at runtime, and
   // also add the S3 Steps Copy bucket and prefixes as environment variables
   if (props.lambdaName === 'notifySlack') {
-    lambdaObject.addEnvironment('STEPS_S3_COPY_BUCKET_NAME', props.s3StepsCopyBucket.bucketName);
-    lambdaObject.addEnvironment('STEPS_S3_COPY_PREFIX', props.s3StepsCopyBucketPrefix);
-    lambdaObject.addEnvironment('STEPS_S3_COPY_MIDFIX', props.s3StepsCopyMidfix);
-
     const slackBotToken = secretsmanager.Secret.fromSecretNameV2(
       scope,
       'SlackBotTokenSecret',
