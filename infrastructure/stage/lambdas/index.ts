@@ -146,8 +146,7 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     );
   }
 
-  // Allow the notifier Lambda to read the Slack bot token and config secrets at runtime, and
-  // also add the S3 Steps Copy bucket and prefixes as environment variables
+  // Allow the notifier Lambda to read the Slack bot token and config secrets at runtime
   if (props.lambdaName === 'notifySlack') {
     const slackBotToken = secretsmanager.Secret.fromSecretNameV2(
       scope,
