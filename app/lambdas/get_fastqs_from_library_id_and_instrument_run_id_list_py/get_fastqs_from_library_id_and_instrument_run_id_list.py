@@ -13,9 +13,9 @@ from typing import List, Dict, Optional
 
 # Get layer tools
 from orcabus_api_tools.fastq import (
-    get_fastqs_in_library,
+    get_fastqs_in_library, get_fastq_set, get_fastq_sets, get_fastq,
 )
-from orcabus_api_tools.fastq.models import Fastq
+from orcabus_api_tools.fastq.models import Fastq, FastqSet
 
 if typing.TYPE_CHECKING:
     from orcabus_api_tools.metadata import Library
@@ -37,26 +37,34 @@ def handler(event, context) -> Dict[str, List[str]]:
 
     # Get the library object
     library: Library = event.get("libraryObject", None)
-    instrument_run_id_list: Optional[List[str]] = event.get("instrumentRunIdList", None)
+    instrument_run_id_list: Optional[List[str]] = event.get("instrumentRunIdList")
 
     # Assert the library object is not None
     assert library is not None, "Library object is None"
 
-    # Get all fastqs for the library
-    fastq_objs: List[Fastq] = get_fastqs_in_library(
-        library['orcabusId'],
+    # Get fastq sets for this library
+    fastq_set_obj_list = get_fastq_sets(
+        library=library['libraryId'],
+        currentFastqSet=True,
     )
+
+    # Check that the fastq set object list is of len 1
+    assert len(fastq_set_obj_list) == 1, "Fastq set object list is not of len 1"
+
+    fastq_set_obj = fastq_set_obj_list[0]
 
     # If instrument runs ids is not None, we will filter the fastqs by the instrument run ids
     if instrument_run_id_list is not None:
-        fastq_objs = list(filter(
+        fastq_id_list = list(filter(
             lambda fastq_obj: fastq_obj['instrumentRunId'] in instrument_run_id_list,
-            fastq_objs
+            fastq_set_obj['fastqSet']
+        ))
+    else:
+        fastq_id_list = list(map(
+            lambda fastq_set_obj_iter_: fastq_set_obj_iter_['id'],
+            fastq_set_obj['fastqSet']
         ))
 
     return {
-        "fastqIdList": list(map(
-            lambda fastq_obj_iter_: fastq_obj_iter_['id'],
-            fastq_objs
-        ))
+        "fastqIdList": fastq_id_list
     }
