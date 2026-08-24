@@ -1,10 +1,12 @@
 import json
+import os
 import urllib.request
 import boto3
-
+import posixpath
 
 from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
+
 
 
 # Flow overview
@@ -29,11 +31,10 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │                                                            │
 # │ 3. Post thread message under the main message              │
 # │    - package details                                       │
-# │    - report link                                           │
+# │    - package report link                                   │
 # │    - Push button                                           │
 # │                                                            │
 # └────────────────────────────────────────────────────────────┘
-#
 #
 # ============================================================
 # Transition: user action in Slack
@@ -49,7 +50,7 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │   - userId                                                 │
 # │   - channelId                                              │
 # │   - packageReadyMessageTs  (The time stamp of the package  |
-# |                 ready message, first messahe in thread)    |
+# |                 ready message, first message in thread)    |
 # └────────────────────────────────────────────────────────────┘
 #                                 │
 #                                 ▼
@@ -116,8 +117,9 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │    - push status             │   │    - failed status           │
 # │    - push id                 │   │    - push id                 │
 # │    - share destination       │   │    - share destination       │
-# └──────────────────────────────┘   │    - check SFN for details   │
-#                                    └──────────────────────────────┘
+# │    - package report link     │   │    - package report link     │
+# └──────────────────────────────┘   └──────────────────────────────┘
+#
 
 
 
@@ -134,6 +136,20 @@ def _get_slack_channel_id() -> str:
     data = json.loads(secret_str)
     return data["channel_id"]
 
+def _generate_presigned_url(
+    bucket: str,
+    key: str,
+    expiration: int = 604800,
+) -> str:
+    s3_client = boto3.client("s3")
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expiration,
+    )
 
 def _get_package_report(package_id):
 
@@ -142,7 +158,6 @@ def _get_package_report(package_id):
     return get_request(
         url=packaging_report_api_url,
     )
-
 
 def _slack_api_post(url: str, bot_token: str, payload: dict) -> dict:
     """
@@ -212,7 +227,6 @@ def _post_message(
         "ts": response_data.get("ts")
     }
 
-
 def _update_message(
     bot_token: str,
     channel: str,
@@ -247,7 +261,6 @@ def _update_message(
         "ok": response_data.get("ok"),
         "error": response_data.get("error"),
     }
-
 
 
 def _build_main_message_blocks(job_name, package_name, status):
@@ -300,6 +313,13 @@ def handler(event, context):
     # Used in: PUSH_COMPLETED
     push_status = event.get("pushStatus")
     push_id = event.get("pushId")
+    steps_s3_copy_bucket = event.get("stepsS3CopyBucket")
+    steps_s3_copy_html_report_prefix = event.get("stepsS3CopyHtmlReportPrefix")
+    html_report_key = event.get("htmlReportKey")
+
+
+
+
 
     # Report link
     # Used in: PACKAGE_READY, PUSH_TRIGGERED
@@ -312,9 +332,8 @@ def handler(event, context):
     package_ready_text = (
         f"*Package ID:* `{package_id}`\n"
         f"*Share Destination:* `{share_destination}`\n"
-        f"Review the packaging report <{package_report_presigned_url}|here>.\n"
+        f"Review the *package report* <{package_report_presigned_url}|here>.\n"
     )
-
 
     # ----------------------------------------------------
     # Package notifications
@@ -425,8 +444,8 @@ def handler(event, context):
         )
 
         # Update push_button_message. We are not passing a blocks payload which means
-        # the blocks (and thus the button) will be removed for preventing multiple push
-        # triggers .The text will remain the same with package details and report link.
+        # the blocks (and thus the button) will be removed to prevent multiple push
+        # triggers. The text remains the same with package details and report link.
 
         package_ready_message_update_response = _update_message(
             bot_token=bot_token,
@@ -459,10 +478,26 @@ def handler(event, context):
 
 
     elif slack_notification_type == "PUSH_COMPLETED":
-        # Push succeded
+
+        # Generate the presigned URL for the copy report in the Steps-S3-Copy working bucket.
+        steps_s3_copy_bucket = event.get("stepsS3CopyBucket")
+        steps_s3_copy_html_report_prefix = event.get("stepsS3CopyHtmlReportPrefix")
+        html_report_key = event.get("htmlReportKey")
+
+        full_copy_report_key = posixpath.join(
+            steps_s3_copy_html_report_prefix, html_report_key
+        )
+
+        copy_report_url = _generate_presigned_url(
+            bucket=steps_s3_copy_bucket,
+            key=full_copy_report_key
+        )
+
+
+        # Push succeeded
         if push_status == "SUCCEEDED":
 
-            # Update Status in main messege to "Completed!".
+            # Update status in main message to "Completed!".
             succeeded_card_blocks = _build_main_message_blocks(job_name, package_name, ':white_check_mark: Completed!')
 
             main_message_update_response = _update_message(
@@ -476,7 +511,8 @@ def handler(event, context):
             push_succeeded_text = (
                 f"*Push Completed:* {push_status}.\n"
                 f"*Push ID:* {push_id}\n"
-                f"*Share Destination:* `{share_destination}`"
+                f"*Share Destination:* `{share_destination}`\n"
+                f"Review the *copy report* <{copy_report_url}|here>.\n"
             )
 
             push_result_message_response = _post_message(
@@ -487,7 +523,7 @@ def handler(event, context):
             )
 
 
-        # Push NOT succeded; catch and show the issue
+        # Push NOT succeeded; catch and show the issue
         else:
             # Update status in main message to "Failed".
             failed_card_blocks = _build_main_message_blocks(job_name, package_name, ':warning: Push not successful.')
@@ -503,6 +539,7 @@ def handler(event, context):
                 f"*Push completed, but was NOT successful:* {push_status}\n"
                 f"*Push ID:* {push_id}\n"
                 f"*Share Destination:* `{share_destination}`\n"
+                f"Review the *copy report* <{copy_report_url}|here>.\n"
                 f"Please check `data-sharing--autoPush` state machine for more details."
             )
 
