@@ -81,6 +81,7 @@ def get_script_template(
         echo "
     Usage: download-data.sh (--download-path local/download_path/)
                             [--dryrun]
+                            [--parallel [N]]
                             [--decompress-ora]
                             [--print-tree]
                             [-h | --help]
@@ -88,6 +89,9 @@ def get_script_template(
     Options:
       --download-path    The local path to download the data to, folders may be created underneath this path.
       --dryrun           If set, the script will only detail the files that will be downloaded, but will not download them.
+      --parallel [N]     If set, download files in parallel using GNU parallel.
+                         Optionally specify the number of concurrent downloads (default: 4).
+                         Requires GNU parallel to be installed (https://www.gnu.org/software/parallel/).
       --print-tree       Print the tree of files that will be downloaded and exists
       --decompress-ora   If set, the script will decompress .ora files.
                          orad binrary must be installed and ORADATA_PATH must be set to a valid directory containing the 'refbin' binary.
@@ -99,9 +103,11 @@ def get_script_template(
 
     Example:
         download-data.sh --download-path /path/to/download/folder/
+        download-data.sh --download-path /path/to/download/folder/ --parallel 8
 
     Requirements:
       * curl
+      * GNU parallel (only required when using --parallel)
     "
     }
 
@@ -155,6 +161,8 @@ def get_script_template(
     download_path=""
     dryrun="false"
     decompress_ora="false"
+    parallel="false"
+    parallel_jobs=4
 
     # Parse the arguments
     while [ $# -gt 0 ]; do
@@ -165,6 +173,14 @@ def get_script_template(
           ;;
         --dryrun | --dry-run)
           dryrun="true"
+          ;;
+        --parallel)
+          parallel="true"
+          # Check if the next argument is a number (optional concurrency value)
+          if [[ $# -gt 1 ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
+            parallel_jobs="$2"
+            shift 1
+          fi
           ;;
         --decompress-ora)
           decompress_ora="true"
@@ -208,12 +224,29 @@ def get_script_template(
         fi
     fi
 
+    # if parallel is set to true
+    # check if GNU parallel is installed
+    if [[ "${parallel}" == "true" ]]; then
+        if ! command -v parallel &> /dev/null; then
+            echo "Error! GNU parallel is not installed but is required for --parallel mode." 1>&2
+            echo "Install it via your package manager, e.g.:" 1>&2
+            echo "  Ubuntu/Debian: sudo apt-get install parallel" 1>&2
+            echo "  macOS:         brew install parallel" 1>&2
+            echo "  CentOS/RHEL:   sudo yum install parallel" 1>&2
+            echo "See https://www.gnu.org/software/parallel/ for more information." 1>&2
+            exit 1
+        fi
+    fi
+
     # Standardise the download path
     download_path="$(dirname "${download_path}")/$(basename "${download_path}")"
 
     # Provide summary
     echo "Downloading __FILE_COUNT__ files to ${download_path}" 1>&2
     echo "A total of __TOTAL_DATA_SIZE__ ( __HF_DATA_SIZE__ ) will be downloaded to ${download_path}" 1>&2
+    if [[ "${parallel}" == "true" ]]; then
+        echo "Using GNU parallel with ${parallel_jobs} concurrent downloads" 1>&2
+    fi
 
     # Iterate over each download url and download the file
     """).lstrip("\n").replace(
@@ -274,7 +307,43 @@ def get_download_file_template(download_url_dicts: List[Dict[str, str]]):
         )
     )
 
-    # Extend the download script with the download commands
+    # Build the parallel execution path
+    # Export the function and variables so GNU parallel can use them in subshells
+    script_template += dedent("""
+    if [[ "${parallel}" == "true" ]]; then
+        # Export function and variables for GNU parallel subshells
+        export -f download_file
+        export decompress_ora
+        export dryrun
+        export download_path
+        export ORADATA_PATH="${ORADATA_PATH:-}"
+
+        parallel --jobs "${parallel_jobs}" --colsep '\\t' --halt soon,fail=1 \\
+            download_file {1} "${download_path}/{2}" {3} {4} {5} \\
+            :::: <(cat <<'__PARALLEL_ARGS_EOF__'
+    """).lstrip("\n")
+
+    # Each line is tab-separated: url, relative_path, size_bytes, hf_size, count
+    script_template += '\n'.join(
+        map(
+            lambda download_url_dict_iter_with_index_: '\t'.join(
+                [
+                    f"{download_url_dict_iter_with_index_[1]['presignedUrl']}",
+                    f"{download_url_dict_iter_with_index_[1]['relativePath']}",
+                    f"{download_url_dict_iter_with_index_[1]['fileSizeInBytes']}",
+                    f"{format_size(download_url_dict_iter_with_index_[1]['fileSizeInBytes'], binary=True)}",
+                    f"{(download_url_dict_iter_with_index_[0] + 1)}",
+                ]
+            ),
+            enumerate(download_url_dicts)
+        )
+    ) + "\n"
+
+    script_template += "__PARALLEL_ARGS_EOF__\n)\n\n"
+
+    # Sequential execution path (original behavior)
+    script_template += "else\n\n"
+
     script_template += '\n'.join(
         map(
             lambda download_url_dict_iter_with_index_: " ".join(
@@ -290,6 +359,8 @@ def get_download_file_template(download_url_dicts: List[Dict[str, str]]):
             enumerate(download_url_dicts)
         )
     ) + "\n\n"
+
+    script_template += "fi\n\n"
 
     script_template += "echo 'Download complete' 1>&2\n"
 
