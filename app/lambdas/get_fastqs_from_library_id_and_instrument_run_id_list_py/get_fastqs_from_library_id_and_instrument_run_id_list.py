@@ -55,9 +55,12 @@ def handler(event, context) -> Dict[str, List[str]]:
 
     # If instrument runs ids is not None, we will filter the fastqs by the instrument run ids
     if instrument_run_id_list is not None:
-        fastq_id_list = list(filter(
-            lambda fastq_obj: fastq_obj['instrumentRunId'] in instrument_run_id_list,
-            fastq_set_obj['fastqSet']
+        fastq_id_list = list(map(
+            lambda fastq_set_obj_iter_: fastq_set_obj_iter_['id'],
+            list(filter(
+                lambda fastq_obj: fastq_obj['instrumentRunId'] in instrument_run_id_list,
+                fastq_set_obj['fastqSet']
+            ))
         ))
     else:
         fastq_id_list = list(map(
