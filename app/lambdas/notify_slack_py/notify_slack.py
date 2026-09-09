@@ -479,18 +479,20 @@ def handler(event, context):
     elif slack_notification_type == "PUSH_COMPLETED":
 
         # Generate the presigned URL for the copy report in the Steps-S3-Copy working bucket.
-        steps_s3_copy_bucket = event.get("stepsS3CopyBucket")
-        steps_s3_copy_html_report_prefix = event.get("stepsS3CopyHtmlReportPrefix")
-        html_report_key = event.get("htmlReportKey")
-
-        full_copy_report_key = posixpath.join(
-            steps_s3_copy_html_report_prefix, html_report_key
-        )
-
-        copy_report_url = _generate_presigned_url(
-            bucket=steps_s3_copy_bucket,
-            key=full_copy_report_key
-        )
+        # We need the bucket, the prefix and the report key to generate the full key for the report.
+        # otherwise, the copy report URL will be None and the message will not include a link to it.
+        copy_report_url = None
+        if steps_s3_copy_bucket and steps_s3_copy_html_report_prefix and html_report_key:
+            full_copy_report_key = posixpath.join(
+                steps_s3_copy_html_report_prefix, html_report_key
+            )
+            try:
+                copy_report_url = _generate_presigned_url(
+                    bucket=steps_s3_copy_bucket,
+                    key=full_copy_report_key,
+                )
+            except Exception:
+                copy_report_url = None
 
 
         # Push succeeded
