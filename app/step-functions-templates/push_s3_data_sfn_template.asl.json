@@ -62,7 +62,7 @@
           "retainSummaryCsv": true,
           "htmlReport": true,
           "retainHtmlReport": true,
-          "htmlReportKey": "{% 'COPY_REPORT__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $pushJobId & '.html' %}"
+          "htmlReportKey": "{% 'COPY_REPORT__'& $pushJobId & '.html' %}"
         }
       },
       "Output": {

@@ -181,7 +181,7 @@
         "pushStatus": "{% $states.result.Payload.pushRequestObject.status %}",
         "stepsS3CopyBucket": "${__aws_s3_copy_steps_bucket__}",
         "stepsS3CopyHtmlReportPrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' & $fromMillis($toMillis($now()), \"[Y0001]__[M01]__[D01]\") & '/' & $states.result.Payload.pushRequestObject.id & '/' %}",
-        "htmlReportKey": "{% 'COPY_REPORT__' & $fromMillis($toMillis($now()), \"[Y0001]_[M01]_[D01]\") & '__' & $states.result.Payload.pushRequestObject.id & '.html' %}"
+        "htmlReportKey": "{% 'COPY_REPORT__' & $states.result.Payload.pushRequestObject.id & '.html' %}"
       },
       "Output": {},
       "Retry": [
