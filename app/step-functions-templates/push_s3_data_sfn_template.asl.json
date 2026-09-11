@@ -62,7 +62,7 @@
           "retainSummaryCsv": true,
           "htmlReport": true,
           "retainHtmlReport": true,
-          "htmlReportKey": "{% 'COPY_REPORT__'& $pushJobId & '.html' %}"
+          "htmlReportKey": "{% 'COPY_REPORT__' & $pushJobId & '.html' %}"
         }
       },
       "Output": {
