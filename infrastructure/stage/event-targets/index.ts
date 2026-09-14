@@ -38,6 +38,16 @@ export function buildDataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget
   );
 }
 
+export function buildDataPushSyncRequestToTaskTokenRecordingLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(
+    new eventsTargets.LambdaFunction(props.lambdaFunction, {
+      event: events.RuleTargetInput.fromEventPath('$.detail'),
+    })
+  );
+}
+
 export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridgeTargetsProps) {
   for (const targetName of eventBridgeTargetsNameList) {
     switch (targetName) {
@@ -90,6 +100,24 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
         }
 
         buildDataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
+        });
+        break;
+      }
+      case 'dataPushSyncRequestToTaskTokenRecordingLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPushSyncRequest'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'recordSyncRequest'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildDataPushSyncRequestToTaskTokenRecordingLambdaTarget({
           eventBridgeRuleObj: rule,
           lambdaFunction: lambdaFunction,
         });

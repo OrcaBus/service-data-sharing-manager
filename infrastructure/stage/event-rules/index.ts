@@ -10,6 +10,8 @@ import {
   PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
   PACKAGING_SYNC_REQUEST_DETAIL_TYPE,
   PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
+  PUSH_SYNC_REQUEST_DETAIL_TYPE,
+  PUSH_SYNC_REQUEST_RULE_DESCRIPTION,
   READSETS_ADDED_DETAIL_TYPE,
   STACK_PREFIX,
   STACK_SOURCE,
@@ -43,6 +45,13 @@ function buildPackagingSyncRequestPattern(): EventPattern {
 function buildPackagingJobStateChangePattern(): EventPattern {
   return {
     detailType: [PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
+function buildPushSyncRequestPattern(): EventPattern {
+  return {
+    detailType: [PUSH_SYNC_REQUEST_DETAIL_TYPE],
     source: [STACK_SOURCE],
   };
 }
@@ -109,6 +118,18 @@ export function buildAllEventRules(
             eventPattern: buildPackagingJobStateChangePattern(),
             eventBus: props.eventBus,
             description: PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'DataPushSyncRequest': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPushSyncRequestPattern(),
+            eventBus: props.eventBus,
+            description: PUSH_SYNC_REQUEST_RULE_DESCRIPTION,
           }),
         });
         break;
