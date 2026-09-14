@@ -28,8 +28,6 @@ export type LambdaName =
   | 'uploadArchiveFileListAsCsv'
   | 'uploadPushJobToS3'
   | 'getDynamodbEvaluatedKeyList'
-  | 'checkPackagePushStatus'
-  | 'triggerPush'
   | 'findMatchingJobsForRun'
   | 'notifySlack'
   | 'extractSlackActionContext'
@@ -62,8 +60,6 @@ export const lambdaNameList: LambdaName[] = [
   'uploadArchiveFileListAsCsv',
   'uploadPushJobToS3',
   'getDynamodbEvaluatedKeyList',
-  'checkPackagePushStatus',
-  'triggerPush',
   'findMatchingJobsForRun',
   'notifySlack',
   'extractSlackActionContext',
@@ -177,12 +173,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   getDynamodbEvaluatedKeyList: {
     needsDbPermissions: true,
   },
-  checkPackagePushStatus: {
-    needsOrcabusApiToolsLayer: true,
-  },
-  triggerPush: {
-    needsOrcabusApiToolsLayer: true,
-  },
+
   findMatchingJobsForRun: {
     needsOrcabusApiToolsLayer: true,
     needsMartLayer: true,
