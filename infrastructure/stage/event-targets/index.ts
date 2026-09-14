@@ -1,4 +1,5 @@
 import {
+  AddLambdaAsEventBridgeTargetProps,
   AddSfnAsEventBridgeTargetProps,
   eventBridgeTargetsNameList,
   EventBridgeTargetsProps,
@@ -13,6 +14,16 @@ export function buildAutocontrollerFastqGlueToAutoControllerSfnTarget(
   props.eventBridgeRuleObj.addTarget(
     new eventsTargets.SfnStateMachine(props.stateMachineObj, {
       input: events.RuleTargetInput.fromEventPath('$.detail'),
+    })
+  );
+}
+
+export function buildDataPackagingSyncRequestToTaskTokenRecordingLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(
+    new eventsTargets.LambdaFunction(props.lambdaFunction, {
+      event: events.RuleTargetInput.fromEventPath('$.detail'),
     })
   );
 }
@@ -35,6 +46,24 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
         buildAutocontrollerFastqGlueToAutoControllerSfnTarget({
           eventBridgeRuleObj: rule,
           stateMachineObj: stateMachine,
+        });
+        break;
+      }
+      case 'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingSyncRequest'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'recordSyncRequest'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildDataPackagingSyncRequestToTaskTokenRecordingLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
         });
         break;
       }

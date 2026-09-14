@@ -73,6 +73,12 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     lambdaObject.addEnvironment('CONTEXT_INDEX_NAME', CONTEXT_INDEX_NAME);
   }
 
+  if (lambdaRequirements.needsTaskTokenTablePermissions) {
+    // Grant write access to the task token table and provide its name
+    props.taskTokenTable.grantWriteData(lambdaObject);
+    lambdaObject.addEnvironment('TASK_TOKEN_TABLE_NAME', props.taskTokenTable.tableName);
+  }
+
   if (lambdaRequirements.needsMartLayer) {
     /* Add env vars and nag suppressions for mart access */
     // Iterate over the MART_ENV_VARS key, value pairs and add them as environment variables to the lambda function

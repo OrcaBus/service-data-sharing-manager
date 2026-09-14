@@ -34,7 +34,8 @@ export type LambdaName =
   | 'findMatchingJobsForRun'
   | 'notifySlack'
   | 'extractSlackActionContext'
-  | 'verifySlackRequest';
+  | 'verifySlackRequest'
+  | 'recordSyncRequest';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -68,6 +69,7 @@ export const lambdaNameList: LambdaName[] = [
   'notifySlack',
   'extractSlackActionContext',
   'verifySlackRequest',
+  'recordSyncRequest',
 ];
 
 export interface Requirements {
@@ -79,6 +81,7 @@ export interface Requirements {
   needsStepsS3DownloadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
   needsHigherMemory?: boolean;
+  needsTaskTokenTablePermissions?: boolean;
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
@@ -201,6 +204,10 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   extractSlackActionContext: {},
   verifySlackRequest: {},
+  recordSyncRequest: {
+    needsOrcabusApiToolsLayer: true,
+    needsTaskTokenTablePermissions: true,
+  },
 };
 
 export interface LambdaProps {
@@ -211,6 +218,7 @@ export interface LambdaProps {
   // Database permissions
   packagingLookUpTable: ITableV2;
   packagingLookUpBucket: IBucket;
+  taskTokenTable: ITableV2;
   // S3 Steps Copy Permissions
   s3StepsCopyBucket: IBucket;
   s3StepsCopyBucketPrefix: string;

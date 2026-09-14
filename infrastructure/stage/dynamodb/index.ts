@@ -193,7 +193,7 @@ export function buildTaskTokenTable(scope: Construct, props: TaskTokenTableProps
     pointInTimeRecoverySpecification: {
       pointInTimeRecoveryEnabled: true,
     },
-    // Enable TTL so resolved rows auto-clean after ~a day
+    // Enable TTL on the table
     timeToLiveAttribute: props.ttlAttribute,
   });
 }

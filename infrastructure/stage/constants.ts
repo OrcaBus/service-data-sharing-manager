@@ -56,6 +56,8 @@ export const PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPackagingJobSta
 export const PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPushJobStateChange';
 export const FASTQ_SYNC_DETAIL_TYPE = 'FastqSync';
 export const ICAV2_DATA_COPY_SYNC_DETAIL_TYPE = 'ICAv2DataCopySync';
+export const PACKAGING_SYNC_REQUEST_DETAIL_TYPE = 'DataPackagingSyncRequest';
+export const PUSH_SYNC_REQUEST_DETAIL_TYPE = 'DataPushSyncRequest';
 
 // API
 export const API_VERSION = 'v1';
@@ -107,6 +109,8 @@ export const autoPushSfnArn: Record<StageName, string> = {
 // EventBridge rule names for auto data sharing
 export const AUTOCONTROLLER_RULE_DESCRIPTION =
   'Rule to listen to FastqGlue ReadSetsAdded events for AutoController.';
+export const PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION =
+  'Rule to listen to DataPackagingSyncRequest events and route them to the record sync request lambda.';
 // EventBridge pattern pieces for the Autocontroller rule that listens to FastqGlue:
 // - source: emitted by the FastqGlue service
 // - detailType: specific event fired when new FASTQ list rows are added

@@ -6,8 +6,11 @@ import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
 import {
   AUTOCONTROLLER_RULE_DESCRIPTION,
   FASTQ_GLUE_EVENT_SOURCE,
+  PACKAGING_SYNC_REQUEST_DETAIL_TYPE,
+  PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
   READSETS_ADDED_DETAIL_TYPE,
   STACK_PREFIX,
+  STACK_SOURCE,
 } from '../constants';
 import {
   EventBridgeRuleObject,
@@ -28,13 +31,20 @@ function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
   };
 }
 
+function buildPackagingSyncRequestPattern(): EventPattern {
+  return {
+    detailType: [PACKAGING_SYNC_REQUEST_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
 /* Generic rule builder */
 function buildEventRule(scope: Construct, props: EventBridgeRuleProps): Rule {
   return new events.Rule(scope, props.ruleName, {
     eventPattern: props.eventPattern,
     eventBus: props.eventBus,
     ruleName: `${STACK_PREFIX}--${props.ruleName}`,
-    description: AUTOCONTROLLER_RULE_DESCRIPTION,
+    description: props.description,
   });
 }
 
@@ -47,6 +57,7 @@ function buildAutocontrollerFastqGlueRule(
     ruleName: props.ruleName,
     eventPattern: buildAutocontrollerFastqGlueRowsAddedPattern(),
     eventBus: props.eventBus,
+    description: AUTOCONTROLLER_RULE_DESCRIPTION,
   });
 }
 
@@ -65,6 +76,18 @@ export function buildAllEventRules(
           ruleObject: buildAutocontrollerFastqGlueRule(scope, {
             ruleName,
             eventBus: props.eventBus,
+          }),
+        });
+        break;
+      }
+      case 'DataPackagingSyncRequest': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPackagingSyncRequestPattern(),
+            eventBus: props.eventBus,
+            description: PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
           }),
         });
         break;

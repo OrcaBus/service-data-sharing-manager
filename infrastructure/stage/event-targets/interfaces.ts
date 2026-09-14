@@ -1,12 +1,17 @@
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as events from 'aws-cdk-lib/aws-events';
+import { IFunction } from 'aws-cdk-lib/aws-lambda';
 import { EventBridgeRuleObject } from '../event-rules/interfaces';
 import { SfnObject } from '../step-functions/interfaces';
+import { LambdaObject } from '../lambdas/interfaces';
 
-export type EventBridgeTargetName = 'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget';
+export type EventBridgeTargetName =
+  | 'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget'
+  | 'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget';
 
 export const eventBridgeTargetsNameList: EventBridgeTargetName[] = [
   'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget',
+  'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget',
 ];
 
 export interface AddSfnAsEventBridgeTargetProps {
@@ -14,7 +19,13 @@ export interface AddSfnAsEventBridgeTargetProps {
   eventBridgeRuleObj: events.Rule;
 }
 
+export interface AddLambdaAsEventBridgeTargetProps {
+  lambdaFunction: IFunction;
+  eventBridgeRuleObj: events.Rule;
+}
+
 export interface EventBridgeTargetsProps {
   eventBridgeRuleObjects: EventBridgeRuleObject[];
   stepFunctionObjects: SfnObject[];
+  lambdaObjects: LambdaObject[];
 }
