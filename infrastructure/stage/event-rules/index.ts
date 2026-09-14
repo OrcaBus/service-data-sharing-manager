@@ -1,7 +1,8 @@
 /* Event Bridge Rules */
 import { Construct } from 'constructs';
 import * as events from 'aws-cdk-lib/aws-events';
-import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
+import { EventPattern, Rule, Schedule } from 'aws-cdk-lib/aws-events';
+import { Duration } from 'aws-cdk-lib';
 
 import {
   AUTOCONTROLLER_RULE_DESCRIPTION,
@@ -17,12 +18,15 @@ import {
   READSETS_ADDED_DETAIL_TYPE,
   STACK_PREFIX,
   STACK_SOURCE,
+  SYNC_TOKEN_HEARTBEAT_RULE_DESCRIPTION,
+  SYNC_TOKEN_HEARTBEAT_SCHEDULE_RATE_MINUTES,
 } from '../constants';
 import {
   EventBridgeRuleObject,
   EventBridgeRuleProps,
   EventBridgeRulesProps,
   BuildAutocontrollerFastqGlueRuleProps,
+  ScheduleRuleProps,
   eventBridgeRuleNameList,
 } from './interfaces';
 
@@ -70,6 +74,15 @@ function buildEventRule(scope: Construct, props: EventBridgeRuleProps): Rule {
   return new events.Rule(scope, props.ruleName, {
     eventPattern: props.eventPattern,
     eventBus: props.eventBus,
+    ruleName: `${STACK_PREFIX}--${props.ruleName}`,
+    description: props.description,
+  });
+}
+
+/* Schedule (rate) rule builder */
+function buildScheduleRule(scope: Construct, props: ScheduleRuleProps): Rule {
+  return new events.Rule(scope, props.ruleName, {
+    schedule: props.schedule,
     ruleName: `${STACK_PREFIX}--${props.ruleName}`,
     description: props.description,
   });
@@ -151,6 +164,17 @@ export function buildAllEventRules(
             eventPattern: buildPushJobStateChangePattern(),
             eventBus: props.eventBus,
             description: PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'SyncTokenHeartbeatSchedule': {
+        out.push({
+          ruleName,
+          ruleObject: buildScheduleRule(scope, {
+            ruleName,
+            schedule: Schedule.rate(Duration.minutes(SYNC_TOKEN_HEARTBEAT_SCHEDULE_RATE_MINUTES)),
+            description: SYNC_TOKEN_HEARTBEAT_RULE_DESCRIPTION,
           }),
         });
         break;

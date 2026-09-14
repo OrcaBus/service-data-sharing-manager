@@ -58,6 +58,12 @@ export function buildDataPushJobStateChangeToTaskTokenResolvingLambdaTarget(
   );
 }
 
+export function buildSyncTokenHeartbeatScheduleToHeartbeatLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(new eventsTargets.LambdaFunction(props.lambdaFunction));
+}
+
 export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridgeTargetsProps) {
   for (const targetName of eventBridgeTargetsNameList) {
     switch (targetName) {
@@ -146,6 +152,24 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
         }
 
         buildDataPushJobStateChangeToTaskTokenResolvingLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
+        });
+        break;
+      }
+      case 'syncTokenHeartbeatScheduleToHeartbeatLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'SyncTokenHeartbeatSchedule'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'sendSyncTokenHeartbeats'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildSyncTokenHeartbeatScheduleToHeartbeatLambdaTarget({
           eventBridgeRuleObj: rule,
           lambdaFunction: lambdaFunction,
         });

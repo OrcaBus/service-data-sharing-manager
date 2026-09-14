@@ -10,7 +10,8 @@ export type EventBridgeTargetName =
   | 'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget'
   | 'dataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget'
   | 'dataPushSyncRequestToTaskTokenRecordingLambdaTarget'
-  | 'dataPushJobStateChangeToTaskTokenResolvingLambdaTarget';
+  | 'dataPushJobStateChangeToTaskTokenResolvingLambdaTarget'
+  | 'syncTokenHeartbeatScheduleToHeartbeatLambdaTarget';
 
 export const eventBridgeTargetsNameList: EventBridgeTargetName[] = [
   'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget',
@@ -18,6 +19,7 @@ export const eventBridgeTargetsNameList: EventBridgeTargetName[] = [
   'dataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget',
   'dataPushSyncRequestToTaskTokenRecordingLambdaTarget',
   'dataPushJobStateChangeToTaskTokenResolvingLambdaTarget',
+  'syncTokenHeartbeatScheduleToHeartbeatLambdaTarget',
 ];
 
 export interface AddSfnAsEventBridgeTargetProps {

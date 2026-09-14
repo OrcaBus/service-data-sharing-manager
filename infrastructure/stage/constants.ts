@@ -117,6 +117,9 @@ export const PUSH_SYNC_REQUEST_RULE_DESCRIPTION =
   'Rule to listen to DataPushSyncRequest events and route them to the record sync request lambda.';
 export const PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION =
   'Rule to listen to DataPushJobStateChange events and route them to the resolve sync token lambda.';
+export const SYNC_TOKEN_HEARTBEAT_RULE_DESCRIPTION =
+  'Scheduled rule to send task token heartbeats for in-progress data sharing sync jobs.';
+export const SYNC_TOKEN_HEARTBEAT_SCHEDULE_RATE_MINUTES = 15;
 // EventBridge pattern pieces for the Autocontroller rule that listens to FastqGlue:
 // - source: emitted by the FastqGlue service
 // - detailType: specific event fired when new FASTQ list rows are added
