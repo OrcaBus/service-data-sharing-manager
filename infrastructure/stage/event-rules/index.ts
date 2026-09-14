@@ -10,6 +10,8 @@ import {
   PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
   PACKAGING_SYNC_REQUEST_DETAIL_TYPE,
   PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
+  PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
+  PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION,
   PUSH_SYNC_REQUEST_DETAIL_TYPE,
   PUSH_SYNC_REQUEST_RULE_DESCRIPTION,
   READSETS_ADDED_DETAIL_TYPE,
@@ -52,6 +54,13 @@ function buildPackagingJobStateChangePattern(): EventPattern {
 function buildPushSyncRequestPattern(): EventPattern {
   return {
     detailType: [PUSH_SYNC_REQUEST_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
+function buildPushJobStateChangePattern(): EventPattern {
+  return {
+    detailType: [PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE],
     source: [STACK_SOURCE],
   };
 }
@@ -130,6 +139,18 @@ export function buildAllEventRules(
             eventPattern: buildPushSyncRequestPattern(),
             eventBus: props.eventBus,
             description: PUSH_SYNC_REQUEST_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'DataPushJobStateChange': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPushJobStateChangePattern(),
+            eventBus: props.eventBus,
+            description: PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION,
           }),
         });
         break;

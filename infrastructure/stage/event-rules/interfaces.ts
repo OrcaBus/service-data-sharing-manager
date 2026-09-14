@@ -4,13 +4,15 @@ export type EventBridgeRuleName =
   | 'ReadSetsAdded'
   | 'DataPackagingSyncRequest'
   | 'DataPackagingJobStateChange'
-  | 'DataPushSyncRequest';
+  | 'DataPushSyncRequest'
+  | 'DataPushJobStateChange';
 
 export const eventBridgeRuleNameList: EventBridgeRuleName[] = [
   'ReadSetsAdded',
   'DataPackagingSyncRequest',
   'DataPackagingJobStateChange',
   'DataPushSyncRequest',
+  'DataPushJobStateChange',
 ];
 
 export interface EventBridgeRuleProps {
