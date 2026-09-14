@@ -74,9 +74,28 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
   }
 
   if (lambdaRequirements.needsTaskTokenTablePermissions) {
-    // Grant write access to the task token table and provide its name
-    props.taskTokenTable.grantWriteData(lambdaObject);
+    props.taskTokenTable.grantReadWriteData(lambdaObject);
     lambdaObject.addEnvironment('TASK_TOKEN_TABLE_NAME', props.taskTokenTable.tableName);
+  }
+
+  if (lambdaRequirements.needsTaskTokenSendPermissions) {
+    // SendTask* actions do not support resource-level scoping
+    lambdaObject.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['states:SendTaskSuccess', 'states:SendTaskFailure', 'states:SendTaskHeartbeat'],
+        resources: ['*'],
+      })
+    );
+    NagSuppressions.addResourceSuppressions(
+      lambdaObject,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason: 'SendTask* actions do not support resource-level permissions and require *',
+        },
+      ],
+      true
+    );
   }
 
   if (lambdaRequirements.needsMartLayer) {

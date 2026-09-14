@@ -6,6 +6,8 @@ import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
 import {
   AUTOCONTROLLER_RULE_DESCRIPTION,
   FASTQ_GLUE_EVENT_SOURCE,
+  PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
+  PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
   PACKAGING_SYNC_REQUEST_DETAIL_TYPE,
   PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
   READSETS_ADDED_DETAIL_TYPE,
@@ -34,6 +36,13 @@ function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
 function buildPackagingSyncRequestPattern(): EventPattern {
   return {
     detailType: [PACKAGING_SYNC_REQUEST_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
+function buildPackagingJobStateChangePattern(): EventPattern {
+  return {
+    detailType: [PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE],
     source: [STACK_SOURCE],
   };
 }
@@ -88,6 +97,18 @@ export function buildAllEventRules(
             eventPattern: buildPackagingSyncRequestPattern(),
             eventBus: props.eventBus,
             description: PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'DataPackagingJobStateChange': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPackagingJobStateChangePattern(),
+            eventBus: props.eventBus,
+            description: PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
           }),
         });
         break;

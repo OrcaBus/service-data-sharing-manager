@@ -1,10 +1,12 @@
 import { EventPattern, IEventBus, Rule } from 'aws-cdk-lib/aws-events';
 
-export type EventBridgeRuleName = 'ReadSetsAdded' | 'DataPackagingSyncRequest';
+export type EventBridgeRuleName =
+  'ReadSetsAdded' | 'DataPackagingSyncRequest' | 'DataPackagingJobStateChange';
 
 export const eventBridgeRuleNameList: EventBridgeRuleName[] = [
   'ReadSetsAdded',
   'DataPackagingSyncRequest',
+  'DataPackagingJobStateChange',
 ];
 
 export interface EventBridgeRuleProps {

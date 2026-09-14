@@ -7,11 +7,13 @@ import { LambdaObject } from '../lambdas/interfaces';
 
 export type EventBridgeTargetName =
   | 'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget'
-  | 'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget';
+  | 'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget'
+  | 'dataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget';
 
 export const eventBridgeTargetsNameList: EventBridgeTargetName[] = [
   'autocontrollerFastqGlueRowsAddedToAutoControllerSfnTarget',
   'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget',
+  'dataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget',
 ];
 
 export interface AddSfnAsEventBridgeTargetProps {

@@ -111,6 +111,8 @@ export const AUTOCONTROLLER_RULE_DESCRIPTION =
   'Rule to listen to FastqGlue ReadSetsAdded events for AutoController.';
 export const PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION =
   'Rule to listen to DataPackagingSyncRequest events and route them to the record sync request lambda.';
+export const PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION =
+  'Rule to listen to DataPackagingJobStateChange events and route them to the resolve sync token lambda.';
 // EventBridge pattern pieces for the Autocontroller rule that listens to FastqGlue:
 // - source: emitted by the FastqGlue service
 // - detailType: specific event fired when new FASTQ list rows are added
