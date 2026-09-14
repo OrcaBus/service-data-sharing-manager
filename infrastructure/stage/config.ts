@@ -6,6 +6,7 @@ import {
   DYNAMODB_PACKAGING_API_TABLE_NAME,
   DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
   DYNAMODB_PUSH_API_TABLE_NAME,
+  DYNAMODB_TASK_TOKEN_TABLE_NAME,
   EVENT_BUS_NAME,
   MART_BUCKET_NAME,
   S3_STEPS_COPY_MIDFIX,
@@ -45,6 +46,7 @@ export const getStatefulApplicationStackProps = (
     packagingJobsTableName: DYNAMODB_PACKAGING_API_TABLE_NAME,
     pushJobsTableName: DYNAMODB_PUSH_API_TABLE_NAME,
     packagingLookUpTableName: DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
+    taskTokenTableName: DYNAMODB_TASK_TOKEN_TABLE_NAME,
 
     // S3 Bucket names
     dataSharingBucketName: DATA_SHARING_BUCKET_NAME.replace(
@@ -73,6 +75,7 @@ export const getStatelessApplicationStackProps = (
     packagingJobsTableName: DYNAMODB_PACKAGING_API_TABLE_NAME,
     pushJobsTableName: DYNAMODB_PUSH_API_TABLE_NAME,
     packagingLookUpTableName: DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME,
+    taskTokenTableName: DYNAMODB_TASK_TOKEN_TABLE_NAME,
 
     // S3 stuff
     dataSharingBucketName: DATA_SHARING_BUCKET_NAME.replace(

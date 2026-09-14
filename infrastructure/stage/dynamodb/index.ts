@@ -6,7 +6,12 @@ import {
   GlobalSecondaryIndexPropsV2,
   ProjectionType,
 } from 'aws-cdk-lib/aws-dynamodb';
-import { ApiTableProps, BuildGlobalIndexesProps, LookUpTableProps } from './interfaces';
+import {
+  ApiTableProps,
+  BuildGlobalIndexesProps,
+  LookUpTableProps,
+  TaskTokenTableProps,
+} from './interfaces';
 import {
   CONTENT_INDEX_NAME,
   CONTEXT_INDEX_NAME,
@@ -172,5 +177,23 @@ export function buildPackagingLookUpTable(scope: Construct, props: LookUpTablePr
       // We want to use 'id' as the sort key for the secondary indexes
       sortKey: props.partitionKey,
     }),
+  });
+}
+
+export function buildTaskTokenTable(scope: Construct, props: TaskTokenTableProps) {
+  /* Create the task token tracking table  */
+  new dynamodb.TableV2(scope, props.tableName, {
+    /* The job id - either a packaging (pkg.xxx) or push (psh.xxx) orcabus id */
+    partitionKey: {
+      name: props.partitionKey,
+      type: dynamodb.AttributeType.STRING,
+    },
+    tableName: props.tableName,
+    removalPolicy: RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE,
+    pointInTimeRecoverySpecification: {
+      pointInTimeRecoveryEnabled: true,
+    },
+    // Enable TTL so resolved rows auto-clean after ~a day
+    timeToLiveAttribute: props.ttlAttribute,
   });
 }

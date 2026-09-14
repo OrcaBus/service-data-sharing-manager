@@ -18,6 +18,7 @@ export const INTERFACE_DIR = path.join(APP_ROOT, 'interface');
 export const DYNAMODB_PACKAGING_API_TABLE_NAME = 'DataSharingPackagingApiTable';
 export const DYNAMODB_PUSH_API_TABLE_NAME = 'DataSharingPushApiTable';
 export const DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME = 'DataSharingPackagingLookupTable';
+export const DYNAMODB_TASK_TOKEN_TABLE_NAME = 'DataSharingTaskTokenTable';
 
 // Indexes - Packaging Job API
 export const PACKAGING_JOB_API_GLOBAL_SECONDARY_INDEX_NAMES = ['package_name', 'status'];
