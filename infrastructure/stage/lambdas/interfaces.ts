@@ -32,9 +32,9 @@ export type LambdaName =
   | 'notifySlack'
   | 'extractSlackActionContext'
   | 'verifySlackRequest'
-  | 'recordSyncRequest'
-  | 'resolveSyncToken'
-  | 'sendSyncTokenHeartbeats';
+  | 'taskTokenRecordRequest'
+  | 'taskTokenResolve'
+  | 'taskTokenHeartbeat';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -65,9 +65,9 @@ export const lambdaNameList: LambdaName[] = [
   'notifySlack',
   'extractSlackActionContext',
   'verifySlackRequest',
-  'recordSyncRequest',
-  'resolveSyncToken',
-  'sendSyncTokenHeartbeats',
+  'taskTokenRecordRequest',
+  'taskTokenResolve',
+  'taskTokenHeartbeat',
 ];
 
 export interface Requirements {
@@ -195,15 +195,15 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   extractSlackActionContext: {},
   verifySlackRequest: {},
-  recordSyncRequest: {
+  taskTokenRecordRequest: {
     needsOrcabusApiToolsLayer: true,
     needsTaskTokenTablePermissions: true,
   },
-  resolveSyncToken: {
+  taskTokenResolve: {
     needsTaskTokenTablePermissions: true,
     needsTaskTokenSendPermissions: true,
   },
-  sendSyncTokenHeartbeats: {
+  taskTokenHeartbeat: {
     needsOrcabusApiToolsLayer: true,
     needsTaskTokenTablePermissions: true,
     needsTaskTokenSendPermissions: true,

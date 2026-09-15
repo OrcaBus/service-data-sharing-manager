@@ -90,7 +90,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingSyncRequest'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
-          (lambdaIter) => lambdaIter.lambdaName === 'recordSyncRequest'
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenRecordRequest'
         )?.lambdaFunction;
 
         if (!rule || !lambdaFunction) {
@@ -108,7 +108,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingJobStateChange'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
-          (lambdaIter) => lambdaIter.lambdaName === 'resolveSyncToken'
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenResolve'
         )?.lambdaFunction;
 
         if (!rule || !lambdaFunction) {
@@ -126,7 +126,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           (eventRuleIter) => eventRuleIter.ruleName === 'DataPushSyncRequest'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
-          (lambdaIter) => lambdaIter.lambdaName === 'recordSyncRequest'
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenRecordRequest'
         )?.lambdaFunction;
 
         if (!rule || !lambdaFunction) {
@@ -144,7 +144,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           (eventRuleIter) => eventRuleIter.ruleName === 'DataPushJobStateChange'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
-          (lambdaIter) => lambdaIter.lambdaName === 'resolveSyncToken'
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenResolve'
         )?.lambdaFunction;
 
         if (!rule || !lambdaFunction) {
@@ -162,7 +162,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           (eventRuleIter) => eventRuleIter.ruleName === 'SyncTokenHeartbeatSchedule'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
-          (lambdaIter) => lambdaIter.lambdaName === 'sendSyncTokenHeartbeats'
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenHeartbeat'
         )?.lambdaFunction;
 
         if (!rule || !lambdaFunction) {
