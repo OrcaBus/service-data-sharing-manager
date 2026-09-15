@@ -22,13 +22,13 @@
           {
             "Detail": {
               "taskToken": "{% $states.context.Task.Token %}",
-              "detailType": "${__packaging_sync_request_detail_type__}",
+              "detailType": "${__packaging_sync_detail_type__}",
               "payload": {
                 "packageName": "{% $packageName %}",
                 "packageRequest": "{% $packageRequest %}"
               }
             },
-            "DetailType": "${__packaging_sync_request_detail_type__}",
+            "DetailType": "${__packaging_sync_detail_type__}",
             "EventBusName": "${__event_bus_name__}",
             "Source": "${__stack_source__}"
           }

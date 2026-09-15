@@ -174,13 +174,13 @@
           {
             "Detail": {
               "taskToken": "{% $states.context.Task.Token %}",
-              "detailType": "${__push_sync_request_detail_type__}",
+              "detailType": "${__push_sync_detail_type__}",
               "payload": {
                 "packageId": "{% $packageId %}",
                 "shareDestination": "{% $shareDestination %}"
               }
             },
-            "DetailType": "${__push_sync_request_detail_type__}",
+            "DetailType": "${__push_sync_detail_type__}",
             "EventBusName": "${__event_bus_name__}",
             "Source": "${__stack_source__}"
           }

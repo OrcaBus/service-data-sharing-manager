@@ -18,7 +18,7 @@ export function buildAutocontrollerFastqGlueToAutoControllerSfnTarget(
   );
 }
 
-export function buildDataPackagingSyncRequestToTaskTokenRecordingLambdaTarget(
+export function buildDataPackagingSyncToTaskTokenRecordingLambdaTarget(
   props: AddLambdaAsEventBridgeTargetProps
 ) {
   props.eventBridgeRuleObj.addTarget(
@@ -38,7 +38,7 @@ export function buildDataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget
   );
 }
 
-export function buildDataPushSyncRequestToTaskTokenRecordingLambdaTarget(
+export function buildDataPushSyncToTaskTokenRecordingLambdaTarget(
   props: AddLambdaAsEventBridgeTargetProps
 ) {
   props.eventBridgeRuleObj.addTarget(
@@ -85,9 +85,9 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
         });
         break;
       }
-      case 'dataPackagingSyncRequestToTaskTokenRecordingLambdaTarget': {
+      case 'dataPackagingSyncToTaskTokenRecordingLambdaTarget': {
         const rule = props.eventBridgeRuleObjects.find(
-          (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingSyncRequest'
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingSync'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
           (lambdaIter) => lambdaIter.lambdaName === 'taskTokenTriggerJobAndTrack'
@@ -97,7 +97,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           throw new Error('Required rule or lambda function not found');
         }
 
-        buildDataPackagingSyncRequestToTaskTokenRecordingLambdaTarget({
+        buildDataPackagingSyncToTaskTokenRecordingLambdaTarget({
           eventBridgeRuleObj: rule,
           lambdaFunction: lambdaFunction,
         });
@@ -121,9 +121,9 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
         });
         break;
       }
-      case 'dataPushSyncRequestToTaskTokenRecordingLambdaTarget': {
+      case 'dataPushSyncToTaskTokenRecordingLambdaTarget': {
         const rule = props.eventBridgeRuleObjects.find(
-          (eventRuleIter) => eventRuleIter.ruleName === 'DataPushSyncRequest'
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPushSync'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
           (lambdaIter) => lambdaIter.lambdaName === 'taskTokenTriggerJobAndTrack'
@@ -133,7 +133,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           throw new Error('Required rule or lambda function not found');
         }
 
-        buildDataPushSyncRequestToTaskTokenRecordingLambdaTarget({
+        buildDataPushSyncToTaskTokenRecordingLambdaTarget({
           eventBridgeRuleObj: rule,
           lambdaFunction: lambdaFunction,
         });

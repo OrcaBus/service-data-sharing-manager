@@ -56,8 +56,8 @@ export const PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPackagingJobSta
 export const PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPushJobStateChange';
 export const FASTQ_SYNC_DETAIL_TYPE = 'FastqSync';
 export const ICAV2_DATA_COPY_SYNC_DETAIL_TYPE = 'ICAv2DataCopySync';
-export const PACKAGING_SYNC_REQUEST_DETAIL_TYPE = 'DataPackagingSyncRequest';
-export const PUSH_SYNC_REQUEST_DETAIL_TYPE = 'DataPushSyncRequest';
+export const PACKAGING_SYNC_DETAIL_TYPE = 'DataPackagingSync';
+export const PUSH_SYNC_DETAIL_TYPE = 'DataPushSync';
 
 // API
 export const API_VERSION = 'v1';
@@ -109,12 +109,12 @@ export const autoPushSfnArn: Record<StageName, string> = {
 // EventBridge rule names for auto data sharing
 export const AUTOCONTROLLER_RULE_DESCRIPTION =
   'Rule to listen to FastqGlue ReadSetsAdded events for AutoController.';
-export const PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION =
-  'Rule to listen to DataPackagingSyncRequest events and route them to the record sync request lambda.';
+export const PACKAGING_SYNC_RULE_DESCRIPTION =
+  'Rule to listen to DataPackagingSync events and route them to the task token trigger job and track lambda.';
 export const PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION =
   'Rule to listen to DataPackagingJobStateChange events and route them to the resolve sync token lambda.';
-export const PUSH_SYNC_REQUEST_RULE_DESCRIPTION =
-  'Rule to listen to DataPushSyncRequest events and route them to the record sync request lambda.';
+export const PUSH_SYNC_RULE_DESCRIPTION =
+  'Rule to listen to DataPushSync events and route them to the task token trigger job and track lambda.';
 export const PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION =
   'Rule to listen to DataPushJobStateChange events and route them to the resolve sync token lambda.';
 export const SYNC_TOKEN_HEARTBEAT_RULE_DESCRIPTION =

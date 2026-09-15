@@ -9,12 +9,12 @@ import {
   FASTQ_GLUE_EVENT_SOURCE,
   PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
   PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
-  PACKAGING_SYNC_REQUEST_DETAIL_TYPE,
-  PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
+  PACKAGING_SYNC_DETAIL_TYPE,
+  PACKAGING_SYNC_RULE_DESCRIPTION,
   PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
   PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION,
-  PUSH_SYNC_REQUEST_DETAIL_TYPE,
-  PUSH_SYNC_REQUEST_RULE_DESCRIPTION,
+  PUSH_SYNC_DETAIL_TYPE,
+  PUSH_SYNC_RULE_DESCRIPTION,
   READSETS_ADDED_DETAIL_TYPE,
   STACK_PREFIX,
   STACK_SOURCE,
@@ -41,9 +41,9 @@ function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
   };
 }
 
-function buildPackagingSyncRequestPattern(): EventPattern {
+function buildPackagingSyncPattern(): EventPattern {
   return {
-    detailType: [PACKAGING_SYNC_REQUEST_DETAIL_TYPE],
+    detailType: [PACKAGING_SYNC_DETAIL_TYPE],
     source: [STACK_SOURCE],
   };
 }
@@ -55,9 +55,9 @@ function buildPackagingJobStateChangePattern(): EventPattern {
   };
 }
 
-function buildPushSyncRequestPattern(): EventPattern {
+function buildPushSyncPattern(): EventPattern {
   return {
-    detailType: [PUSH_SYNC_REQUEST_DETAIL_TYPE],
+    detailType: [PUSH_SYNC_DETAIL_TYPE],
     source: [STACK_SOURCE],
   };
 }
@@ -120,14 +120,14 @@ export function buildAllEventRules(
         });
         break;
       }
-      case 'DataPackagingSyncRequest': {
+      case 'DataPackagingSync': {
         out.push({
           ruleName,
           ruleObject: buildEventRule(scope, {
             ruleName,
-            eventPattern: buildPackagingSyncRequestPattern(),
+            eventPattern: buildPackagingSyncPattern(),
             eventBus: props.eventBus,
-            description: PACKAGING_SYNC_REQUEST_RULE_DESCRIPTION,
+            description: PACKAGING_SYNC_RULE_DESCRIPTION,
           }),
         });
         break;
@@ -144,14 +144,14 @@ export function buildAllEventRules(
         });
         break;
       }
-      case 'DataPushSyncRequest': {
+      case 'DataPushSync': {
         out.push({
           ruleName,
           ruleObject: buildEventRule(scope, {
             ruleName,
-            eventPattern: buildPushSyncRequestPattern(),
+            eventPattern: buildPushSyncPattern(),
             eventBus: props.eventBus,
-            description: PUSH_SYNC_REQUEST_RULE_DESCRIPTION,
+            description: PUSH_SYNC_RULE_DESCRIPTION,
           }),
         });
         break;
