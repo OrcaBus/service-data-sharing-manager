@@ -6,7 +6,7 @@ Forwards the request to the Data Sharing API to create the job, then records the
 job id and task token in the task token table so the token can be resolved when
 the job reaches a terminal state.
 
-Request type is selected by the event detail-type:
+Request type is selected by the event detail-type (values injected via env vars):
   - DataPackagingSync -> create_package
   - DataPushSync      -> push_package
 
@@ -28,8 +28,9 @@ import boto3
 
 from orcabus_api_tools.data_sharing import create_package, push_package
 
-PACKAGING_SYNC_DETAIL_TYPE = "DataPackagingSync"
-PUSH_SYNC_DETAIL_TYPE = "DataPushSync"
+# Detail-types are injected by the infrastructure (single source of truth in constants.ts)
+PACKAGING_SYNC_DETAIL_TYPE_ENV_VAR = "PACKAGING_SYNC_DETAIL_TYPE"
+PUSH_SYNC_DETAIL_TYPE_ENV_VAR = "PUSH_SYNC_DETAIL_TYPE"
 
 # TTL for task token rows, in days
 TASK_TOKEN_TTL_DAYS = 1
@@ -45,14 +46,14 @@ def create_job(detail_type: str, payload: dict) -> str:
     """
     Forward the request to the Data Sharing API and return the created job id.
     """
-    if detail_type == PACKAGING_SYNC_DETAIL_TYPE:
+    if detail_type == environ[PACKAGING_SYNC_DETAIL_TYPE_ENV_VAR]:
         package = create_package(
             package_name=payload["packageName"],
             package_request=payload["packageRequest"],
         )
         return package["id"]
 
-    if detail_type == PUSH_SYNC_DETAIL_TYPE:
+    if detail_type == environ[PUSH_SYNC_DETAIL_TYPE_ENV_VAR]:
         push_job = push_package(
             package_id=payload["packageId"],
             location_uri=payload["shareDestination"],

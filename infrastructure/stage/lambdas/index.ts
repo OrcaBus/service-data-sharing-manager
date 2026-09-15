@@ -22,6 +22,8 @@ import {
   MART_BUCKET_PREFIX,
   MART_ENV_VARS,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
+  PACKAGING_SYNC_DETAIL_TYPE,
+  PUSH_SYNC_DETAIL_TYPE,
   SLACK_BOT_TOKEN_SECRET_NAME,
   SLACK_CONFIG_SECRET_NAME,
   SLACK_SIGNING_SECRET_NAME,
@@ -76,6 +78,12 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
   if (lambdaRequirements.needsTaskTokenTablePermissions) {
     props.taskTokenTable.grantReadWriteData(lambdaObject);
     lambdaObject.addEnvironment('TASK_TOKEN_TABLE_NAME', props.taskTokenTable.tableName);
+  }
+
+  // Inject the sync request detail-types so constants.ts stays the single source of truth
+  if (props.lambdaName === 'taskTokenTriggerJobAndTrack') {
+    lambdaObject.addEnvironment('PACKAGING_SYNC_DETAIL_TYPE', PACKAGING_SYNC_DETAIL_TYPE);
+    lambdaObject.addEnvironment('PUSH_SYNC_DETAIL_TYPE', PUSH_SYNC_DETAIL_TYPE);
   }
 
   if (lambdaRequirements.needsTaskTokenSendPermissions) {
