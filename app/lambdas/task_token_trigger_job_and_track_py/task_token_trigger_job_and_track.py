@@ -21,10 +21,12 @@ Expected event:
   }
 """
 
+import hashlib
 from datetime import datetime, timezone, timedelta
 from os import environ
 
 import boto3
+from botocore.exceptions import ClientError
 
 from orcabus_api_tools.data_sharing import create_package, push_package
 
@@ -40,6 +42,44 @@ TASK_TOKEN_TABLE_NAME_ENV_VAR = "TASK_TOKEN_TABLE_NAME"
 
 def get_dynamodb_table():
     return boto3.resource("dynamodb").Table(environ[TASK_TOKEN_TABLE_NAME_ENV_VAR])
+
+
+def get_claim_id(task_token: str) -> str:
+    """
+    Build the idempotency claim key for a task token.
+
+    EventBridge delivers at-least-once, so the same request (carrying the same
+    task token) can arrive more than once. The token is hashed to keep the key
+    tidy.
+    """
+    return f"claim#{hashlib.sha256(task_token.encode()).hexdigest()}"
+
+
+def claim_request(task_token: str) -> bool:
+    """
+    Atomically claim a request before creating the job.
+
+    Returns True if this invocation won the claim (no job created yet for this
+    token), or False if the request was already claimed by a previous delivery.
+    """
+    now = datetime.now(timezone.utc)
+    expire_at = int((now + timedelta(days=TASK_TOKEN_TTL_DAYS)).timestamp())
+
+    try:
+        get_dynamodb_table().put_item(
+            Item={
+                "id": get_claim_id(task_token),
+                "claimed_at": now.isoformat(),
+                "expire_at": expire_at,
+            },
+            ConditionExpression="attribute_not_exists(id)",
+        )
+    except ClientError as error:
+        if error.response.get("Error", {}).get("Code") == "ConditionalCheckFailedException":
+            return False
+        raise
+
+    return True
 
 
 def create_job(detail_type: str, payload: dict) -> str:
@@ -86,9 +126,15 @@ def handler(event, context):
     detail_type = event["detailType"]
     payload = event["payload"]
 
+    # Claim the request before creating the job. EventBridge is at-least-once, so
+    # a duplicate delivery (or a retry) could otherwise create a second package/push job.
+    if not claim_request(task_token):
+        return {"claimed": False, "reason": "request already claimed"}
+
     job_id = create_job(detail_type, payload)
     record_task_token(job_id, task_token)
 
     return {
+        "claimed": True,
         "id": job_id,
     }
