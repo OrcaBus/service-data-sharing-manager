@@ -90,7 +90,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingSyncRequest'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
-          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenRecordRequest'
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenTriggerJobAndTrack'
         )?.lambdaFunction;
 
         if (!rule || !lambdaFunction) {
@@ -126,7 +126,7 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
           (eventRuleIter) => eventRuleIter.ruleName === 'DataPushSyncRequest'
         )?.ruleObject;
         const lambdaFunction = props.lambdaObjects.find(
-          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenRecordRequest'
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenTriggerJobAndTrack'
         )?.lambdaFunction;
 
         if (!rule || !lambdaFunction) {
