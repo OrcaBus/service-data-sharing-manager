@@ -48,6 +48,15 @@ def get_task_token(job_id: str):
     return item.get("task_token")
 
 
+def delete_task_token_row(job_id: str) -> None:
+    """
+    Remove the row once the token is resolved so the heartbeat lambda no longer
+    queries a finished job. TTL remains as a safety net for rows that are never
+    resolved.
+    """
+    get_dynamodb_table().delete_item(Key={"id": job_id})
+
+
 def send_task_success(task_token: str, job_id: str, status: str) -> None:
     get_sfn_client().send_task_success(
         taskToken=task_token,
@@ -83,6 +92,11 @@ def handler(event, context):
         error_code = error.response.get("Error", {}).get("Code")
         if error_code not in IGNORABLE_ERROR_CODES:
             raise
+        # Token already resolved or expired - the row is done either way, remove it
+        delete_task_token_row(job_id)
         return {"resolved": False, "reason": error_code}
+
+    # Token resolved - remove the row so the heartbeat no longer queries this job
+    delete_task_token_row(job_id)
 
     return {"resolved": True, "id": job_id, "status": status}
