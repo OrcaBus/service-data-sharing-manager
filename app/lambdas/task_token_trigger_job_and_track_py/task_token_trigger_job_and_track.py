@@ -33,8 +33,9 @@ from orcabus_api_tools.data_sharing import create_package, push_package
 PACKAGING_SYNC_DETAIL_TYPE_ENV_VAR = "PACKAGING_SYNC_DETAIL_TYPE"
 PUSH_SYNC_DETAIL_TYPE_ENV_VAR = "PUSH_SYNC_DETAIL_TYPE"
 
-# TTL for task token rows, in days
-TASK_TOKEN_TTL_DAYS = 1
+# TTL for task token rows, in days. One week gives headroom for long-running
+# jobs (e.g. unarchiving archived data) before the safety-net cleanup kicks in.
+TASK_TOKEN_TTL_DAYS = 7
 
 TASK_TOKEN_TABLE_NAME_ENV_VAR = "TASK_TOKEN_TABLE_NAME"
 
