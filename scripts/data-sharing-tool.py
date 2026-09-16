@@ -88,7 +88,9 @@ class PackageRequestResponseDict(TypedDict):
     status: str
     requestTime: datetime
     completionTime: Optional[datetime]
+    deprecatedTime: Optional[datetime]
     hasExpired: bool
+    hasDeprecated: bool
 
 
 class PackageRequestDict(TypedDict):
