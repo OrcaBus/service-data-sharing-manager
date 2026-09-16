@@ -27,6 +27,8 @@ import {
   FASTQ_SYNC_DETAIL_TYPE,
   ICAV2_DATA_COPY_SYNC_DETAIL_TYPE,
   PACKAGING_LOOKUP_SECONDARY_INDEX_NAMES,
+  PACKAGING_SYNC_DETAIL_TYPE,
+  PUSH_SYNC_DETAIL_TYPE,
   STACK_PREFIX,
   STACK_SOURCE,
   STEP_FUNCTIONS_DIR,
@@ -70,6 +72,8 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   definitionSubstitutions['__fastq_sync_detail_type__'] = FASTQ_SYNC_DETAIL_TYPE;
   definitionSubstitutions['__icav2_data_copy_event_detail_type__'] =
     ICAV2_DATA_COPY_SYNC_DETAIL_TYPE;
+  definitionSubstitutions['__packaging_sync_detail_type__'] = PACKAGING_SYNC_DETAIL_TYPE;
+  definitionSubstitutions['__push_sync_detail_type__'] = PUSH_SYNC_DETAIL_TYPE;
 
   // Ecs stuff
   definitionSubstitutions['__generate_data_package_report_container_name__'] =

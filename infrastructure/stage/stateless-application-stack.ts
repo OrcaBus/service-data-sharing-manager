@@ -80,6 +80,11 @@ export class StatelessApplicationStack extends GitStack {
       'PackagingLookUpTable',
       props.packagingLookUpTableName
     );
+    const taskTokenTable = dynamodb.TableV2.fromTableName(
+      this,
+      'TaskTokenTable',
+      props.taskTokenTableName
+    );
 
     // Get the S3 bucket from the props
     const dataSharingBucket = s3.Bucket.fromBucketName(
@@ -127,6 +132,7 @@ export class StatelessApplicationStack extends GitStack {
       dataSharingToolsLayer: dataSharingToolsLayer,
       packagingLookUpTable: packagingLookUpTable,
       packagingLookUpBucket: dataSharingBucket,
+      taskTokenTable: taskTokenTable,
       s3StepsCopyBucket: s3StepsCopyBucket,
       s3StepsCopyBucketPrefix: props.s3StepsCopyPrefix,
       athenaQueryResultsBucket: athenaQueryResultsBucket,
@@ -178,6 +184,7 @@ export class StatelessApplicationStack extends GitStack {
     buildAllEventBridgeTargets(this, {
       eventBridgeRuleObjects,
       stepFunctionObjects: stepFunctions,
+      lambdaObjects: lambdas,
     });
 
     /*

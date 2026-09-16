@@ -18,6 +18,7 @@ export const INTERFACE_DIR = path.join(APP_ROOT, 'interface');
 export const DYNAMODB_PACKAGING_API_TABLE_NAME = 'DataSharingPackagingApiTable';
 export const DYNAMODB_PUSH_API_TABLE_NAME = 'DataSharingPushApiTable';
 export const DYNAMODB_PACKAGING_LOOKUP_TABLE_NAME = 'DataSharingPackagingLookupTable';
+export const DYNAMODB_TASK_TOKEN_TABLE_NAME = 'DataSharingTaskTokenTable';
 
 // Indexes - Packaging Job API
 export const PACKAGING_JOB_API_GLOBAL_SECONDARY_INDEX_NAMES = ['package_name', 'status'];
@@ -55,6 +56,8 @@ export const PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPackagingJobSta
 export const PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE = 'DataPushJobStateChange';
 export const FASTQ_SYNC_DETAIL_TYPE = 'FastqSync';
 export const ICAV2_DATA_COPY_SYNC_DETAIL_TYPE = 'ICAv2DataCopySync';
+export const PACKAGING_SYNC_DETAIL_TYPE = 'DataPackagingSync';
+export const PUSH_SYNC_DETAIL_TYPE = 'DataPushSync';
 
 // API
 export const API_VERSION = 'v1';
@@ -106,6 +109,17 @@ export const autoPushSfnArn: Record<StageName, string> = {
 // EventBridge rule names for auto data sharing
 export const AUTOCONTROLLER_RULE_DESCRIPTION =
   'Rule to listen to FastqGlue ReadSetsAdded events for AutoController.';
+export const PACKAGING_SYNC_RULE_DESCRIPTION =
+  'Rule to listen to DataPackagingSync events and route them to the task token trigger job and track lambda.';
+export const PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION =
+  'Rule to listen to DataPackagingJobStateChange events and route them to the resolve sync token lambda.';
+export const PUSH_SYNC_RULE_DESCRIPTION =
+  'Rule to listen to DataPushSync events and route them to the task token trigger job and track lambda.';
+export const PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION =
+  'Rule to listen to DataPushJobStateChange events and route them to the resolve sync token lambda.';
+export const SYNC_TOKEN_HEARTBEAT_RULE_DESCRIPTION =
+  'Scheduled rule to send task token heartbeats for in-progress data sharing sync jobs.';
+export const SYNC_TOKEN_HEARTBEAT_SCHEDULE_RATE_MINUTES = 15;
 // EventBridge pattern pieces for the Autocontroller rule that listens to FastqGlue:
 // - source: emitted by the FastqGlue service
 // - detailType: specific event fired when new FASTQ list rows are added
