@@ -215,7 +215,6 @@ export interface LambdaProps {
   // S3 Steps Copy Permissions
   s3StepsCopyBucket: IBucket;
   s3StepsCopyBucketPrefix: string;
-  s3StepsCopyMidfix: string;
   // Athena
   athenaQueryResultsBucket: IBucket;
 }

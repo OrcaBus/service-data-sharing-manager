@@ -129,7 +129,6 @@ export class StatelessApplicationStack extends GitStack {
       packagingLookUpBucket: dataSharingBucket,
       s3StepsCopyBucket: s3StepsCopyBucket,
       s3StepsCopyBucketPrefix: props.s3StepsCopyPrefix,
-      s3StepsCopyMidfix: props.s3StepsCopyMidfix,
       athenaQueryResultsBucket: athenaQueryResultsBucket,
     });
 
