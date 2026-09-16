@@ -155,6 +155,7 @@ class PackageWithId(PackageBase, PackageOrcabusId):
     status: JobStatusType = Field(default='PENDING')
     request_time: datetime = Field(default_factory=datetime.now)
     completion_time: Optional[datetime] = None
+    deprecated_time: Optional[datetime] = None
 
 
 class PackageResponseDict(TypedDict):
@@ -164,6 +165,7 @@ class PackageResponseDict(TypedDict):
     status: JobStatusType
     requestTime: datetime
     completionTime: Optional[datetime]
+    deprecatedTime: Optional[datetime]
     hasExpired: bool
 
 
@@ -252,6 +254,12 @@ class PackageData(PackageWithId, Dyntastic):
     def is_expired(self):
         return (
             True if (self.request_time + timedelta(days=30)) < datetime.now(timezone.utc)
+            else False
+        )
+
+    def is_deprecated(self):
+        return (
+            True if self.deprecated_time is not None
             else False
         )
 
