@@ -167,6 +167,7 @@ class PackageResponseDict(TypedDict):
     completionTime: Optional[datetime]
     deprecatedTime: Optional[datetime]
     hasExpired: bool
+    hasDeprecated: bool
 
 
 class PackageResponse(PackageWithId):
@@ -181,6 +182,13 @@ class PackageResponse(PackageWithId):
     def has_expired(self) -> bool:
         return (
             True if PackageData.get(self.id).is_expired()
+            else False
+        )
+
+    @computed_field
+    def has_deprecated(self) -> bool:
+        return (
+            True if self.deprecated_time is not None
             else False
         )
 
