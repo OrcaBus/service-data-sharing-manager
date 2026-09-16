@@ -1,7 +1,6 @@
 import json
 import urllib.request
 import boto3
-import posixpath
 
 from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
@@ -149,6 +148,26 @@ def _generate_presigned_url(
         },
         ExpiresIn=expiration,
     )
+
+def _find_copy_report_key(
+    bucket: str,
+    base_prefix: str,
+    push_id: str,
+) -> str | None:
+    """
+    Discover the copy report object under base_prefix, matching the deterministic
+    filename COPY_REPORT__<push_id>.html, wherever the copier placed it.
+    Returns the object key, or None if not found.
+    """
+    s3_client = boto3.client("s3")
+    target_suffix = f"COPY_REPORT__{push_id}.html"
+
+    paginator = s3_client.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=bucket, Prefix=base_prefix):
+        for obj in page.get("Contents", []):
+            if obj["Key"].endswith(target_suffix):
+                return obj["Key"]
+    return None
 
 def _get_package_report(package_id):
 
@@ -313,8 +332,7 @@ def handler(event, context):
     push_status = event.get("pushStatus")
     push_id = event.get("pushId")
     steps_s3_copy_bucket = event.get("stepsS3CopyBucket")
-    steps_s3_copy_html_report_prefix = event.get("stepsS3CopyHtmlReportPrefix")
-    html_report_key = event.get("htmlReportKey")
+    steps_s3_copy_base_prefix = event.get("stepsS3CopyBasePrefix")
 
 
 
@@ -482,15 +500,18 @@ def handler(event, context):
         # We need the bucket, the prefix and the report key to generate the full key for the report.
         # otherwise, the copy report URL will be None and the message will not include a link to it.
         copy_report_url = None
-        if steps_s3_copy_bucket and steps_s3_copy_html_report_prefix and html_report_key:
-            full_copy_report_key = posixpath.join(
-                steps_s3_copy_html_report_prefix, html_report_key
-            )
+        if steps_s3_copy_bucket and steps_s3_copy_base_prefix and push_id:
             try:
-                copy_report_url = _generate_presigned_url(
+                copy_report_key = _find_copy_report_key(
                     bucket=steps_s3_copy_bucket,
-                    key=full_copy_report_key,
+                    base_prefix=steps_s3_copy_base_prefix,
+                    push_id=push_id,
                 )
+                if copy_report_key:
+                    copy_report_url = _generate_presigned_url(
+                        bucket=steps_s3_copy_bucket,
+                        key=copy_report_key,
+                    )
             except Exception:
                 copy_report_url = None
 
