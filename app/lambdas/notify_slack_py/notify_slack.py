@@ -1,6 +1,10 @@
 import json
+import logging
 import urllib.request
 import boto3
+
+logger = logging.getLogger()
+logger.setLevel("INFO")
 
 from orcabus_api_tools.data_sharing import get_data_sharing_url
 from orcabus_api_tools.utils.requests_helpers import get_request
@@ -499,6 +503,9 @@ def handler(event, context):
         # Generate the presigned URL for the copy report in the Steps-S3-Copy working bucket.
         # We need the bucket, the prefix and the report key to generate the full key for the report.
         # otherwise, the copy report URL will be None and the message will not include a link to it.
+        # Build the copy report link on a best-effort basis: if it can't be
+        # resolved, log a warning and post the notification without the link
+        # rather than failing the whole push-completed notification.
         copy_report_url = None
         if steps_s3_copy_bucket and steps_s3_copy_base_prefix and push_id:
             try:
@@ -512,8 +519,17 @@ def handler(event, context):
                         bucket=steps_s3_copy_bucket,
                         key=copy_report_key,
                     )
+                else:
+                    logger.warning(
+                        "Copy report not found for push %s under s3://%s/%s",
+                        push_id, steps_s3_copy_bucket, steps_s3_copy_base_prefix,
+                    )
             except Exception:
-                copy_report_url = None
+                logger.warning(
+                    "Failed to generate presigned URL for copy report of push %s under s3://%s/%s",
+                    push_id, steps_s3_copy_bucket, steps_s3_copy_base_prefix,
+                    exc_info=True,
+                )
 
 
         # Push succeeded
