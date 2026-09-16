@@ -14,6 +14,7 @@ Command:
     view-package-report     View the package report
     push-package            Push a package to a destination
     presign-package         Presign a package
+    deprecate-package       Deprecate a package
     list-push-jobs          List push jobs
     get-push-job-status     Get status of a push job
 """
@@ -361,6 +362,20 @@ def presign_package(package_id: str) -> str:
         raise HTTPError(f"Got an error, response was {response.text}") from e
 
     return response.text
+
+
+def deprecate_package(package_id: str) -> PackageRequestResponseDict:
+    response = requests.patch(
+        headers=get_default_post_headers(),
+        url=f"{get_base_api()}/api/v1/package/{package_id}:deprecate"
+    )
+
+    try:
+        response.raise_for_status()
+    except HTTPError as e:
+        raise HTTPError(f"Got an error, response was {response.text}") from e
+
+    return response.json()
 
 
 # Sub functions
@@ -790,6 +805,41 @@ class PresignPackageSubCommand(Command):
         print(f"\"{package_script_presigned_url}\"")
 
 
+class DeprecatePackageSubCommand(Command):
+    """
+    Usage:
+        data-sharing-tool deprecate-package --help
+        data-sharing-tool deprecate-package (--package-id=<package_id>)
+
+    Description:
+      Deprecate a package. This marks a succeeded package as deprecated so that no
+      further sharing actions (presign / push) can be performed against it.
+      The package record and its audit history are preserved.
+
+    Options:
+      --package-id=<package_id>             The package id to deprecate
+
+      --help                                Show this help message and exit
+
+    Environment variables:
+      AWS_PROFILE       The AWS profile used by boto3
+
+    Example:
+        data-sharing-tool deprecate-package --package-id 'pkg.12345678910'
+    """
+
+    def __init__(self, command_argv):
+        super().__init__(command_argv)
+        # Import args
+        self.package_id = self.cli_args['--package-id']
+
+        # Deprecate the package
+        print(json.dumps(
+            deprecate_package(package_id=self.package_id),
+            indent=4
+        ))
+
+
 class ListPushJobsSubCommand(Command):
     """
     Usage:
@@ -889,6 +939,8 @@ def _dispatch():
         subcommand = PushPackageSubCommand
     elif cmd == "presign-package":
         subcommand = PresignPackageSubCommand
+    elif cmd == "deprecate-package":
+        subcommand = DeprecatePackageSubCommand
     elif cmd == "list-push-jobs":
         subcommand = ListPushJobsSubCommand
     elif cmd == "get-push-job-status":
