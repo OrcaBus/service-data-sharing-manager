@@ -21,7 +21,6 @@ Expected event:
   }
 """
 
-import hashlib
 from datetime import datetime, timezone, timedelta
 from os import environ
 
@@ -49,10 +48,9 @@ def get_claim_id(task_token: str) -> str:
     Build the idempotency claim key for a task token.
 
     EventBridge delivers at-least-once, so the same request (carrying the same
-    task token) can arrive more than once. The token is hashed to keep the key
-    tidy.
+    task token) can arrive more than once. The token itself is used as the key.
     """
-    return f"claim#{hashlib.sha256(task_token.encode()).hexdigest()}"
+    return f"claim#{task_token}"
 
 
 def claim_request(task_token: str) -> bool:
