@@ -185,6 +185,10 @@ async def get_report_presigned_url(package_id: str = Depends(sanitise_pkg_orcabu
     if package_data.is_expired():
         raise HTTPException(status_code=409, detail="Package has expired")
 
+    # Check that the package has not been deprecated
+    if package_data.is_deprecated():
+        raise HTTPException(status_code=409, detail="Package has been deprecated")
+
     return generate_presigned_url(
         bucket=environ[PACKAGE_BUCKET_NAME_ENV_VAR],
         key=str(Path(package_data.package_s3_sharing_prefix) / "final" / f"SummaryReport.{package_data.package_name}.html")
@@ -211,6 +215,10 @@ async def get_data_presigned_url(package_id: str = Depends(sanitise_pkg_orcabus_
     # Check that the package has not expired
     if package_data.is_expired():
         raise HTTPException(status_code=409, detail="Package has expired")
+
+    # Check that the package has not been deprecated
+    if package_data.is_deprecated():
+        raise HTTPException(status_code=409, detail="Package has been deprecated")
 
     # Launch the job
     generate_presigned_urls_list_sync = launch_sync_sfn(
@@ -318,6 +326,42 @@ async def abort_job(package_id: str = Depends(sanitise_pkg_orcabus_id)) -> Packa
 
 
 @router.patch(
+    "/{package_id}:deprecate",
+    tags=["package job"],
+    description=dedent("""
+    Deprecate a package. This marks a succeeded package as deprecated so that no
+    further sharing actions (presign / push) can be performed against it, while
+    preserving the package record and its audit history.
+    """)
+)
+async def deprecate_package(package_id: str = Depends(sanitise_pkg_orcabus_id)) -> PackageResponseDict:
+    try:
+        package_obj = PackageData.get(package_id)
+
+        if package_obj.status != 'SUCCEEDED':
+            raise AssertionError("Only a succeeded package can be deprecated")
+
+        if package_obj.is_deprecated():
+            raise AssertionError("Package is already deprecated")
+
+        # Set the deprecation timestamp automatically
+        package_obj.deprecated_time = datetime.now(timezone.utc)
+
+        # Save, event, return
+        package_obj.save()
+        package_obj_dict = package_obj.to_dict()
+        put_package_update_event(package_obj_dict)
+
+        return package_obj_dict
+    except DoesNotExist as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except AssertionError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch(
     "/{package_id}",
     tags=["package job"],
     description=dedent("""
@@ -382,6 +426,10 @@ async def start_data_push(package_id: str = Depends(sanitise_pkg_orcabus_id), pu
     # Check that the package has not expired
     if package_data.is_expired():
         raise HTTPException(status_code=409, detail="Package has expired")
+
+    # Check that the package has not been deprecated
+    if package_data.is_deprecated():
+        raise HTTPException(status_code=409, detail="Package has been deprecated")
 
     # Fake the sfn execution arn for the push job
     # This way the step function will have the push job id
