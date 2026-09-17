@@ -178,7 +178,9 @@
       },
       "Assign": {
         "pushId": "{% $states.result.Payload.pushRequestObject.id %}",
-        "pushStatus": "{% $states.result.Payload.pushRequestObject.status %}"
+        "pushStatus": "{% $states.result.Payload.pushRequestObject.status %}",
+        "stepsS3CopyBucket": "${__aws_s3_copy_steps_bucket__}",
+        "stepsS3CopyBasePrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' %}"
       },
       "Output": {},
       "Retry": [
@@ -250,6 +252,8 @@
         "Payload": {
           "slackNotificationType": "PUSH_COMPLETED",
           "pushId": "{% $pushId %}",
+          "stepsS3CopyBucket": "{% $stepsS3CopyBucket %}",
+          "stepsS3CopyBasePrefix": "{% $stepsS3CopyBasePrefix %}",
           "pushStatus": "{% $pushStatus %}",
           "packageName": "{% $packageName %}",
           "packageId": "{% $packageId %}",

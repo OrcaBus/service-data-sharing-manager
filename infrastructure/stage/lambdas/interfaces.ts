@@ -189,6 +189,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   notifySlack: {
     needsOrcabusApiToolsLayer: true,
+    needsStepsS3DownloadPermissions: true,
   },
   updateIngestId: {
     needsOrcabusApiToolsLayer: true,
