@@ -70,6 +70,36 @@ def write_rmarkdown_top_level_header(
     ))
 
 
+def write_rmarkdown_multiple_projects_warning_banner(
+        doc: Document
+):
+    """
+    Write a warning banner to the top of the report when the package contains
+    data from more than one project.
+
+    The individual projects are already listed throughout the report tables, so
+    the banner only needs to flag that multiple projects are present.
+
+    :param doc: The snakemd document to write to
+    :return:
+    """
+    doc.add_raw(dedent(
+        """
+        <div style="
+            border: 1px solid #ffeeba;
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        ">
+          <strong>&#9888; Warning:</strong> This package contains data from multiple projects.
+        </div>
+        """
+    ))
+    doc.add_raw("\n")
+
+
 def write_rmarkdown_header(
         doc: Document,
         section_level: int,
@@ -656,6 +686,14 @@ def generate_data_summary_report_template(job_id: str) -> None:
     # Initialise snake doc
     doc = snakemd.new_doc()
     write_rmarkdown_top_level_header(doc)
+
+    # Add a warning banner if the package contains data from multiple projects
+    if metadata_summary_df is not None:
+        unique_project_count = len(
+            metadata_summary_df['Project ID'].replace("", pd.NA).dropna().unique()
+        )
+        if unique_project_count > 1:
+            write_rmarkdown_multiple_projects_warning_banner(doc)
 
     # Add metadata section to document
     add_metadata_section(doc, metadata_summary_df)
