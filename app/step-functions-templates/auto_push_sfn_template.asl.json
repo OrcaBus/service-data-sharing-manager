@@ -189,7 +189,9 @@
       "HeartbeatSeconds": 3600,
       "Assign": {
         "pushId": "{% $states.result.id %}",
-        "pushStatus": "{% $states.result.status %}"
+        "pushStatus": "{% $states.result.status %}",
+        "stepsS3CopyBucket": "${__aws_s3_copy_steps_bucket__}",
+        "stepsS3CopyBasePrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' %}"
       },
       "Catch": [
         {
@@ -210,6 +212,8 @@
         "Payload": {
           "slackNotificationType": "PUSH_COMPLETED",
           "pushId": "{% $pushId %}",
+          "stepsS3CopyBucket": "{% $stepsS3CopyBucket %}",
+          "stepsS3CopyBasePrefix": "{% $stepsS3CopyBasePrefix %}",
           "pushStatus": "{% $pushStatus %}",
           "packageName": "{% $packageName %}",
           "packageId": "{% $packageId %}",
