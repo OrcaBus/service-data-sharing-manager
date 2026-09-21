@@ -70,6 +70,162 @@ def write_rmarkdown_top_level_header(
     ))
 
 
+def write_warning_banner(
+        doc: Document,
+        message: str
+):
+    """
+    Write a reusable amber warning banner to the report.
+
+    Callers pass the HTML-safe message to display (the leading warning icon and
+    styling are added here so all banners look consistent).
+
+    :param doc: The snakemd document to write to
+    :param message: The warning message to display inside the banner
+    :return:
+    """
+    doc.add_raw(dedent(
+        """
+        <div style="
+            border: 1px solid #ffeeba;
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        ">
+          <strong>&#9888; Warning:</strong> __MESSAGE__
+        </div>
+        """
+    ).replace(
+        "__MESSAGE__", message
+    ))
+    doc.add_raw("\n")
+
+
+def write_multiple_projects_warning_banner(
+        doc: Document
+):
+    """
+    Warn when the package contains data from more than one project.
+
+    The individual projects are already listed throughout the report tables, so
+    the banner only needs to flag that multiple projects are present.
+    """
+    write_warning_banner(
+        doc,
+        message="This package contains data from multiple projects."
+    )
+
+
+def write_archived_data_warning_banner(
+        doc: Document
+):
+    """
+    Warn when the package contains files in an archived storage class that cannot
+    be presigned for download until they are restored.
+
+    Only 'Glacier' and 'DeepArchive' block presigned-URL access; 'GlacierIr'
+    (Glacier Instant Retrieval) is directly accessible and is not flagged here.
+    """
+    write_warning_banner(
+        doc,
+        message=(
+            "This package contains data in an archived storage class "
+            "(Glacier or Deep Archive). Presigned URLs cannot be generated for "
+            "this package."
+        )
+    )
+
+
+# Storage classes that block presigned-URL generation until the object is restored.
+# 'GlacierIr' (Glacier Instant Retrieval) is directly accessible and is not included.
+ARCHIVED_STORAGE_CLASSES = ('Glacier', 'DeepArchive')
+
+
+def has_archived_files(*summary_dfs: Optional[pd.DataFrame]) -> bool:
+    """
+    Return True if any of the provided summary dataframes contains a file in an
+    archived storage class that blocks presigned-URL generation.
+
+    :param summary_dfs: One or more summary dataframes (any may be None). Only
+        those with a 'Storage Class' column are inspected.
+    :return: True if at least one archived file is present.
+    """
+    for summary_df in summary_dfs:
+        if summary_df is None:
+            continue
+        if 'Storage Class' not in summary_df.columns.tolist():
+            continue
+        if summary_df['Storage Class'].isin(ARCHIVED_STORAGE_CLASSES).any():
+            return True
+    return False
+
+
+def write_ora_decompression_section(
+        doc: Document
+):
+    """
+    Write a section explaining how to decompress ORA-compressed FASTQ files.
+
+    ORA files can be streamed directly into the UMCCR orad docker container,
+    which decompresses them back to raw FASTQ without writing intermediate files
+    to disk. We show both a presigned-URL (curl) and a direct S3 (aws s3 cp)
+    variant, plus how to save the decompressed output.
+
+    Only added to the report when the package contains ORA-compressed files.
+
+    :param doc: The snakemd document to write to
+    :return:
+    """
+    write_rmarkdown_header(
+        doc,
+        section_level=SECTION_LEVEL,
+        title="Decompressing ORA files",
+        add_tabset=False
+    )
+    doc.add_raw(dedent(
+        """
+        This package contains ORA-compressed FASTQ files (`.fastq.ora`). Decompress
+        them by streaming through the UMCCR `orad` docker image (multi-arch, reference
+        data bundled) &mdash; no local install required:
+
+        - `ghcr.io/umccr/orad:2.7.0` (pinned)
+        - `ghcr.io/umccr/orad:latest`
+
+        From the S3 URI (piped into `head` here just to preview the first few lines):
+
+        ```bash
+        aws s3 cp "<S3_ORA_URI_R1_001.fastq.ora>" - | \\
+        docker run \\
+          --rm \\
+          --interactive ghcr.io/umccr/orad:latest orad \\
+          --ora-reference /opt/oradata \\
+          --raw \\
+          --stdout - | \\
+        head
+        ```
+
+        Or, from presigned URLs (no AWS credentials needed):
+
+        ```bash
+        curl --silent "<PRESIGNED_URL_R1_001.fastq.ora>" | \\
+        docker run \\
+          --rm \\
+          --interactive ghcr.io/umccr/orad:latest orad \\
+          --ora-reference /opt/oradata \\
+          --raw \\
+          --stdout - | \\
+        head
+        ```
+
+        Swap the trailing `| head` for `| gzip > R1_001.fastq.gz` to save the full
+        decompressed output.
+        """
+    ))
+    doc.add_raw("\n")
+
+
 def write_rmarkdown_header(
         doc: Document,
         section_level: int,
@@ -653,57 +809,71 @@ def generate_data_summary_report_template(job_id: str) -> None:
         library_df=library_df
     )
 
-    # Initialise snake doc
-    doc = snakemd.new_doc()
-    write_rmarkdown_top_level_header(doc)
-
-    # Add metadata section to document
-    add_metadata_section(doc, metadata_summary_df)
-
     # Get the files df
     files_df = get_files_df(
         job_id=job_id
     )
 
-    # Get the fastqs
+    # Get the fastqs (and their summary) up front so we can decide which warning
+    # banners to show before writing any sections.
     fastq_df = get_fastq_df(
         job_id=job_id,
         library_df=library_df,
         files_df=files_df,
     )
+    fastq_summary_df = (
+        get_fastq_summary_df(fastq_df=fastq_df)
+        if fastq_df is not None
+        else None
+    )
 
-    if fastq_df is not None:
-        # Get the fastq df as a summary
-        fastq_summary_df = get_fastq_summary_df(
-            fastq_df=fastq_df,
-        )
-
-        # Add fastqs section to document
-        add_fastqs_section(doc, fastq_summary_df)
-
-    # Get the analyses
+    # Get the analyses (and their summaries) up front for the same reason.
     analyses_df = get_analyses_df(
         job_id=job_id,
         library_df=library_df,
         files_df=files_df
     )
-
     if analyses_df is not None:
-        analyses_summary_df = get_analyses_summary_df(
-            analyses_df=analyses_df
-        )
+        analyses_summary_df = get_analyses_summary_df(analyses_df=analyses_df)
+        secondary_files_summary_df = get_secondary_files_summary_df(analyses_df=analyses_df)
+    else:
+        analyses_summary_df = None
+        secondary_files_summary_df = None
 
-        # Get the secondary files
-        secondary_files_summary_df = get_secondary_files_summary_df(
-            analyses_df=analyses_df
-        )
+    # Initialise snake doc
+    doc = snakemd.new_doc()
+    write_rmarkdown_top_level_header(doc)
 
+    # Warning banners (shown at the top of the report, before any section) --------
+    # Warn if the package contains data from more than one project
+    if (
+        metadata_summary_df is not None
+        and len(metadata_summary_df['Project ID'].replace("", pd.NA).dropna().unique()) > 1
+    ):
+        write_multiple_projects_warning_banner(doc)
+
+    # Warn if the package contains archived files that block presigned-URL generation
+    if has_archived_files(fastq_summary_df, analyses_summary_df, secondary_files_summary_df):
+        write_archived_data_warning_banner(doc)
+
+    # Report sections -------------------------------------------------------------
+    # Add metadata section to document
+    add_metadata_section(doc, metadata_summary_df)
+
+    if fastq_summary_df is not None:
+        # Add fastqs section to document
+        add_fastqs_section(doc, fastq_summary_df)
+
+        # Add the ORA decompression section if the package contains ORA files
+        if (fastq_summary_df['Compression Format'] == 'ORA').any():
+            write_ora_decompression_section(doc)
+
+    if analyses_summary_df is not None:
         # Add analyses section to document
         add_analyses_section(doc, analyses_summary_df)
 
         # Add secondary files section to document
         add_secondary_files_section(doc, secondary_files_summary_df)
-
 
     # Write the document to a file
     doc.dump("data_summary_report", ext="Rmd")
