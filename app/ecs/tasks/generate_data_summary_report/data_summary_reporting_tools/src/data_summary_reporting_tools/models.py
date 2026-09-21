@@ -1,6 +1,6 @@
 # Imports
 from datetime import datetime
-from typing import Optional, TypedDict, List, Dict, Literal, Any
+from typing import Optional, TypedDict, List, Dict, Literal
 import pandera.pandas as pa
 
 DataType = Literal[
@@ -38,15 +38,31 @@ class ReadSet(TypedDict):
     compressionFormat: Optional[str]
 
 
+class Sequali(TypedDict):
+    sequaliHtml: FileStorageObject
+    sequaliParquet: FileStorageObject
+    multiqcHtml: FileStorageObject
+    multiqcParquet: FileStorageObject
+
+
+class Picard(TypedDict):
+    collectInsertSizeParquet: FileStorageObject
+    collectInsertSizePdf: FileStorageObject
+    multiqcHtml: FileStorageObject
+    multiqcParquet: FileStorageObject
+
+
 class Qc(TypedDict):
     insertSizeEstimate: float
+    insertSizeStdEstimate: float
     rawWgsCoverageEstimate: float
     r1Q20Fraction: float
     r2Q20Fraction: float
     r1GcFraction: float
     r2GcFraction: float
     duplicationFractionEstimate: float
-    sequaliReports: Optional[Dict[str, Any]]
+    sequaliReports: Optional[Sequali]
+    picard: Optional[Picard]
 
 
 class Project(TypedDict):
