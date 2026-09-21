@@ -95,7 +95,7 @@
           "ErrorEquals": ["States.ALL"],
           "Next": "Update API (push complete)",
           "Output": {
-            "errorMessage": "{% $states.errorOutput %}",
+            "errorMessage": "{% $states.errorOutput.Cause %}",
             "executionId": "{% $states.context.Execution.Name %}"
           }
         }
@@ -147,7 +147,7 @@
           "Next": "Update API (push complete)",
           "Output": {
             "hasError": true,
-            "errorMessage": "{% $states.errorOutput %}"
+            "errorMessage": "{% $states.errorOutput.Cause %}"
           }
         }
       ],
