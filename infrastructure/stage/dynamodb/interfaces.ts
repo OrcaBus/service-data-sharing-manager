@@ -13,3 +13,9 @@ export interface LookUpTableProps {
   sortKey: string;
   ttlAttribute: string;
 }
+
+export interface TaskTokenTableProps {
+  tableName: string;
+  partitionKey: string;
+  ttlAttribute: string;
+}

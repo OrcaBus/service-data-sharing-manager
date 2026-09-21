@@ -11,6 +11,7 @@ export interface StatefulApplicationStackConfig {
   packagingJobsTableName: string;
   pushJobsTableName: string;
   packagingLookUpTableName: string;
+  taskTokenTableName: string;
 
   // S3 Bucket names
   dataSharingBucketName: string;
@@ -30,6 +31,7 @@ export interface StatelessApplicationStackConfig {
   packagingJobsTableName: string;
   pushJobsTableName: string;
   packagingLookUpTableName: string;
+  taskTokenTableName: string;
 
   // S3 stuff
   dataSharingBucketName: string;
