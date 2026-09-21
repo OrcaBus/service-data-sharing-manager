@@ -337,6 +337,7 @@ def handler(event, context):
     push_id = event.get("pushId")
     steps_s3_copy_bucket = event.get("stepsS3CopyBucket")
     steps_s3_copy_base_prefix = event.get("stepsS3CopyBasePrefix")
+    error_cause = event.get("errorCause")
 
 
 
@@ -574,12 +575,12 @@ def handler(event, context):
             )
             # Post message in thread to show the push result and details.
             push_failed_text = (
-                f"*Push completed, but was NOT successful:* {push_status}\n"
-                f"*Push ID:* {push_id}\n"
+                f"*Push was NOT successful:* {push_status}\n"
                 f"*Share Destination:* `{share_destination}`\n"
-                f"Review the *copy report* <{copy_report_url}|here>.\n"
+                f"*Cause:* `{error_cause}`\n"
                 f"Please check `data-sharing--autoPush` state machine for more details."
             )
+
 
             push_result_message_response = _post_message(
                 bot_token=bot_token,
