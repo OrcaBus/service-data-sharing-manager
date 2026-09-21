@@ -100,6 +100,70 @@ def write_rmarkdown_multiple_projects_warning_banner(
     doc.add_raw("\n")
 
 
+def write_ora_decompression_section(
+        doc: Document
+):
+    """
+    Write a section explaining how to decompress ORA-compressed FASTQ files.
+
+    ORA files can be streamed directly into the UMCCR orad docker container,
+    which decompresses them back to raw FASTQ without writing intermediate files
+    to disk. We show both a presigned-URL (curl) and a direct S3 (aws s3 cp)
+    variant, plus how to save the decompressed output.
+
+    Only added to the report when the package contains ORA-compressed files.
+
+    :param doc: The snakemd document to write to
+    :return:
+    """
+    write_rmarkdown_header(
+        doc,
+        section_level=SECTION_LEVEL,
+        title="Decompressing ORA files",
+        add_tabset=False
+    )
+    doc.add_raw(dedent(
+        """
+        This package contains ORA-compressed FASTQ files (`.fastq.ora`). Decompress
+        them by streaming through the UMCCR `orad` docker image (multi-arch, reference
+        data bundled) &mdash; no local install required:
+
+        - `ghcr.io/umccr/orad:2.7.0` (pinned)
+        - `ghcr.io/umccr/orad:latest`
+
+        From the S3 URI (piped into `head` here just to preview the first few lines):
+
+        ```bash
+        aws s3 cp "<S3_ORA_URI_R1_001.fastq.ora>" - | \\
+        docker run \\
+          --rm \\
+          --interactive ghcr.io/umccr/orad:latest orad \\
+          --ora-reference /opt/oradata \\
+          --raw \\
+          --stdout - | \\
+        head
+        ```
+
+        Or, from presigned URLs (no AWS credentials needed):
+
+        ```bash
+        curl --silent "<PRESIGNED_URL_R1_001.fastq.ora>" | \\
+        docker run \\
+          --rm \\
+          --interactive ghcr.io/umccr/orad:latest orad \\
+          --ora-reference /opt/oradata \\
+          --raw \\
+          --stdout - | \\
+        head
+        ```
+
+        Swap the trailing `| head` for `| gzip > R1_001.fastq.gz` to save the full
+        decompressed output.
+        """
+    ))
+    doc.add_raw("\n")
+
+
 def write_rmarkdown_header(
         doc: Document,
         section_level: int,
@@ -692,7 +756,7 @@ def generate_data_summary_report_template(job_id: str) -> None:
         unique_project_count = len(
             metadata_summary_df['Project ID'].replace("", pd.NA).dropna().unique()
         )
-        if unique_project_count > 1:
+        if unique_project_count > 0:
             write_rmarkdown_multiple_projects_warning_banner(doc)
 
     # Add metadata section to document
@@ -718,6 +782,10 @@ def generate_data_summary_report_template(job_id: str) -> None:
 
         # Add fastqs section to document
         add_fastqs_section(doc, fastq_summary_df)
+
+        # Add the ORA decompression section if the package contains ORA files
+        if (fastq_summary_df['Compression Format'] == 'ORA').any():
+            write_ora_decompression_section(doc)
 
     # Get the analyses
     analyses_df = get_analyses_df(
