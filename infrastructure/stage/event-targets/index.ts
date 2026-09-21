@@ -1,4 +1,5 @@
 import {
+  AddLambdaAsEventBridgeTargetProps,
   AddSfnAsEventBridgeTargetProps,
   eventBridgeTargetsNameList,
   EventBridgeTargetsProps,
@@ -15,6 +16,52 @@ export function buildAutocontrollerFastqGlueToAutoControllerSfnTarget(
       input: events.RuleTargetInput.fromEventPath('$.detail'),
     })
   );
+}
+
+export function buildDataPackagingSyncToTaskTokenRecordingLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(
+    new eventsTargets.LambdaFunction(props.lambdaFunction, {
+      event: events.RuleTargetInput.fromEventPath('$.detail'),
+    })
+  );
+}
+
+export function buildDataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(
+    new eventsTargets.LambdaFunction(props.lambdaFunction, {
+      event: events.RuleTargetInput.fromEventPath('$.detail'),
+    })
+  );
+}
+
+export function buildDataPushSyncToTaskTokenRecordingLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(
+    new eventsTargets.LambdaFunction(props.lambdaFunction, {
+      event: events.RuleTargetInput.fromEventPath('$.detail'),
+    })
+  );
+}
+
+export function buildDataPushJobStateChangeToTaskTokenResolvingLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(
+    new eventsTargets.LambdaFunction(props.lambdaFunction, {
+      event: events.RuleTargetInput.fromEventPath('$.detail'),
+    })
+  );
+}
+
+export function buildSyncTokenHeartbeatScheduleToHeartbeatLambdaTarget(
+  props: AddLambdaAsEventBridgeTargetProps
+) {
+  props.eventBridgeRuleObj.addTarget(new eventsTargets.LambdaFunction(props.lambdaFunction));
 }
 
 export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridgeTargetsProps) {
@@ -35,6 +82,96 @@ export function buildAllEventBridgeTargets(_scope: Construct, props: EventBridge
         buildAutocontrollerFastqGlueToAutoControllerSfnTarget({
           eventBridgeRuleObj: rule,
           stateMachineObj: stateMachine,
+        });
+        break;
+      }
+      case 'dataPackagingSyncToTaskTokenRecordingLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingSync'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenTriggerJobAndTrack'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildDataPackagingSyncToTaskTokenRecordingLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
+        });
+        break;
+      }
+      case 'dataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPackagingJobStateChange'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenResolve'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildDataPackagingJobStateChangeToTaskTokenResolvingLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
+        });
+        break;
+      }
+      case 'dataPushSyncToTaskTokenRecordingLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPushSync'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenTriggerJobAndTrack'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildDataPushSyncToTaskTokenRecordingLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
+        });
+        break;
+      }
+      case 'dataPushJobStateChangeToTaskTokenResolvingLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'DataPushJobStateChange'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenResolve'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildDataPushJobStateChangeToTaskTokenResolvingLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
+        });
+        break;
+      }
+      case 'syncTokenHeartbeatScheduleToHeartbeatLambdaTarget': {
+        const rule = props.eventBridgeRuleObjects.find(
+          (eventRuleIter) => eventRuleIter.ruleName === 'SyncTokenHeartbeatSchedule'
+        )?.ruleObject;
+        const lambdaFunction = props.lambdaObjects.find(
+          (lambdaIter) => lambdaIter.lambdaName === 'taskTokenHeartbeat'
+        )?.lambdaFunction;
+
+        if (!rule || !lambdaFunction) {
+          throw new Error('Required rule or lambda function not found');
+        }
+
+        buildSyncTokenHeartbeatScheduleToHeartbeatLambdaTarget({
+          eventBridgeRuleObj: rule,
+          lambdaFunction: lambdaFunction,
         });
         break;
       }

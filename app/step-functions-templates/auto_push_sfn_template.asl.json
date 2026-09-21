@@ -136,7 +136,7 @@
           "JitterStrategy": "FULL"
         }
       ],
-      "Next": "Trigger Push"
+      "Next": "Request Push (Sync)"
     },
     "Notify Slack: Push Not Authorised": {
       "Type": "Task",
@@ -166,81 +166,48 @@
       ],
       "End": true
     },
-    "Trigger Push": {
+    "Request Push (Sync)": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
+      "Resource": "arn:aws:states:::events:putEvents.waitForTaskToken",
       "Arguments": {
-        "FunctionName": "${__trigger_push_lambda_function_arn__}",
-        "Payload": {
-          "packageId": "{% $packageId %}",
-          "shareDestination": "{% $shareDestination %}"
-        }
+        "Entries": [
+          {
+            "Detail": {
+              "taskToken": "{% $states.context.Task.Token %}",
+              "detailType": "${__push_sync_detail_type__}",
+              "payload": {
+                "packageId": "{% $packageId %}",
+                "shareDestination": "{% $shareDestination %}"
+              }
+            },
+            "DetailType": "${__push_sync_detail_type__}",
+            "EventBusName": "${__event_bus_name__}",
+            "Source": "${__stack_source__}"
+          }
+        ]
       },
+      "HeartbeatSeconds": 3600,
       "Assign": {
-        "pushId": "{% $states.result.Payload.pushRequestObject.id %}",
-        "pushStatus": "{% $states.result.Payload.pushRequestObject.status %}"
+        "pushId": "{% $states.result.id %}",
+        "pushStatus": "{% $states.result.status %}",
+        "errorCause": null,
+        "stepsS3CopyBucket": "${__aws_s3_copy_steps_bucket__}",
+        "stepsS3CopyBasePrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' %}"
       },
-      "Output": {},
-      "Retry": [
+      "Catch": [
         {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 1,
-          "MaxAttempts": 3,
-          "BackoffRate": 2,
-          "JitterStrategy": "FULL"
-        }
-      ],
-      "Next": "Wait For Push"
-    },
-    "Wait For Push": {
-      "Type": "Wait",
-      "Seconds": 300,
-      "Next": "Check Push Status"
-    },
-    "Check Push Status": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Arguments": {
-        "FunctionName": "${__check_package_push_status_lambda_function_arn__}",
-        "Payload": {
-          "id": "{% $pushId %}"
-        }
-      },
-      "Assign": {
-        "pushStatus": "{% $states.result.Payload.status %}"
-      },
-      "Output": {},
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 1,
-          "MaxAttempts": 3,
-          "BackoffRate": 2,
-          "JitterStrategy": "FULL"
-        }
-      ],
-      "Next": "Is Push Completed"
-    },
-    "Is Push Completed": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Comment": "Push reached a terminal state: Succeeded, Failed, or Cancelled",
-          "Condition": "{% $pushStatus in [ 'SUCCEEDED', 'FAILED', 'CANCELLED' ] %}",
+          "ErrorEquals": ["States.ALL"],
+          "Assign": {
+            "pushStatus": "FAILED",
+            "errorCause": "{% $states.errorOutput.Cause %}",
+            "pushId": null,
+            "stepsS3CopyBucket": null,
+            "stepsS3CopyBasePrefix": null
+          },
           "Next": "NotifySlack: Push Completed"
         }
       ],
-      "Default": "Wait For Push"
+      "Next": "NotifySlack: Push Completed"
     },
     "NotifySlack: Push Completed": {
       "Type": "Task",
@@ -250,7 +217,10 @@
         "Payload": {
           "slackNotificationType": "PUSH_COMPLETED",
           "pushId": "{% $pushId %}",
+          "stepsS3CopyBucket": "{% $stepsS3CopyBucket %}",
+          "stepsS3CopyBasePrefix": "{% $stepsS3CopyBasePrefix %}",
           "pushStatus": "{% $pushStatus %}",
+          "errorCause": "{% $errorCause %}",
           "packageName": "{% $packageName %}",
           "packageId": "{% $packageId %}",
           "shareDestination": "{% $shareDestination %}",

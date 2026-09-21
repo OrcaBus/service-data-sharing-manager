@@ -1,19 +1,32 @@
 /* Event Bridge Rules */
 import { Construct } from 'constructs';
 import * as events from 'aws-cdk-lib/aws-events';
-import { EventPattern, Rule } from 'aws-cdk-lib/aws-events';
+import { EventPattern, Rule, Schedule } from 'aws-cdk-lib/aws-events';
+import { Duration } from 'aws-cdk-lib';
 
 import {
   AUTOCONTROLLER_RULE_DESCRIPTION,
   FASTQ_GLUE_EVENT_SOURCE,
+  PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
+  PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
+  PACKAGING_SYNC_DETAIL_TYPE,
+  PACKAGING_SYNC_RULE_DESCRIPTION,
+  PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
+  PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION,
+  PUSH_SYNC_DETAIL_TYPE,
+  PUSH_SYNC_RULE_DESCRIPTION,
   READSETS_ADDED_DETAIL_TYPE,
   STACK_PREFIX,
+  STACK_SOURCE,
+  SYNC_TOKEN_HEARTBEAT_RULE_DESCRIPTION,
+  SYNC_TOKEN_HEARTBEAT_SCHEDULE_RATE_MINUTES,
 } from '../constants';
 import {
   EventBridgeRuleObject,
   EventBridgeRuleProps,
   EventBridgeRulesProps,
   BuildAutocontrollerFastqGlueRuleProps,
+  ScheduleRuleProps,
   eventBridgeRuleNameList,
 } from './interfaces';
 
@@ -28,13 +41,50 @@ function buildAutocontrollerFastqGlueRowsAddedPattern(): EventPattern {
   };
 }
 
+function buildPackagingSyncPattern(): EventPattern {
+  return {
+    detailType: [PACKAGING_SYNC_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
+function buildPackagingJobStateChangePattern(): EventPattern {
+  return {
+    detailType: [PACKAGING_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
+function buildPushSyncPattern(): EventPattern {
+  return {
+    detailType: [PUSH_SYNC_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
+function buildPushJobStateChangePattern(): EventPattern {
+  return {
+    detailType: [PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE],
+    source: [STACK_SOURCE],
+  };
+}
+
 /* Generic rule builder */
 function buildEventRule(scope: Construct, props: EventBridgeRuleProps): Rule {
   return new events.Rule(scope, props.ruleName, {
     eventPattern: props.eventPattern,
     eventBus: props.eventBus,
     ruleName: `${STACK_PREFIX}--${props.ruleName}`,
-    description: AUTOCONTROLLER_RULE_DESCRIPTION,
+    description: props.description,
+  });
+}
+
+/* Schedule (rate) rule builder */
+function buildScheduleRule(scope: Construct, props: ScheduleRuleProps): Rule {
+  return new events.Rule(scope, props.ruleName, {
+    schedule: props.schedule,
+    ruleName: `${STACK_PREFIX}--${props.ruleName}`,
+    description: props.description,
   });
 }
 
@@ -47,6 +97,7 @@ function buildAutocontrollerFastqGlueRule(
     ruleName: props.ruleName,
     eventPattern: buildAutocontrollerFastqGlueRowsAddedPattern(),
     eventBus: props.eventBus,
+    description: AUTOCONTROLLER_RULE_DESCRIPTION,
   });
 }
 
@@ -65,6 +116,65 @@ export function buildAllEventRules(
           ruleObject: buildAutocontrollerFastqGlueRule(scope, {
             ruleName,
             eventBus: props.eventBus,
+          }),
+        });
+        break;
+      }
+      case 'DataPackagingSync': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPackagingSyncPattern(),
+            eventBus: props.eventBus,
+            description: PACKAGING_SYNC_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'DataPackagingJobStateChange': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPackagingJobStateChangePattern(),
+            eventBus: props.eventBus,
+            description: PACKAGING_JOB_STATE_CHANGE_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'DataPushSync': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPushSyncPattern(),
+            eventBus: props.eventBus,
+            description: PUSH_SYNC_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'DataPushJobStateChange': {
+        out.push({
+          ruleName,
+          ruleObject: buildEventRule(scope, {
+            ruleName,
+            eventPattern: buildPushJobStateChangePattern(),
+            eventBus: props.eventBus,
+            description: PUSH_JOB_STATE_CHANGE_RULE_DESCRIPTION,
+          }),
+        });
+        break;
+      }
+      case 'SyncTokenHeartbeatSchedule': {
+        out.push({
+          ruleName,
+          ruleObject: buildScheduleRule(scope, {
+            ruleName,
+            schedule: Schedule.rate(Duration.minutes(SYNC_TOKEN_HEARTBEAT_SCHEDULE_RATE_MINUTES)),
+            description: SYNC_TOKEN_HEARTBEAT_RULE_DESCRIPTION,
           }),
         });
         break;

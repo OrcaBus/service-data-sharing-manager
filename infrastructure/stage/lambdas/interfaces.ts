@@ -28,13 +28,13 @@ export type LambdaName =
   | 'uploadArchiveFileListAsCsv'
   | 'uploadPushJobToS3'
   | 'getDynamodbEvaluatedKeyList'
-  | 'triggerPackaging'
-  | 'checkPackagePushStatus'
-  | 'triggerPush'
   | 'findMatchingJobsForRun'
   | 'notifySlack'
   | 'extractSlackActionContext'
-  | 'verifySlackRequest';
+  | 'verifySlackRequest'
+  | 'taskTokenTriggerJobAndTrack'
+  | 'taskTokenResolve'
+  | 'taskTokenHeartbeat';
 
 export const lambdaNameList: LambdaName[] = [
   'createCsvForS3StepsCopy',
@@ -61,13 +61,13 @@ export const lambdaNameList: LambdaName[] = [
   'uploadArchiveFileListAsCsv',
   'uploadPushJobToS3',
   'getDynamodbEvaluatedKeyList',
-  'triggerPackaging',
-  'checkPackagePushStatus',
-  'triggerPush',
   'findMatchingJobsForRun',
   'notifySlack',
   'extractSlackActionContext',
   'verifySlackRequest',
+  'taskTokenTriggerJobAndTrack',
+  'taskTokenResolve',
+  'taskTokenHeartbeat',
 ];
 
 export interface Requirements {
@@ -79,6 +79,8 @@ export interface Requirements {
   needsStepsS3DownloadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
   needsHigherMemory?: boolean;
+  needsTaskTokenTablePermissions?: boolean;
+  needsTaskTokenSendPermissions?: boolean;
 }
 
 export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
@@ -173,15 +175,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   getDynamodbEvaluatedKeyList: {
     needsDbPermissions: true,
   },
-  triggerPackaging: {
-    needsOrcabusApiToolsLayer: true,
-  },
-  checkPackagePushStatus: {
-    needsOrcabusApiToolsLayer: true,
-  },
-  triggerPush: {
-    needsOrcabusApiToolsLayer: true,
-  },
+
   findMatchingJobsForRun: {
     needsOrcabusApiToolsLayer: true,
     needsMartLayer: true,
@@ -189,6 +183,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   notifySlack: {
     needsOrcabusApiToolsLayer: true,
+    needsStepsS3DownloadPermissions: true,
   },
   updateIngestId: {
     needsOrcabusApiToolsLayer: true,
@@ -201,6 +196,19 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   extractSlackActionContext: {},
   verifySlackRequest: {},
+  taskTokenTriggerJobAndTrack: {
+    needsOrcabusApiToolsLayer: true,
+    needsTaskTokenTablePermissions: true,
+  },
+  taskTokenResolve: {
+    needsTaskTokenTablePermissions: true,
+    needsTaskTokenSendPermissions: true,
+  },
+  taskTokenHeartbeat: {
+    needsOrcabusApiToolsLayer: true,
+    needsTaskTokenTablePermissions: true,
+    needsTaskTokenSendPermissions: true,
+  },
 };
 
 export interface LambdaProps {
@@ -211,6 +219,7 @@ export interface LambdaProps {
   // Database permissions
   packagingLookUpTable: ITableV2;
   packagingLookUpBucket: IBucket;
+  taskTokenTable: ITableV2;
   // S3 Steps Copy Permissions
   s3StepsCopyBucket: IBucket;
   s3StepsCopyBucketPrefix: string;

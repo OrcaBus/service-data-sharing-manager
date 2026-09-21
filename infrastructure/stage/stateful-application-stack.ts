@@ -6,6 +6,7 @@ import {
   buildPackagingJobApiTable,
   buildPackagingLookUpTable,
   buildPushJobApiTable,
+  buildTaskTokenTable,
 } from './dynamodb';
 import { createSlackSecret } from './secrets';
 import { buildSsmParameters } from './ssm';
@@ -22,7 +23,7 @@ export class StatefulApplicationStack extends GitStack {
      * Stateful Application Stack
      * Includes:
      *   * S3 Bucket for data sharing
-     *   * DynamoDB Tables for packaging jobs, push jobs, and packaging lookups
+     *   * DynamoDB Tables for packaging jobs, push jobs, packaging lookups, and task token tracking
      */
 
     // Create the s3 bucket
@@ -43,6 +44,11 @@ export class StatefulApplicationStack extends GitStack {
       tableName: props.packagingLookUpTableName,
       partitionKey: 'id',
       sortKey: 'id_type',
+      ttlAttribute: 'expire_at',
+    });
+    buildTaskTokenTable(this, {
+      tableName: props.taskTokenTableName,
+      partitionKey: 'id',
       ttlAttribute: 'expire_at',
     });
 

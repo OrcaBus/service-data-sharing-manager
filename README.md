@@ -259,6 +259,22 @@ This will return a presigned url for a shell script that can be used to download
 > itself will only be valid for 24 hours, therefore, you should download the shell script and then send it to its intended
 > recipient rather than sending them the presigned url of the shell script.
 
+#### Deprecating packages
+
+If a package was created in error or its validity is in doubt, we can deprecate it to
+prevent any further sharing actions (presigning or pushing) against it. The package
+record and its audit history are preserved.
+
+```bash
+data-sharing-tool deprecate-package \
+  --package-id pkg.12345678910
+```
+
+Once deprecated, the package response will show a `deprecatedTime` timestamp and
+`hasDeprecated: true`, and any presign or push attempt will be rejected.
+
+> Deprecation only applies to packages that have succeeded. It cannot be undone.
+
 CLI Troubleshooting
 --------------------------------------------------------------------------------
 
