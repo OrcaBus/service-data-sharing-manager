@@ -190,19 +190,24 @@
       "Assign": {
         "pushId": "{% $states.result.id %}",
         "pushStatus": "{% $states.result.status %}",
+        "errorCause": null,
         "stepsS3CopyBucket": "${__aws_s3_copy_steps_bucket__}",
         "stepsS3CopyBasePrefix": "{% '${__aws_s3_copy_steps_prefix__}' & '${__aws_s3_copy_steps_midfix__}' %}"
       },
       "Catch": [
         {
           "ErrorEquals": ["States.ALL"],
-          "Next": "Auto Push Failed"
+          "Assign": {
+            "pushStatus": "FAILED",
+            "errorCause": "{% $states.errorOutput.Cause %}",
+            "pushId": null,
+            "stepsS3CopyBucket": null,
+            "stepsS3CopyBasePrefix": null
+          },
+          "Next": "NotifySlack: Push Completed"
         }
       ],
       "Next": "NotifySlack: Push Completed"
-    },
-    "Auto Push Failed": {
-      "Type": "Fail"
     },
     "NotifySlack: Push Completed": {
       "Type": "Task",
@@ -215,6 +220,7 @@
           "stepsS3CopyBucket": "{% $stepsS3CopyBucket %}",
           "stepsS3CopyBasePrefix": "{% $stepsS3CopyBasePrefix %}",
           "pushStatus": "{% $pushStatus %}",
+          "errorCause": "{% $errorCause %}",
           "packageName": "{% $packageName %}",
           "packageId": "{% $packageId %}",
           "shareDestination": "{% $shareDestination %}",
