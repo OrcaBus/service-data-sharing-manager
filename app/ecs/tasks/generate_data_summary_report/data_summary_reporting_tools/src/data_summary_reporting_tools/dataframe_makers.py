@@ -201,6 +201,8 @@ def get_fastq_summary_df(
             "Lane": series_iter_["lane"],
             "Compression Format": series_iter_["readSet"]["compressionFormat"],
             "File Size": humanfriendly.format_size(series_iter_["size"]),
+            # Raw byte count used to sort the 'File Size' column numerically (hidden column)
+            "File Size (bytes)": int(series_iter_["size"]),
             "Relative Output Path": series_iter_["relativePath"],
             # Additional fields for splitting data frames
             "Assay": series_iter_["assay"],

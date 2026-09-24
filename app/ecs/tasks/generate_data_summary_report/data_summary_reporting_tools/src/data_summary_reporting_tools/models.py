@@ -220,6 +220,7 @@ class FastqSummaryModel(pa.DataFrameModel):
     lane: int = pa.Field(alias='Lane')
     compression_format: Optional[str] = pa.Field(alias='Compression Format', nullable=True)
     file_size: str = pa.Field(alias='File Size')
+    file_size_bytes: int = pa.Field(alias='File Size (bytes)')  # Hidden column, used to sort 'File Size' numerically
     relative_output_path: str = pa.Field(alias='Relative Output Path')
     # Additional fields for splitting data frames
     assay: Optional[str] = pa.Field(alias='Assay', nullable=True)  # Hidden column

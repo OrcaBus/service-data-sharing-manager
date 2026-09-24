@@ -96,8 +96,21 @@ def write_rmarkdown_table(
         dataframe: pd.DataFrame,
         caption: str,
         hidden_columns: Optional[List[str]] = None,
-        js_chunk: Optional[str] = None
+        js_chunk: Optional[str] = None,
+        sort_by_column_map: Optional[dict] = None
 ):
+    """
+    :param doc:
+    :param dataframe:
+    :param caption:
+    :param hidden_columns:
+    :param js_chunk:
+    :param sort_by_column_map: Optional mapping of {display_column: data_column}. The display column
+        will be ordered by the values of the data column instead of its own (string) values. This is
+        used so that a human-readable column such as 'File Size' ("10 GB") sorts by its underlying
+        numeric byte value rather than alphabetically.
+    :return:
+    """
     global TABLE_COUNT
 
     # We're adding another table, up the count!
@@ -126,6 +139,23 @@ def write_rmarkdown_table(
     else:
         hidden_columns_num = []
 
+    # Build columnDefs entries that make a display column sort by another column's data.
+    # DT / DataTables' `orderData` accepts the column index whose data should be used for
+    # ordering. We use the same 1-based index space as the hidden-column `targets` above.
+    order_data_defs = []
+    if sort_by_column_map is not None:
+        for display_column, data_column in sort_by_column_map.items():
+            if (
+                    display_column in dataframe.columns.tolist() and
+                    data_column in dataframe.columns.tolist()
+            ):
+                order_data_defs.append(
+                    "list(targets = c({__target__}), orderData = c({__order_data__}))".format(
+                        __target__=dataframe.columns.get_loc(display_column) + 1,
+                        __order_data__=dataframe.columns.get_loc(data_column) + 1,
+                    )
+                )
+
     doc.add_raw(dedent(
         """
         ```{{r {__chunk_title__}}}
@@ -151,7 +181,7 @@ def write_rmarkdown_table(
                         visible = FALSE,
                         searchable = TRUE,
                         targets = c({__hidden_column_targets__})
-                    )
+                    ){__order_data_defs__}
                 ),
                 buttons=c('copy', 'csv', 'excel', 'pdf', 'print', 'colvis'),
                 rowCallback = {__row_call_back__}
@@ -165,6 +195,10 @@ def write_rmarkdown_table(
                 "__caption_title__": f"Table {TABLE_COUNT}:",
                 "__caption__": caption,
                 "__hidden_column_targets__": ", ".join(map(str, hidden_columns_num)),
+                "__order_data_defs__": (
+                    (",\n                    " + ",\n                    ".join(order_data_defs))
+                    if order_data_defs else ""
+                ),
                 "__row_call_back__": f"JS(\"{js_chunk}\")" if js_chunk is not None else "NULL"
             }
         )
@@ -175,7 +209,8 @@ def add_summary_section(
         doc: Document,
         summary_df: Union[DataFrame[FastqSummaryModel], DataFrame[MetadataSummaryModel]],
         section_name: str = "summary",  # One of "Metadata" or "Fastq"
-        hidden_columns: Optional[List[str]] = None
+        hidden_columns: Optional[List[str]] = None,
+        sort_by_column_map: Optional[dict] = None
 ):
     """
     Add in the summary section to the document.
@@ -183,6 +218,7 @@ def add_summary_section(
     :param section_name:
     :param doc:
     :param summary_df:
+    :param sort_by_column_map:
     :return:
     """
     if summary_df is None:
@@ -236,6 +272,7 @@ def add_summary_section(
             caption=f"All {section_name} in the data package",
             hidden_columns=hidden_columns,
             js_chunk=js_chunk,
+            sort_by_column_map=sort_by_column_map,
         )
         return
 
@@ -260,6 +297,7 @@ def add_summary_section(
         caption=f"All {section_name} in the data package",
         hidden_columns=hidden_columns,
         js_chunk=js_chunk,
+        sort_by_column_map=sort_by_column_map,
     )
 
     if not has_multiple_projects:
@@ -279,6 +317,7 @@ def add_summary_section(
                 caption=f"{section_name} for libraries with assay: '{convert_underscored_list(assay)}' and type: '{convert_underscored_list(assay)}'",
                 hidden_columns=hidden_columns,
                 js_chunk=js_chunk,
+                sort_by_column_map=sort_by_column_map,
             )
         return
 
@@ -308,6 +347,7 @@ def add_summary_section(
                 caption=f"{section_name.title()} for libraries in project: '{project_id}'",
                 hidden_columns=hidden_columns,
                 js_chunk=js_chunk,
+                sort_by_column_map=sort_by_column_map,
             )
             continue
 
@@ -324,6 +364,7 @@ def add_summary_section(
             caption=f"{section_name} for libraries in project: '{project_id}'",
             hidden_columns=hidden_columns,
             js_chunk=js_chunk,
+            sort_by_column_map=sort_by_column_map,
         )
 
         # We have multiple assay / type combinations for this project (and multiple projects)
@@ -342,6 +383,7 @@ def add_summary_section(
                 caption=f"{section_name.title()} for libraries with assay: '{assay}' and type: '{type_}' in project: '{project_id}'",
                 hidden_columns=hidden_columns,
                 js_chunk=js_chunk,
+                sort_by_column_map=sort_by_column_map,
             )
 
 def add_metadata_section(
@@ -385,14 +427,17 @@ def add_fastqs_section(
         "Project ID",
         "Assay",
         "Type",
-        "Storage Class"
+        "Storage Class",
+        "File Size (bytes)"
     ]
 
     add_summary_section(
         doc=doc,
         summary_df=fastq_df,
         section_name="fastq",
-        hidden_columns=hidden_fastq_columns
+        hidden_columns=hidden_fastq_columns,
+        # Sort the human-readable 'File Size' column by its underlying byte count
+        sort_by_column_map={"File Size": "File Size (bytes)"}
     )
 
 
