@@ -26,7 +26,7 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Next": "Get number of fastqs",
+          "Next": "Get fastq count and sync filemanager",
           "Condition": "{% (\n  /* Collect the bucket from the pushLocation s3 uri */\n  $pushBucket := ([$pushLocation ~> $split(\"/\", 3)][2]);\n  /* Return the boolean if pushBucket is in the filemanager buckets */\n  $pushBucket in $fileManagerBuckets\n) %}",
           "Comment": "Push location is in filemanager buckets - proceed with ingest ID update"
         }
@@ -37,35 +37,79 @@
       "Type": "Pass",
       "End": true
     },
-    "Get number of fastqs": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Arguments": {
-        "FunctionName": "${__get_fastqs_in_packaging_job_lambda_function_arn__}",
-        "Payload": {
-          "packagingJobId": "{% $packagingJobId %}",
-          "pushLocation": "{% $pushLocation %}",
-          "countOnly": true
-        }
-      },
-      "Retry": [
+    "Get fastq count and sync filemanager": {
+      "Type": "Parallel",
+      "Branches": [
         {
-          "ErrorEquals": [
-            "Lambda.ServiceException",
-            "Lambda.AWSLambdaException",
-            "Lambda.SdkClientException",
-            "Lambda.TooManyRequestsException"
-          ],
-          "IntervalSeconds": 1,
-          "MaxAttempts": 3,
-          "BackoffRate": 2,
-          "JitterStrategy": "FULL"
+          "StartAt": "Get number of fastqs",
+          "States": {
+            "Get number of fastqs": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "${__get_fastqs_in_packaging_job_lambda_function_arn__}",
+                "Payload": {
+                  "packagingJobId": "{% $packagingJobId %}",
+                  "pushLocation": "{% $pushLocation %}",
+                  "countOnly": true
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true,
+              "Output": {
+                "listCount": "{% $states.result.Payload.listCount %}"
+              }
+            }
+          }
+        },
+        {
+          "StartAt": "Sync filemanager",
+          "States": {
+            "Sync filemanager": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "${__sync_filemanager_lambda_function_arn__}",
+                "Payload": {
+                  "s3UriPrefix": "{% $pushLocation %}"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException",
+                    "States.TaskFailed"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
         }
       ],
       "Next": "For each fastq (batched / index)",
-      "Output": {},
       "Assign": {
-        "listCount": "{% $states.result.Payload.listCount %}"
+        "listCount": "{% $states.result[0].listCount %}"
       }
     },
     "For each fastq (batched / index)": {

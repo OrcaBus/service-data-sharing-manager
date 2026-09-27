@@ -58,7 +58,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'packageFileToJsonlData',
     'checkStepsCopyOutput',
   ],
-  updateFastqIngestIds: ['updateIngestId', 'getFastqsInPackagingJob'],
+  updateFastqIngestIds: ['updateIngestId', 'getFastqsInPackagingJob', 'syncFilemanager'],
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoController: ['findMatchingJobsForRun'],
   autoPackage: ['notifySlack'],
