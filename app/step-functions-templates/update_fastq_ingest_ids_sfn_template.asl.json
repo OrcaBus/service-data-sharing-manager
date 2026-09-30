@@ -76,15 +76,43 @@
           }
         },
         {
-          "StartAt": "Sync filemanager",
+          "StartAt": "Get primary data path prefix",
           "States": {
+            "Get primary data path prefix": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "${__get_primary_data_path_prefix_from_packaging_job_lambda_function_arn__}",
+                "Payload": {
+                  "packagingJobId": "{% $packagingJobId %}"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "Next": "Sync filemanager",
+              "Assign": {
+                "primaryDataPathPrefix": "{% $states.result.Payload.primaryDataPathPrefix %}"
+              }
+            },
             "Sync filemanager": {
               "Type": "Task",
               "Resource": "arn:aws:states:::lambda:invoke",
               "Arguments": {
                 "FunctionName": "${__sync_filemanager_lambda_function_arn__}",
                 "Payload": {
-                  "s3UriPrefix": "{% $pushLocation %}"
+                  "s3UriPrefix": "{% (\n  /* Strip any trailing slash off the push location before joining */\n  $pushLocationBase := $pushLocation ~> $replace(/\\/$/, \"\");\n  /* Extend the push location with the primary data path prefix when present */\n  $exists($primaryDataPathPrefix) and $primaryDataPathPrefix != \"\"\n    ? $pushLocationBase & \"/\" & $primaryDataPathPrefix & \"/\"\n    : $pushLocation\n) %}"
                 }
               },
               "Retry": [
