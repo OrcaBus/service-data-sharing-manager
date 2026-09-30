@@ -14,7 +14,7 @@ import {
   s3CopyStepsBucket,
   s3CopyStepsFunctionArn,
   SSM_ROOT_PREFIX,
-  autoPushSfnArn,
+  slackPackageActionSfnArn,
 } from './constants';
 import {
   ACCOUNT_ID_ALIAS,
@@ -103,6 +103,6 @@ export const getStatelessApplicationStackProps = (
     ssmParameterPaths: getSsmParameterPaths(),
 
     /* Auto Data Sharing Stuff */
-    autoPushSfnArn: autoPushSfnArn[stage],
+    slackPackageActionSfnArn: slackPackageActionSfnArn[stage],
   };
 };

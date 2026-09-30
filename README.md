@@ -341,7 +341,7 @@ Automatic data sharing leverages Slack notifications and push trigger buttons, w
   - The `auto-data-sharing` Slack app must be added as an integration to each channel it will post in. In production, this is the private channel `#auto-data-sharing`; in development, it is `#alerts-dev`.
 
 - **Interactivity:**
-  - Under Slack App > “Interactivity & Shortcuts”, set the **Request URL** to the API Gateway endpoint deployed for the stack (`AutoPushSlackApi`, see `infrastructure/stage/api/index.ts`). Find it under "Invoke URL" for `AutoPushSlackApi` in AWS API Gateway Console. The final URL should be:
+  - Under Slack App > “Interactivity & Shortcuts”, set the **Request URL** to the API Gateway endpoint deployed for the stack (`SlackPackageActionApi`, see `infrastructure/stage/api/index.ts`). Find it under "Invoke URL" for `SlackPackageActionApi` in AWS API Gateway Console. The final URL should be:
   ```
   https://<api-gateway-id>.execute-api.<region>.amazonaws.com/prod/slack/actions
   ```

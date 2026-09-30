@@ -91,7 +91,7 @@ def _get_allowed_users() -> list[str]:
 def handler(event, context):
 
   """
-  Lambda handler to trigger the push step in the data sharing auto_push workflow.
+  Lambda handler to trigger the push step in the data sharing slackPackageAction workflow.
   """
   event_data = _event_from_slack_body(event["slackBody"])
   allowed_users = _get_allowed_users()

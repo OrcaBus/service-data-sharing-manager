@@ -15,7 +15,7 @@ export type StepFunctionsName =
   | 'push'
   | 'autoController'
   | 'autoPackage'
-  | 'autoPush';
+  | 'slackPackageAction';
 
 export const stepFunctionsNameList: StepFunctionsName[] = [
   'packaging',
@@ -26,7 +26,7 @@ export const stepFunctionsNameList: StepFunctionsName[] = [
   'push',
   'autoController',
   'autoPackage',
-  'autoPush',
+  'slackPackageAction',
 ];
 
 export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
@@ -62,7 +62,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoController: ['findMatchingJobsForRun'],
   autoPackage: ['notifySlack'],
-  autoPush: ['notifySlack', 'extractSlackActionContext', 'verifySlackRequest'],
+  slackPackageAction: ['notifySlack', 'extractSlackActionContext', 'verifySlackRequest'],
 };
 
 export interface StepFunctionRequirements {
@@ -112,7 +112,7 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   autoPackage: {
     needsEventPutPermissions: true,
   },
-  autoPush: {
+  slackPackageAction: {
     needsEventPutPermissions: true,
   },
 };

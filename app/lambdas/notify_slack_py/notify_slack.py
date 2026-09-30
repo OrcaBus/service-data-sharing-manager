@@ -578,7 +578,7 @@ def handler(event, context):
                 f"*Push was NOT successful:* {push_status}\n"
                 f"*Share Destination:* `{share_destination}`\n"
                 f"*Cause:* `{error_cause}`\n"
-                f"Please check `data-sharing--autoPush` state machine for more details."
+                f"Please check `data-sharing--slackPackageAction` state machine for more details."
             )
 
 
