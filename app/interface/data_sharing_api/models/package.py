@@ -260,8 +260,9 @@ class PackageData(PackageWithId, Dyntastic):
         )
 
     def is_expired(self):
+        expiry_days = int(environ.get('PACKAGE_EXPIRY_DAYS'))
         return (
-            True if (self.request_time + timedelta(days=30)) < datetime.now(timezone.utc)
+            True if (self.request_time + timedelta(days=expiry_days)) < datetime.now(timezone.utc)
             else False
         )
 

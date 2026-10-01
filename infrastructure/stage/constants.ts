@@ -64,6 +64,10 @@ export const API_VERSION = 'v1';
 export const API_NAME = 'DataSharingAPI';
 export const API_SUBDOMAIN_NAME = 'data-sharing';
 
+// Package lifecycle
+// Number of days after a package is requested before it expires.
+export const PACKAGE_EXPIRY_DAYS = 30;
+
 // Step functions
 export const STACK_PREFIX = 'data-sharing';
 

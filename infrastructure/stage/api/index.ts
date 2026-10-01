@@ -11,6 +11,7 @@ import {
   PUSH_JOB_API_GLOBAL_SECONDARY_INDEX_NAMES,
   PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
   STACK_SOURCE,
+  PACKAGE_EXPIRY_DAYS,
 } from '../constants';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Duration } from 'aws-cdk-lib';
@@ -65,6 +66,8 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
       EVENT_DETAIL_TYPE_PUSH_JOB_STATE_CHANGE: PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
       /* Package bucket */
       PACKAGE_BUCKET_NAME: props.packagingLookUpBucket.bucketName,
+      /* Package expiry window (single source of truth in constants.ts) */
+      PACKAGE_EXPIRY_DAYS: PACKAGE_EXPIRY_DAYS.toString(),
     },
   });
 
