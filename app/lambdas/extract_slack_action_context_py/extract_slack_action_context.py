@@ -32,6 +32,7 @@ def _event_from_slack_body(slack_body: str) -> dict:
 
     # Extract from the slack body the values carried in the button.
     action = slack_payload.get("actions")[0]
+    action_id = action.get("action_id")
     raw_value = action.get("value")
     value = json.loads(raw_value)
 
@@ -42,6 +43,7 @@ def _event_from_slack_body(slack_body: str) -> dict:
     main_message_ts = value.get("mainMessageTs")
 
     return {
+      "actionId": action_id,
       "jobName": job_name,
       "packageId": package_id,
       "packageName": package_name,
@@ -96,6 +98,7 @@ def handler(event, context):
   event_data = _event_from_slack_body(event["slackBody"])
   allowed_users = _get_allowed_users()
 
+  action_id = event_data.get("actionId")
   package_id = event_data.get("packageId")
   package_name = event_data.get("packageName")
   share_destination = event_data.get("shareDestination")
@@ -108,6 +111,7 @@ def handler(event, context):
 
 
   return {
+      "actionId": action_id,
       "userAllowed": userAllowed,
       "packageId": package_id,
       "packageName": package_name,

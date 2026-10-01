@@ -344,10 +344,20 @@ def handler(event, context):
 
 
     # Report link
-    # Used in: PACKAGE_READY, PUSH_TRIGGERED
+    # Only fetched for the notifications that render it (PACKAGE_READY, PUSH_TRIGGERED).
+    # The getSummaryReport endpoint rejects deprecated packages (409), so we must not
+    # fetch it for PACKAGE_DEPRECATED. Kept best-effort: a failure here should not sink
+    # the whole notification.
     package_report_presigned_url = None
-    if package_id is not None:
-        package_report_presigned_url = _get_package_report(package_id).strip('"')
+    if package_id is not None and slack_notification_type in ("PACKAGE_READY", "PUSH_TRIGGERED"):
+        try:
+            package_report_presigned_url = _get_package_report(package_id).strip('"')
+        except Exception:
+            logger.warning(
+                "Failed to fetch package report for %s; continuing without a report link.",
+                package_id,
+                exc_info=True,
+            )
 
     # Text for the first message in the thread, with package details and report link.
     #  Used in: PACKAGE_READY, PUSH_TRIGGERED (to update the message and remove the button).
@@ -412,9 +422,20 @@ def handler(event, context):
                             "emoji": True,
                         },
                         "style": "primary",
-                            "action_id": "auto_push_package",
+                        "action_id": "auto_push_package",
                         "value": button_value,
-                    }
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Deprecate",
+                            "emoji": True,
+                        },
+                        "style": "danger",
+                        "action_id": "auto_deprecate_package",
+                        "value": button_value,
+                    },
                 ],
             },
         ]
@@ -595,6 +616,80 @@ def handler(event, context):
             "pushResultMessageOk": push_result_message_response.get("ok"),
             "pushResultMessageError": push_result_message_response.get("error"),
         }
+
+    # ----------------------------------------------------
+    # Deprecate notifications
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "PACKAGE_DEPRECATED":
+
+        # Update the main message status to "Package deprecated".
+        deprecated_card_blocks = _build_main_message_blocks(
+            job_name, package_name, ':heavy_multiplication_x: Package deprecated'
+        )
+
+        main_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=main_message_ts,
+            blocks=deprecated_card_blocks,
+        )
+
+        # Update the package-ready message without a blocks payload, which removes
+        # both the Push and Deprecate buttons. A deprecated package's report is no
+        # longer accessible, so we drop the report link and keep the core details.
+        deprecated_details_text = (
+            f"*Package ID:* `{package_id}`\n"
+            f"*Share Destination:* `{share_destination}`\n"
+        )
+
+        package_ready_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=package_ready_message_ts,
+            text=deprecated_details_text,
+        )
+
+        # Post a thread reply showing who deprecated the package.
+        deprecated_text = (
+            f"*Package deprecated* by <@{user_id}>."
+        )
+
+        deprecated_message_response = _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            thread_ts=main_message_ts,
+            text=deprecated_text,
+        )
+
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
+            "packageReadyMessageError": package_ready_message_update_response.get("error"),
+            "deprecatedMessageOk": deprecated_message_response.get("ok"),
+            "deprecatedMessageError": deprecated_message_response.get("error"),
+        }
+
+    elif slack_notification_type == "DEPRECATE_NOT_SUCCESSFUL":
+
+        # Deprecation failed. Leave the main message and the buttons untouched so the
+        # user can retry or push, and send an ephemeral warning to whoever clicked.
+        deprecate_failed_text = (
+            f":warning: Deprecation was not successful.\n"
+            f"*Cause:* `{error_cause}`\n"
+            f"You can retry, or push the package instead."
+        )
+
+        return _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            user=user_id,
+            text=deprecate_failed_text,
+            thread_ts=main_message_ts,
+            ephemeral=True,
+        )
+
     else:
         return {
             "ok": False,

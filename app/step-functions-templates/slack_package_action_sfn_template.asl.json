@@ -67,6 +67,7 @@
         }
       },
       "Assign": {
+        "actionId": "{% $states.result.Payload.actionId %}",
         "userId": "{% $states.result.Payload.userId %}",
         "channelId": "{% $states.result.Payload.channelId %}",
         "packageId": "{% $states.result.Payload.packageId %}",
@@ -99,7 +100,17 @@
       "Choices": [
         {
           "Condition": "{% $userAllowed = false %}",
-          "Next": "Notify Slack: Push Not Authorised"
+          "Next": "Notify Slack: Action Not Authorised"
+        }
+      ],
+      "Default": "Which action?"
+    },
+    "Which action?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $actionId = 'auto_deprecate_package' %}",
+          "Next": "Deprecate Package"
         }
       ],
       "Default": "Notify Slack: Push Triggered"
@@ -138,7 +149,7 @@
       ],
       "Next": "Request Push (Sync)"
     },
-    "Notify Slack: Push Not Authorised": {
+    "Notify Slack: Action Not Authorised": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
@@ -229,6 +240,108 @@
           "jobName": "{% $jobName %}",
           "mainMessageTs": "{% $mainMessageTs %}",
           "packageReadyMessageTs": "{% $packageReadyMessageTs %}"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    },
+    "Deprecate Package": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__deprecate_package_lambda_function_arn__}",
+        "Payload": {
+          "packageId": "{% $packageId %}"
+        }
+      },
+      "Assign": {
+        "deprecated": "{% $states.result.Payload.deprecated %}",
+        "errorCause": "{% $states.result.Payload.errorCause %}"
+      },
+      "Output": {},
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Was deprecation successful?"
+    },
+    "Was deprecation successful?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $deprecated = true %}",
+          "Next": "Notify Slack: Package Deprecated"
+        }
+      ],
+      "Default": "Notify Slack: Deprecate Not Successful"
+    },
+    "Notify Slack: Package Deprecated": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "slackNotificationType": "PACKAGE_DEPRECATED",
+          "jobName": "{% $jobName %}",
+          "packageId": "{% $packageId %}",
+          "packageName": "{% $packageName %}",
+          "shareDestination": "{% $shareDestination %}",
+          "userId": "{% $userId %}",
+          "channelId": "{% $channelId %}",
+          "mainMessageTs": "{% $mainMessageTs %}",
+          "packageReadyMessageTs": "{% $packageReadyMessageTs %}"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    },
+    "Notify Slack: Deprecate Not Successful": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "slackNotificationType": "DEPRECATE_NOT_SUCCESSFUL",
+          "userId": "{% $userId %}",
+          "channelId": "{% $channelId %}",
+          "mainMessageTs": "{% $mainMessageTs %}",
+          "errorCause": "{% $errorCause %}"
         }
       },
       "Retry": [

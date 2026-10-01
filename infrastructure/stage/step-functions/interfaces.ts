@@ -62,7 +62,12 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
   push: ['updatePushJobApi', 'uploadPushJobToS3'],
   autoController: ['findMatchingJobsForRun'],
   autoPackage: ['notifySlack'],
-  slackPackageAction: ['notifySlack', 'extractSlackActionContext', 'verifySlackRequest'],
+  slackPackageAction: [
+    'notifySlack',
+    'extractSlackActionContext',
+    'verifySlackRequest',
+    'deprecatePackage',
+  ],
 };
 
 export interface StepFunctionRequirements {
