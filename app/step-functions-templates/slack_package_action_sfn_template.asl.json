@@ -269,6 +269,7 @@
       },
       "Assign": {
         "deprecated": "{% $states.result.Payload.deprecated %}",
+        "alreadyDeprecated": "{% $states.result.Payload.alreadyDeprecated %}",
         "errorCause": "{% $states.result.Payload.errorCause %}"
       },
       "Output": {},
@@ -312,7 +313,8 @@
           "userId": "{% $userId %}",
           "channelId": "{% $channelId %}",
           "mainMessageTs": "{% $mainMessageTs %}",
-          "packageReadyMessageTs": "{% $packageReadyMessageTs %}"
+          "packageReadyMessageTs": "{% $packageReadyMessageTs %}",
+          "alreadyDeprecated": "{% $alreadyDeprecated %}"
         }
       },
       "Retry": [

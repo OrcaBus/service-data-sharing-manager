@@ -432,7 +432,6 @@ def handler(event, context):
                             "text": "Deprecate",
                             "emoji": True,
                         },
-                        "style": "danger",
                         "action_id": "auto_deprecate_package",
                         "value": button_value,
                     },
@@ -650,10 +649,17 @@ def handler(event, context):
             text=deprecated_details_text,
         )
 
-        # Post a thread reply showing who deprecated the package.
-        deprecated_text = (
-            f"*Package deprecated* by <@{user_id}>."
-        )
+        # Post a thread reply showing who deprecated the package. If it was already
+        # deprecated, note that instead of implying this click deprecated it.
+        already_deprecated = event.get("alreadyDeprecated") is True
+        if already_deprecated:
+            deprecated_text = (
+                f"<@{user_id}> requested deprecation, but this package was *already deprecated*."
+            )
+        else:
+            deprecated_text = (
+                f"*Package deprecated* by <@{user_id}>."
+            )
 
         deprecated_message_response = _post_message(
             bot_token=bot_token,
