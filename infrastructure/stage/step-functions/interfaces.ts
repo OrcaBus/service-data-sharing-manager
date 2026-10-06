@@ -50,7 +50,7 @@ export const lambdasInStepFunctions: Record<StepFunctionsName, LambdaName[]> = {
     'createScriptFromPresignedUrlsList',
     'syncFilemanager',
   ],
-  pushIcav2Data: ['queryAndCollectIcav2Prefixes'],
+  pushIcav2Data: ['queryAndCollectIcav2Prefixes', 'updatePushJobApi'],
   pushS3Data: [
     'getS3DestinationAndSourceUriMappings',
     'createCsvForS3StepsCopy',
