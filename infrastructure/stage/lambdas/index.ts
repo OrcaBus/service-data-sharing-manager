@@ -75,6 +75,14 @@ function buildLambdaFunction(scope: Construct, props: LambdaProps): LambdaObject
     lambdaObject.addEnvironment('CONTEXT_INDEX_NAME', CONTEXT_INDEX_NAME);
   }
 
+  if (lambdaRequirements.needsPackagingApiTableReadPermissions) {
+    // Grant read access to the packaging job API table
+    props.packagingApiTable.grantReadData(lambdaObject);
+
+    // Add the packaging API table name as an environment variable
+    lambdaObject.addEnvironment('PACKAGING_API_TABLE_NAME', props.packagingApiTable.tableName);
+  }
+
   if (lambdaRequirements.needsTaskTokenTablePermissions) {
     props.taskTokenTable.grantReadWriteData(lambdaObject);
     lambdaObject.addEnvironment('TASK_TOKEN_TABLE_NAME', props.taskTokenTable.tableName);
