@@ -68,6 +68,9 @@ export const API_SUBDOMAIN_NAME = 'data-sharing';
 // Number of days after a package is requested before it expires. May be a fraction
 // for testing sub-day windows. Note: EventBridge Scheduler
 // fires at ~1-minute granularity, so values below ~2 minutes are not reliable.
+// Keep it large enough to push/review before expiry: too short a window can expire
+// the package before the push is triggered (push and report fetch are rejected once
+// expired), so for testing use e.g. 20 minutes (0.0139), not seconds.
 export const PACKAGE_EXPIRY_DAYS = 30;
 
 // Step functions
