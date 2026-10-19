@@ -448,13 +448,17 @@ def handler(event, context):
             blocks=push_button_blocks,
         )
 
-        # Return the response from both API calls for observability.
+        # Return the response from both API calls for observability. The ts values and
+        # channel id are also used by the auto package SFN to schedule the expiry
+        # notification (PACKAGE_EXPIRED).
         return {
             "mainMessageOk": main_message_response.get("ok"),
             "mainMessageError": main_message_response.get("error"),
             "mainMessageTs": main_message_ts,
             "pushButtonMessageOk": push_button_message_response.get("ok"),
             "pushButtonMessageError": push_button_message_response.get("error"),
+            "packageReadyMessageTs": push_button_message_response.get("ts"),
+            "channelId": channel_id,
         }
 
     # ----------------------------------------------------
@@ -695,6 +699,61 @@ def handler(event, context):
             thread_ts=main_message_ts,
             ephemeral=True,
         )
+
+    # ----------------------------------------------------
+    # Expiry notifications
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "PACKAGE_EXPIRED":
+
+        # Update the main message status to "Package expired".
+        expired_card_blocks = _build_main_message_blocks(
+            job_name, package_name, ':hourglass: Package expired'
+        )
+
+        main_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=main_message_ts,
+            blocks=expired_card_blocks,
+        )
+
+        # Update the package-ready message without a blocks payload, which removes
+        # both the Push and Deprecate buttons. An expired package's report is no
+        # longer accessible, so we drop the report link and keep the core details.
+        expired_details_text = (
+            f"*Package ID:* `{package_id}`\n"
+            f"*Share Destination:* `{share_destination}`\n"
+            f"This package has *expired*.\n"
+        )
+
+        package_ready_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=package_ready_message_ts,
+            text=expired_details_text,
+        )
+
+        # Post a thread reply noting the expiry.
+        expired_text = (
+            ":hourglass: This package has expired and can no longer be pushed."
+        )
+
+        expired_message_response = _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            thread_ts=main_message_ts,
+            text=expired_text,
+        )
+
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
+            "packageReadyMessageError": package_ready_message_update_response.get("error"),
+            "expiredMessageOk": expired_message_response.get("ok"),
+            "expiredMessageError": expired_message_response.get("error"),
+        }
 
     else:
         return {

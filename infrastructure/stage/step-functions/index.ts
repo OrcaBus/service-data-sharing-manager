@@ -34,6 +34,8 @@ import {
   STEP_FUNCTIONS_DIR,
   AUTO_PACKAGE_PUSH_JOBS_KEY,
   SSM_ROOT_PREFIX,
+  PACKAGE_EXPIRY_DAYS,
+  PACKAGE_EXPIRY_SCHEDULER_ROLE_NAME,
 } from '../constants';
 import { NagSuppressions } from 'cdk-nag';
 import { LogLevel, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
@@ -96,6 +98,14 @@ function createStateMachineDefinitionSubstitutions(props: SfnProps): {
   // Auto Jobs Config (for AutoController SFN)
   definitionSubstitutions['__jobs_config_bucket__'] = props.dataSharingBucketName;
   definitionSubstitutions['__jobs_config_key__'] = AUTO_PACKAGE_PUSH_JOBS_KEY;
+
+  // Package expiry scheduling (for the auto package SFN). The expiry window is the
+  // single source of truth in constants.ts; the scheduler role is assumed by
+  // EventBridge Scheduler to invoke notify-slack when the one-shot schedule fires.
+  definitionSubstitutions['__package_expiry_days__'] = PACKAGE_EXPIRY_DAYS.toString();
+  definitionSubstitutions['__package_expiry_scheduler_role_arn__'] =
+    `arn:aws:iam::${cdk.Aws.ACCOUNT_ID}:role/${PACKAGE_EXPIRY_SCHEDULER_ROLE_NAME}`;
+  definitionSubstitutions['__stack_prefix__'] = STACK_PREFIX;
 
   // SSM Stuff
   definitionSubstitutions['__filemanager_buckets_ssm_parameter_name__'] =
@@ -373,6 +383,69 @@ function wireUpStateMachinePermissions(scope: Construct, props: SfnPropsWithStat
           id: 'AwsSolutions-IAM5',
           reason:
             'Describe execution requires wildcard in resource ARN because execution IDs are dynamic',
+        },
+      ],
+      true
+    );
+  }
+
+  // Expiry Scheduler Permissions
+  // The auto package SFN creates a one-shot EventBridge Scheduler schedule that, after
+  // PACKAGE_EXPIRY_DAYS, invokes the notify-slack lambda with PACKAGE_EXPIRED. For that
+  // we need (a) a role EventBridge Scheduler assumes to invoke notify-slack, and (b) the
+  // SFN role to be able to create schedules and pass that role.
+  if (sfnRequirements.needsExpirySchedulerPermissions) {
+    // Find the notify-slack lambda so the scheduler role can be scoped to invoking it.
+    const notifySlackLambda = props.lambdaObjects.find(
+      (lambdaObject) => lambdaObject.lambdaName === 'notifySlack'
+    );
+    if (!notifySlackLambda) {
+      throw new Error(
+        'needsExpirySchedulerPermissions requires the notifySlack lambda to be present'
+      );
+    }
+
+    // Role assumed by EventBridge Scheduler to invoke the notify-slack lambda.
+    const expirySchedulerRole = new iam.Role(scope, 'PackageExpirySchedulerRole', {
+      roleName: PACKAGE_EXPIRY_SCHEDULER_ROLE_NAME,
+      assumedBy: new iam.ServicePrincipal('scheduler.amazonaws.com'),
+      description:
+        'Role assumed by EventBridge Scheduler to invoke notify-slack when a package expires',
+    });
+    notifySlackLambda.lambdaFunction.grantInvoke(expirySchedulerRole);
+    NagSuppressions.addResourceSuppressions(
+      expirySchedulerRole,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason: 'Lambda object uses asterisk on invoke permissions when versions not used',
+        },
+      ],
+      true
+    );
+
+    // Allow the SFN to create one-shot schedules and pass the scheduler role.
+    props.stateMachineObj.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['scheduler:CreateSchedule'],
+        resources: [
+          `arn:aws:scheduler:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:schedule/default/${STACK_PREFIX}-package-expiry-*`,
+        ],
+      })
+    );
+    props.stateMachineObj.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['iam:PassRole'],
+        resources: [expirySchedulerRole.roleArn],
+      })
+    );
+    NagSuppressions.addResourceSuppressions(
+      props.stateMachineObj,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'CreateSchedule is scoped to this stack prefix; schedule names include dynamic package ids',
         },
       ],
       true

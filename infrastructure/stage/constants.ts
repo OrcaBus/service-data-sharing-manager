@@ -71,6 +71,11 @@ export const PACKAGE_EXPIRY_DAYS = 30;
 // Step functions
 export const STACK_PREFIX = 'data-sharing';
 
+// Name of the IAM role EventBridge Scheduler assumes to invoke the notify-slack lambda
+// when a one-shot package-expiry schedule fires. Explicit name so the auto package SFN
+// can reference its ARN deterministically for iam:PassRole.
+export const PACKAGE_EXPIRY_SCHEDULER_ROLE_NAME = `${STACK_PREFIX}-package-expiry-scheduler`;
+
 // S3 Stuff
 export const DATA_SHARING_BUCKET_NAME = 'data-sharing-artifacts-__ACCOUNT_ID__-__REGION__';
 export const DATA_SHARING_BUCKET_PREFIX = 'packages';

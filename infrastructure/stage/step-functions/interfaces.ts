@@ -79,6 +79,7 @@ export interface StepFunctionRequirements {
   needsDistributedMapPermissions?: boolean;
   isExpressSfn?: boolean;
   needsSsmPermissions?: boolean;
+  needsExpirySchedulerPermissions?: boolean;
 }
 
 export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctionRequirements> = {
@@ -116,6 +117,7 @@ export const stepFunctionsRequirementsMap: Record<StepFunctionsName, StepFunctio
   },
   autoPackage: {
     needsEventPutPermissions: true,
+    needsExpirySchedulerPermissions: true,
   },
   slackPackageAction: {
     needsEventPutPermissions: true,
