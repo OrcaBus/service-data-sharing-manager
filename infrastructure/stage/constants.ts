@@ -65,7 +65,9 @@ export const API_NAME = 'DataSharingAPI';
 export const API_SUBDOMAIN_NAME = 'data-sharing';
 
 // Package lifecycle
-// Number of days after a package is requested before it expires.
+// Number of days after a package is requested before it expires. May be a fraction
+// for testing sub-day windows. Note: EventBridge Scheduler
+// fires at ~1-minute granularity, so values below ~2 minutes are not reliable.
 export const PACKAGE_EXPIRY_DAYS = 30;
 
 // Step functions

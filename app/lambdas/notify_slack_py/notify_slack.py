@@ -1,6 +1,7 @@
 import json
 import logging
 import urllib.request
+from datetime import datetime, timezone
 import boto3
 
 logger = logging.getLogger()
@@ -35,6 +36,12 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │    - package details                                       │
 # │    - package report link                                   │
 # │    - Push button                                           │
+# │    - Deprecate button                                      │
+# │                                                            │
+# │ 4. The auto package SFN also schedules a one-shot          │
+# │    EventBridge Scheduler that, after PACKAGE_EXPIRY_DAYS,   │
+# │    invokes this lambda with PACKAGE_EXPIRED (see the        │
+# │    expiry flow below).                                      │
 # │                                                            │
 # └────────────────────────────────────────────────────────────┘
 #
@@ -43,7 +50,8 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # ============================================================
 #
 #                  ┌──────────────────────────────┐
-#                  │ User clicks Push in Slack    │
+#                  │ User clicks Push or Deprecate │
+#                  │ in Slack                      │
 #                  └──────────────┬───────────────┘
 #                                 │
 #                                 ▼
@@ -58,6 +66,8 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 #                                 ▼
 # ┌────────────────────────────────────────────────────────────┐
 # │ Context extracted from button value:                       │
+# │   - actionId (auto_push_package | auto_deprecate_package,  │
+# │     used to branch to the push or deprecate flow)          │
 # │   - packageId                                              │
 # │   - packageName                                            │
 # │   - shareDestination                                       │
@@ -121,6 +131,58 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │    - share destination       │   │    - share destination       │
 # │    - package report link     │   │    - package report link     │
 # └──────────────────────────────┘   └──────────────────────────────┘
+#
+# ============================================================
+# Deprecate flow (user clicks Deprecate; authorised like push)
+# ============================================================
+#
+# ┌────────────────────────────────────────────────────────────┐
+# │ Deprecate the package via the data sharing API             │
+# └───────┬───────────────────────────────────────┬────────────┘
+#         │                                       │
+#         │ success / already deprecated          │ failure
+#         ▼                                       ▼
+# ┌──────────────────────────────┐   ┌──────────────────────────────┐
+# │ Slack notify lambda:         │   │ Slack notify lambda:         │
+# │ PACKAGE_DEPRECATED           │   │ DEPRECATE_NOT_SUCCESSFUL     │
+# │                              │   │                              │
+# │ 1. Update main message       │   │ - send ephemeral warning     │
+# │    - "Package deprecated"    │   │   to the user (buttons kept  │
+# │                              │   │   so they can retry / push)  │
+# │ 2. Update package-ready msg  │   │                              │
+# │    - remove Push + Deprecate │   │                              │
+# │      buttons                 │   │                              │
+# │                              │   │                              │
+# │ 3. Post thread reply         │   │                              │
+# │    - "Deprecated by <user>"  │   │                              │
+# │      (or "already            │   │                              │
+# │      deprecated")            │   │                              │
+# └──────────────────────────────┘   └──────────────────────────────┘
+#
+# ============================================================
+# Expiry flow (scheduled, no user action)
+# ============================================================
+#
+# ┌──────────────────────────────────────────────────────────┐
+# │ One-shot EventBridge Scheduler fires PACKAGE_EXPIRY_DAYS  │
+# │ after the package was ready and invokes this lambda with │
+# │ PACKAGE_EXPIRED (then the schedule deletes itself).      │
+# └──────────────────────────┬───────────────────────────────┘
+#                            │
+#                            ▼
+# ┌────────────────────────────────────────────────────────────┐
+# │ Slack notify lambda: PACKAGE_EXPIRED                       │
+# │                                                            │
+# │ 1. Update main message                                     │
+# │    - "Package expired"                                     │
+# │                                                            │
+# │ 2. Update package-ready thread message                     │
+# │    - remove Push + Deprecate buttons                       │
+# │    - drop the report link (expired reports are rejected)   │
+# │                                                            │
+# │ 3. Post thread reply                                       │
+# │    - "This package has expired on <date>"                  │
+# └────────────────────────────────────────────────────────────┘
 #
 
 
@@ -708,7 +770,7 @@ def handler(event, context):
 
         # Update the main message status to "Package expired".
         expired_card_blocks = _build_main_message_blocks(
-            job_name, package_name, ':hourglass: Package expired'
+            job_name, package_name, ':heavy_multiplication_x: Package expired'
         )
 
         main_message_update_response = _update_message(
@@ -724,7 +786,6 @@ def handler(event, context):
         expired_details_text = (
             f"*Package ID:* `{package_id}`\n"
             f"*Share Destination:* `{share_destination}`\n"
-            f"This package has *expired*.\n"
         )
 
         package_ready_message_update_response = _update_message(
@@ -734,9 +795,16 @@ def handler(event, context):
             text=expired_details_text,
         )
 
-        # Post a thread reply noting the expiry.
+        # Post a thread reply noting the expiry. Use Slack's <!date> token so the
+        # timestamp renders in each viewer's own local timezone; the text after the
+        # pipe is the fallback shown if Slack can't format it.
+        expiry_epoch = int(datetime.now(timezone.utc).timestamp())
+        expiry_when = (
+            f"<!date^{expiry_epoch}^{{date_short_pretty}} at {{time}}"
+            f"|{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}>"
+        )
         expired_text = (
-            ":hourglass: This package has expired and can no longer be pushed."
+            f":hourglass: This package has *expired* ({expiry_when})."
         )
 
         expired_message_response = _post_message(
