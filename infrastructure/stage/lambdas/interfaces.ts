@@ -16,6 +16,7 @@ export type LambdaName =
   | 'handleWorkflowInputs'
   | 'getFastqsFromLibraryIdAndInstrumentRunIdList'
   | 'getFastqsInPackagingJob'
+  | 'getPrimaryDataPathPrefixFromPackagingJob'
   | 'getFilesListFromPortalRunId'
   | 'listPortalRunIdsInLibrary'
   | 'packageFileToJsonlData'
@@ -50,6 +51,7 @@ export const lambdaNameList: LambdaName[] = [
   'handleWorkflowInputs',
   'getFastqsFromLibraryIdAndInstrumentRunIdList',
   'getFastqsInPackagingJob',
+  'getPrimaryDataPathPrefixFromPackagingJob',
   'getFilesListFromPortalRunId',
   'listPortalRunIdsInLibrary',
   'packageFileToJsonlData',
@@ -77,6 +79,7 @@ export interface Requirements {
   needsDataSharingToolsLayer?: boolean;
   needsMartLayer?: boolean;
   needsDbPermissions?: boolean;
+  needsPackagingApiTableReadPermissions?: boolean;
   needsStepsS3UploadPermissions?: boolean;
   needsStepsS3DownloadPermissions?: boolean;
   needsPackagingBucketPermissions?: boolean;
@@ -196,6 +199,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
     needsDbPermissions: true,
     needsHigherMemory: true,
   },
+  getPrimaryDataPathPrefixFromPackagingJob: {
+    needsPackagingApiTableReadPermissions: true,
+  },
   extractSlackActionContext: {},
   verifySlackRequest: {},
   deprecatePackage: {
@@ -223,6 +229,7 @@ export interface LambdaProps {
   dataSharingToolsLayer: ILayerVersion;
   // Database permissions
   packagingLookUpTable: ITableV2;
+  packagingApiTable: ITableV2;
   packagingLookUpBucket: IBucket;
   taskTokenTable: ITableV2;
   // S3 Steps Copy Permissions

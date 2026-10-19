@@ -131,6 +131,7 @@ export class StatelessApplicationStack extends GitStack {
     const lambdas = buildAllLambdas(this, {
       dataSharingToolsLayer: dataSharingToolsLayer,
       packagingLookUpTable: packagingLookUpTable,
+      packagingApiTable: packagingJobsTable,
       packagingLookUpBucket: dataSharingBucket,
       taskTokenTable: taskTokenTable,
       s3StepsCopyBucket: s3StepsCopyBucket,
