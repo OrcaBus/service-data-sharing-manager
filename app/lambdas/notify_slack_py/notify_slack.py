@@ -181,7 +181,7 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │    - drop the report link (expired reports are rejected)   │
 # │                                                            │
 # │ 3. Post thread reply                                       │
-# │    - "This package has expired on <date>"                  │
+# │    - "Package expired on <date>"                           │
 # └────────────────────────────────────────────────────────────┘
 #
 
@@ -291,10 +291,24 @@ def _main_message_was_updated(bot_token: str, channel: str, ts: str) -> bool:
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
+        # Slack returns HTTP 200 even on API errors (e.g. missing_scope), so check `ok`.
+        if not data.get("ok"):
+            logger.warning(
+                "conversations.history failed for %s: %s; assuming already updated.",
+                ts, data.get("error"),
+            )
+            return True
+
         messages = data.get("messages") or []
         if not messages:
+            logger.warning(
+                "conversations.history returned no message for %s; assuming already updated.", ts
+            )
             return True
-        return "edited" in messages[0]
+
+        was_edited = "edited" in messages[0]
+        logger.info("Main message %s edited=%s", ts, was_edited)
+        return was_edited
     except Exception:
         logger.warning(
             "Could not read main message %s; assuming already updated.", ts, exc_info=True
@@ -843,7 +857,7 @@ def handler(event, context):
             f"|{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}>"
         )
         expired_text = (
-            f":hourglass: This package has *expired* ({expiry_when})."
+            f"*Package expired* ({expiry_when})."
         )
 
         expired_message_response = _post_message(

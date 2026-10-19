@@ -334,8 +334,9 @@ Multiple jobs can be defined within a single JSON array. Below is a template for
 
 Automatic data sharing leverages Slack notifications and push trigger buttons, which are handled by the [`auto-data-sharing`](https://api.slack.com/apps/A0A28QK9752/general?) app in the [UMCCR Slack workspace](https://umccr.slack.com). The app must be configured with the following settings:
 
-- **Required OAuth Scope:**
+- **Required OAuth Scopes:**
   - `chat:write` — Allows the app to send messages as the bot in channels it is a member of.
+  - `channels:history` (dev, public channel) and `groups:history` (prod, private channel) — let the app read past messages, needed by the expiry flow. Reinstall the app after adding them.
 
 - **Channel Integration:**
   - The `auto-data-sharing` Slack app must be added as an integration to each channel it will post in. In production, this is the private channel `#auto-data-sharing`; in development, it is `#alerts-dev`.
