@@ -268,6 +268,39 @@ def _slack_api_post(url: str, bot_token: str, payload: dict) -> dict:
 
     return data
 
+def _main_message_was_updated(bot_token: str, channel: str, ts: str) -> bool:
+    """
+    Return True if the main message has already been edited (i.e. its status moved on from
+    "Awaiting review" to push/completed/deprecated). Slack adds an `edited` field to any
+    message updated via chat.update; an untouched original has none.
+
+    Best-effort: on any error we return True so the expiry flow does NOT overwrite a card
+    whose state we couldn't confirm. Requires the bot's channel history scope.
+    """
+    try:
+        # Values are a channel id and a numeric ts, so no URL-encoding is needed.
+        url = (
+            "https://slack.com/api/conversations.history"
+            f"?channel={channel}&latest={ts}&limit=1&inclusive=true"
+        )
+        req = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Bearer {bot_token}"},
+            method="GET",
+        )
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        messages = data.get("messages") or []
+        if not messages:
+            return True
+        return "edited" in messages[0]
+    except Exception:
+        logger.warning(
+            "Could not read main message %s; assuming already updated.", ts, exc_info=True
+        )
+        return True
+
 def _post_message(
     bot_token: str,
     channel: str,
@@ -768,32 +801,38 @@ def handler(event, context):
 
     elif slack_notification_type == "PACKAGE_EXPIRED":
 
-        # Update the main message status to "Package expired".
-        expired_card_blocks = _build_main_message_blocks(
-            job_name, package_name, ':heavy_multiplication_x: Package expired'
-        )
+        # Only overwrite the main card if it is still the original "Awaiting review"
+        # message. If it was already updated (push / completed / deprecated), leave it
+        # and just add the expiry note in the thread.
+        main_message_update_response = {}
+        package_ready_message_update_response = {}
+        if not _main_message_was_updated(bot_token, channel_id, main_message_ts):
+            # Update the main message status to "Package expired".
+            expired_card_blocks = _build_main_message_blocks(
+                job_name, package_name, ':heavy_multiplication_x: Package expired'
+            )
 
-        main_message_update_response = _update_message(
-            bot_token=bot_token,
-            channel=channel_id,
-            ts=main_message_ts,
-            blocks=expired_card_blocks,
-        )
+            main_message_update_response = _update_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                ts=main_message_ts,
+                blocks=expired_card_blocks,
+            )
 
-        # Update the package-ready message without a blocks payload, which removes
-        # both the Push and Deprecate buttons. An expired package's report is no
-        # longer accessible, so we drop the report link and keep the core details.
-        expired_details_text = (
-            f"*Package ID:* `{package_id}`\n"
-            f"*Share Destination:* `{share_destination}`\n"
-        )
+            # Update the package-ready message without a blocks payload, which removes
+            # both the Push and Deprecate buttons. An expired package's report is no
+            # longer accessible, so we drop the report link and keep the core details.
+            expired_details_text = (
+                f"*Package ID:* `{package_id}`\n"
+                f"*Share Destination:* `{share_destination}`\n"
+            )
 
-        package_ready_message_update_response = _update_message(
-            bot_token=bot_token,
-            channel=channel_id,
-            ts=package_ready_message_ts,
-            text=expired_details_text,
-        )
+            package_ready_message_update_response = _update_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                ts=package_ready_message_ts,
+                text=expired_details_text,
+            )
 
         # Post a thread reply noting the expiry. Use Slack's <!date> token so the
         # timestamp renders in each viewer's own local timezone; the text after the
