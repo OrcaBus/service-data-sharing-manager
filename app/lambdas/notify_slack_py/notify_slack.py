@@ -1,6 +1,7 @@
 import json
 import logging
 import urllib.request
+from datetime import datetime, timezone
 import boto3
 
 logger = logging.getLogger()
@@ -35,6 +36,12 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │    - package details                                       │
 # │    - package report link                                   │
 # │    - Push button                                           │
+# │    - Deprecate button                                      │
+# │                                                            │
+# │ 4. The auto package SFN also schedules a one-shot          │
+# │    EventBridge Scheduler that, after PACKAGE_EXPIRY_DAYS,   │
+# │    invokes this lambda with PACKAGE_EXPIRED (see the        │
+# │    expiry flow below).                                      │
 # │                                                            │
 # └────────────────────────────────────────────────────────────┘
 #
@@ -43,7 +50,8 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # ============================================================
 #
 #                  ┌──────────────────────────────┐
-#                  │ User clicks Push in Slack    │
+#                  │ User clicks Push or Deprecate │
+#                  │ in Slack                      │
 #                  └──────────────┬───────────────┘
 #                                 │
 #                                 ▼
@@ -58,6 +66,8 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 #                                 ▼
 # ┌────────────────────────────────────────────────────────────┐
 # │ Context extracted from button value:                       │
+# │   - actionId (auto_push_package | auto_deprecate_package,  │
+# │     used to branch to the push or deprecate flow)          │
 # │   - packageId                                              │
 # │   - packageName                                            │
 # │   - shareDestination                                       │
@@ -121,6 +131,58 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 # │    - share destination       │   │    - share destination       │
 # │    - package report link     │   │    - package report link     │
 # └──────────────────────────────┘   └──────────────────────────────┘
+#
+# ============================================================
+# Deprecate flow (user clicks Deprecate; authorised like push)
+# ============================================================
+#
+# ┌────────────────────────────────────────────────────────────┐
+# │ Deprecate the package via the data sharing API             │
+# └───────┬───────────────────────────────────────┬────────────┘
+#         │                                       │
+#         │ success / already deprecated          │ failure
+#         ▼                                       ▼
+# ┌──────────────────────────────┐   ┌──────────────────────────────┐
+# │ Slack notify lambda:         │   │ Slack notify lambda:         │
+# │ PACKAGE_DEPRECATED           │   │ DEPRECATE_NOT_SUCCESSFUL     │
+# │                              │   │                              │
+# │ 1. Update main message       │   │ - send ephemeral warning     │
+# │    - "Package deprecated"    │   │   to the user (buttons kept  │
+# │                              │   │   so they can retry / push)  │
+# │ 2. Update package-ready msg  │   │                              │
+# │    - remove Push + Deprecate │   │                              │
+# │      buttons                 │   │                              │
+# │                              │   │                              │
+# │ 3. Post thread reply         │   │                              │
+# │    - "Deprecated by <user>"  │   │                              │
+# │      (or "already            │   │                              │
+# │      deprecated")            │   │                              │
+# └──────────────────────────────┘   └──────────────────────────────┘
+#
+# ============================================================
+# Expiry flow (scheduled, no user action)
+# ============================================================
+#
+# ┌──────────────────────────────────────────────────────────┐
+# │ One-shot EventBridge Scheduler fires PACKAGE_EXPIRY_DAYS  │
+# │ after the package was ready and invokes this lambda with │
+# │ PACKAGE_EXPIRED (then the schedule deletes itself).      │
+# └──────────────────────────┬───────────────────────────────┘
+#                            │
+#                            ▼
+# ┌────────────────────────────────────────────────────────────┐
+# │ Slack notify lambda: PACKAGE_EXPIRED                       │
+# │                                                            │
+# │ 1. Update main message                                     │
+# │    - "Package expired"                                     │
+# │                                                            │
+# │ 2. Update package-ready thread message                     │
+# │    - remove Push + Deprecate buttons                       │
+# │    - drop the report link (expired reports are rejected)   │
+# │                                                            │
+# │ 3. Post thread reply                                       │
+# │    - "Package expired on <date>"                           │
+# └────────────────────────────────────────────────────────────┘
 #
 
 
@@ -205,6 +267,53 @@ def _slack_api_post(url: str, bot_token: str, payload: dict) -> dict:
     data = json.loads(body)
 
     return data
+
+def _main_message_was_updated(bot_token: str, channel: str, ts: str) -> bool:
+    """
+    Return True if the main message has already been edited (i.e. its status moved on from
+    "Awaiting review" to push/completed/deprecated). Slack adds an `edited` field to any
+    message updated via chat.update; an untouched original has none.
+
+    Best-effort: on any error we return True so the expiry flow does NOT overwrite a card
+    whose state we couldn't confirm. Requires the bot's channel history scope.
+    """
+    try:
+        # Values are a channel id and a numeric ts, so no URL-encoding is needed.
+        url = (
+            "https://slack.com/api/conversations.history"
+            f"?channel={channel}&latest={ts}&limit=1&inclusive=true"
+        )
+        req = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Bearer {bot_token}"},
+            method="GET",
+        )
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        # Slack returns HTTP 200 even on API errors (e.g. missing_scope), so check `ok`.
+        if not data.get("ok"):
+            logger.warning(
+                "conversations.history failed for %s: %s; assuming already updated.",
+                ts, data.get("error"),
+            )
+            return True
+
+        messages = data.get("messages") or []
+        if not messages:
+            logger.warning(
+                "conversations.history returned no message for %s; assuming already updated.", ts
+            )
+            return True
+
+        was_edited = "edited" in messages[0]
+        logger.info("Main message %s edited=%s", ts, was_edited)
+        return was_edited
+    except Exception:
+        logger.warning(
+            "Could not read main message %s; assuming already updated.", ts, exc_info=True
+        )
+        return True
 
 def _post_message(
     bot_token: str,
@@ -344,10 +453,20 @@ def handler(event, context):
 
 
     # Report link
-    # Used in: PACKAGE_READY, PUSH_TRIGGERED
+    # Only fetched for the notifications that render it (PACKAGE_READY, PUSH_TRIGGERED).
+    # The getSummaryReport endpoint rejects deprecated packages (409), so we must not
+    # fetch it for PACKAGE_DEPRECATED. Kept best-effort: a failure here should not sink
+    # the whole notification.
     package_report_presigned_url = None
-    if package_id is not None:
-        package_report_presigned_url = _get_package_report(package_id).strip('"')
+    if package_id is not None and slack_notification_type in ("PACKAGE_READY", "PUSH_TRIGGERED"):
+        try:
+            package_report_presigned_url = _get_package_report(package_id).strip('"')
+        except Exception:
+            logger.warning(
+                "Failed to fetch package report for %s; continuing without a report link.",
+                package_id,
+                exc_info=True,
+            )
 
     # Text for the first message in the thread, with package details and report link.
     #  Used in: PACKAGE_READY, PUSH_TRIGGERED (to update the message and remove the button).
@@ -412,9 +531,19 @@ def handler(event, context):
                             "emoji": True,
                         },
                         "style": "primary",
-                            "action_id": "auto_push_package",
+                        "action_id": "auto_push_package",
                         "value": button_value,
-                    }
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Deprecate",
+                            "emoji": True,
+                        },
+                        "action_id": "auto_deprecate_package",
+                        "value": button_value,
+                    },
                 ],
             },
         ]
@@ -428,13 +557,17 @@ def handler(event, context):
             blocks=push_button_blocks,
         )
 
-        # Return the response from both API calls for observability.
+        # Return the response from both API calls for observability. The ts values and
+        # channel id are also used by the auto package SFN to schedule the expiry
+        # notification (PACKAGE_EXPIRED).
         return {
             "mainMessageOk": main_message_response.get("ok"),
             "mainMessageError": main_message_response.get("error"),
             "mainMessageTs": main_message_ts,
             "pushButtonMessageOk": push_button_message_response.get("ok"),
             "pushButtonMessageError": push_button_message_response.get("error"),
+            "packageReadyMessageTs": push_button_message_response.get("ts"),
+            "channelId": channel_id,
         }
 
     # ----------------------------------------------------
@@ -578,7 +711,7 @@ def handler(event, context):
                 f"*Push was NOT successful:* {push_status}\n"
                 f"*Share Destination:* `{share_destination}`\n"
                 f"*Cause:* `{error_cause}`\n"
-                f"Please check `data-sharing--autoPush` state machine for more details."
+                f"Please check `data-sharing--slackPackageAction` state machine for more details."
             )
 
 
@@ -595,6 +728,154 @@ def handler(event, context):
             "pushResultMessageOk": push_result_message_response.get("ok"),
             "pushResultMessageError": push_result_message_response.get("error"),
         }
+
+    # ----------------------------------------------------
+    # Deprecate notifications
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "PACKAGE_DEPRECATED":
+
+        # Update the main message status to "Package deprecated".
+        deprecated_card_blocks = _build_main_message_blocks(
+            job_name, package_name, ':heavy_multiplication_x: Package deprecated'
+        )
+
+        main_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=main_message_ts,
+            blocks=deprecated_card_blocks,
+        )
+
+        # Update the package-ready message without a blocks payload, which removes
+        # both the Push and Deprecate buttons. A deprecated package's report is no
+        # longer accessible, so we drop the report link and keep the core details.
+        deprecated_details_text = (
+            f"*Package ID:* `{package_id}`\n"
+            f"*Share Destination:* `{share_destination}`\n"
+        )
+
+        package_ready_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=package_ready_message_ts,
+            text=deprecated_details_text,
+        )
+
+        # Post a thread reply showing who deprecated the package. If it was already
+        # deprecated, note that instead of implying this click deprecated it.
+        already_deprecated = event.get("alreadyDeprecated") is True
+        if already_deprecated:
+            deprecated_text = (
+                f"<@{user_id}> requested deprecation, but this package was *already deprecated*."
+            )
+        else:
+            deprecated_text = (
+                f"*Package deprecated* by <@{user_id}>."
+            )
+
+        deprecated_message_response = _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            thread_ts=main_message_ts,
+            text=deprecated_text,
+        )
+
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
+            "packageReadyMessageError": package_ready_message_update_response.get("error"),
+            "deprecatedMessageOk": deprecated_message_response.get("ok"),
+            "deprecatedMessageError": deprecated_message_response.get("error"),
+        }
+
+    elif slack_notification_type == "DEPRECATE_NOT_SUCCESSFUL":
+
+        # Deprecation failed. Leave the main message and the buttons untouched so the
+        # user can retry or push, and send an ephemeral warning to whoever clicked.
+        deprecate_failed_text = (
+            f":warning: Deprecation was not successful.\n"
+            f"*Cause:* `{error_cause}`\n"
+            f"You can retry, or push the package instead."
+        )
+
+        return _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            user=user_id,
+            text=deprecate_failed_text,
+            thread_ts=main_message_ts,
+            ephemeral=True,
+        )
+
+    # ----------------------------------------------------
+    # Expiry notifications
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "PACKAGE_EXPIRED":
+
+        # Only overwrite the main card if it is still the original "Awaiting review"
+        # message. If it was already updated (push / completed / deprecated), leave it
+        # and just add the expiry note in the thread.
+        main_message_update_response = {}
+        package_ready_message_update_response = {}
+        if not _main_message_was_updated(bot_token, channel_id, main_message_ts):
+            # Update the main message status to "Package expired".
+            expired_card_blocks = _build_main_message_blocks(
+                job_name, package_name, ':heavy_multiplication_x: Package expired'
+            )
+
+            main_message_update_response = _update_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                ts=main_message_ts,
+                blocks=expired_card_blocks,
+            )
+
+            # Update the package-ready message without a blocks payload, which removes
+            # both the Push and Deprecate buttons. An expired package's report is no
+            # longer accessible, so we drop the report link and keep the core details.
+            expired_details_text = (
+                f"*Package ID:* `{package_id}`\n"
+                f"*Share Destination:* `{share_destination}`\n"
+            )
+
+            package_ready_message_update_response = _update_message(
+                bot_token=bot_token,
+                channel=channel_id,
+                ts=package_ready_message_ts,
+                text=expired_details_text,
+            )
+
+        # Post a thread reply noting the expiry. Use Slack's <!date> token so the
+        # timestamp renders in each viewer's own local timezone; the text after the
+        # pipe is the fallback shown if Slack can't format it.
+        expiry_epoch = int(datetime.now(timezone.utc).timestamp())
+        expiry_when = (
+            f"<!date^{expiry_epoch}^{{date_short_pretty}} at {{time}}"
+            f"|{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}>"
+        )
+        expired_text = (
+            f"*Package expired* ({expiry_when})."
+        )
+
+        expired_message_response = _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            thread_ts=main_message_ts,
+            text=expired_text,
+        )
+
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
+            "packageReadyMessageError": package_ready_message_update_response.get("error"),
+            "expiredMessageOk": expired_message_response.get("ok"),
+            "expiredMessageError": expired_message_response.get("error"),
+        }
+
     else:
         return {
             "ok": False,

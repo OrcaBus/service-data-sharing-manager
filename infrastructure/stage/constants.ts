@@ -64,8 +64,22 @@ export const API_VERSION = 'v1';
 export const API_NAME = 'DataSharingAPI';
 export const API_SUBDOMAIN_NAME = 'data-sharing';
 
+// Package lifecycle
+// Number of days after a package is requested before it expires. May be a fraction
+// for testing sub-day windows. Note: EventBridge Scheduler
+// fires at ~1-minute granularity, so values below ~2 minutes are not reliable.
+// Keep it large enough to push/review before expiry: too short a window can expire
+// the package before the push is triggered (push and report fetch are rejected once
+// expired), so for testing use e.g. 20 minutes (0.0139), not seconds.
+export const PACKAGE_EXPIRY_DAYS = 30;
+
 // Step functions
 export const STACK_PREFIX = 'data-sharing';
+
+// Name of the IAM role EventBridge Scheduler assumes to invoke the notify-slack lambda
+// when a one-shot package-expiry schedule fires. Explicit name so the auto package SFN
+// can reference its ARN deterministically for iam:PassRole.
+export const PACKAGE_EXPIRY_SCHEDULER_ROLE_NAME = `${STACK_PREFIX}-package-expiry-scheduler`;
 
 // S3 Stuff
 export const DATA_SHARING_BUCKET_NAME = 'data-sharing-artifacts-__ACCOUNT_ID__-__REGION__';
@@ -100,10 +114,10 @@ export const AUTO_PACKAGE_PUSH_JOBS_KEY = 'auto_package_push_jobs/jobs.json';
 export const SLACK_BOT_TOKEN_SECRET_NAME = 'auto-data-sharing-slack-bot-token'; // pragma: allowlist secret
 export const SLACK_CONFIG_SECRET_NAME = 'auto-data-sharing-slack-config'; // pragma: allowlist secret
 export const SLACK_SIGNING_SECRET_NAME = 'auto-data-sharing-slack-signing-secret'; // pragma: allowlist secret
-export const autoPushSfnArn: Record<StageName, string> = {
-  BETA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['BETA']}:stateMachine:${STACK_PREFIX}--autoPush`, // pragma: allowlist secret
-  GAMMA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['GAMMA']}:stateMachine:${STACK_PREFIX}--autoPush`, // pragma: allowlist secret
-  PROD: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['PROD']}:stateMachine:${STACK_PREFIX}--autoPush`, // pragma: allowlist secret
+export const slackPackageActionSfnArn: Record<StageName, string> = {
+  BETA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['BETA']}:stateMachine:${STACK_PREFIX}--slackPackageAction`, // pragma: allowlist secret
+  GAMMA: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['GAMMA']}:stateMachine:${STACK_PREFIX}--slackPackageAction`, // pragma: allowlist secret
+  PROD: `arn:aws:states:${REGION}:${ACCOUNT_ID_ALIAS['PROD']}:stateMachine:${STACK_PREFIX}--slackPackageAction`, // pragma: allowlist secret
 };
 
 // EventBridge rule names for auto data sharing

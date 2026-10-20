@@ -52,5 +52,5 @@ export interface StatelessApplicationStackConfig {
   ssmParameterPaths: SsmParameterPaths;
 
   /* Auto Data Sharing Stuff */
-  autoPushSfnArn: string;
+  slackPackageActionSfnArn: string;
 }

@@ -260,8 +260,10 @@ class PackageData(PackageWithId, Dyntastic):
         )
 
     def is_expired(self):
+        # Float allowed so sub-day windows can be used for example for testing.
+        expiry_days = float(environ.get('PACKAGE_EXPIRY_DAYS'))
         return (
-            True if (self.request_time + timedelta(days=30)) < datetime.now(timezone.utc)
+            True if (self.request_time + timedelta(days=expiry_days)) < datetime.now(timezone.utc)
             else False
         )
 

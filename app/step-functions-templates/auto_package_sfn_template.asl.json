@@ -59,6 +59,11 @@
           "slackNotificationType": "PACKAGE_READY"
         }
       },
+      "Assign": {
+        "channelId": "{% $states.result.Payload.channelId %}",
+        "mainMessageTs": "{% $states.result.Payload.mainMessageTs %}",
+        "packageReadyMessageTs": "{% $states.result.Payload.packageReadyMessageTs %}"
+      },
       "Retry": [
         {
           "ErrorEquals": [
@@ -67,6 +72,35 @@
             "Lambda.SdkClientException",
             "Lambda.TooManyRequestsException"
           ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "Schedule Package Expiry",
+      "Output": {}
+    },
+    "Schedule Package Expiry": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:scheduler:createSchedule",
+      "Arguments": {
+        "Name": "{% '${__stack_prefix__}' & '-package-expiry-' & $id %}",
+        "GroupName": "default",
+        "ActionAfterCompletion": "DELETE",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "ScheduleExpression": "{% 'at(' & $fromMillis($toMillis($now()) + ${__package_expiry_days__} * 24 * 60 * 60 * 1000, '[Y0001]-[M01]-[D01]T[H01]:[m01]:[s01]') & ')' %}",
+        "Target": {
+          "Arn": "${__notify_slack_lambda_function_arn__}",
+          "RoleArn": "${__package_expiry_scheduler_role_arn__}",
+          "Input": "{% $string({ 'slackNotificationType': 'PACKAGE_EXPIRED', 'jobName': $jobName, 'packageId': $id, 'packageName': $packageName, 'shareDestination': $shareDestination, 'channelId': $channelId, 'mainMessageTs': $mainMessageTs, 'packageReadyMessageTs': $packageReadyMessageTs }) %}"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
           "IntervalSeconds": 1,
           "MaxAttempts": 3,
           "BackoffRate": 2,

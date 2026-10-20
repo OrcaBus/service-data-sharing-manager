@@ -33,6 +33,7 @@ export type LambdaName =
   | 'notifySlack'
   | 'extractSlackActionContext'
   | 'verifySlackRequest'
+  | 'deprecatePackage'
   | 'taskTokenTriggerJobAndTrack'
   | 'taskTokenResolve'
   | 'taskTokenHeartbeat';
@@ -67,6 +68,7 @@ export const lambdaNameList: LambdaName[] = [
   'notifySlack',
   'extractSlackActionContext',
   'verifySlackRequest',
+  'deprecatePackage',
   'taskTokenTriggerJobAndTrack',
   'taskTokenResolve',
   'taskTokenHeartbeat',
@@ -202,6 +204,9 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   },
   extractSlackActionContext: {},
   verifySlackRequest: {},
+  deprecatePackage: {
+    needsOrcabusApiToolsLayer: true,
+  },
   taskTokenTriggerJobAndTrack: {
     needsOrcabusApiToolsLayer: true,
     needsTaskTokenTablePermissions: true,

@@ -35,6 +35,6 @@ export interface BuildHttpRoutesProps {
   apiIntegration: HttpLambdaIntegration;
 }
 
-export interface BuildSlackAutoPushApiProps {
-  autoPushSfn: IStateMachine;
+export interface BuildSlackPackageActionApiProps {
+  slackPackageActionSfn: IStateMachine;
 }

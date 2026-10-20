@@ -11,6 +11,7 @@ import {
   PUSH_JOB_API_GLOBAL_SECONDARY_INDEX_NAMES,
   PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
   STACK_SOURCE,
+  PACKAGE_EXPIRY_DAYS,
 } from '../constants';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Duration } from 'aws-cdk-lib';
@@ -33,7 +34,7 @@ import {
   BuildApiIntegrationProps,
   BuildHttpRoutesProps,
   LambdaApiFunctionProps,
-  BuildSlackAutoPushApiProps,
+  BuildSlackPackageActionApiProps,
 } from './interfaces';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs';
@@ -65,6 +66,8 @@ export function buildApiInterfaceLambda(scope: Construct, props: LambdaApiFuncti
       EVENT_DETAIL_TYPE_PUSH_JOB_STATE_CHANGE: PUSH_JOB_STATE_CHANGE_EVENT_DETAIL_TYPE,
       /* Package bucket */
       PACKAGE_BUCKET_NAME: props.packagingLookUpBucket.bucketName,
+      /* Package expiry window (single source of truth in constants.ts) */
+      PACKAGE_EXPIRY_DAYS: PACKAGE_EXPIRY_DAYS.toString(),
     },
   });
 
@@ -209,16 +212,19 @@ export function addHttpRoutes(scope: Construct, props: BuildHttpRoutesProps) {
   });
 }
 
-// Build Slack API Gateway for AutoPush feature
-export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPushApiProps) {
+// Build Slack API Gateway for the Slack package action feature
+export function buildSlackPackageActionApi(
+  scope: Construct,
+  props: BuildSlackPackageActionApiProps
+) {
   // Create CloudWatch Log Group for API Gateway access logs
-  const accessLogGroup = new logs.LogGroup(scope, 'AutoPushSlackApiAccessLogs', {
+  const accessLogGroup = new logs.LogGroup(scope, 'SlackPackageActionApiAccessLogs', {
     retention: logs.RetentionDays.ONE_MONTH,
   });
   // Create the API Gateway
-  const slackApi = new apigateway.RestApi(scope, 'AutoPushSlackApi', {
-    restApiName: 'AutoPushSlackApi',
-    description: 'Slack actions endpoint for Auto Push feature.',
+  const slackApi = new apigateway.RestApi(scope, 'SlackPackageActionApi', {
+    restApiName: 'SlackPackageActionApi',
+    description: 'Slack actions endpoint for the Slack package action feature.',
     endpointConfiguration: {
       types: [apigateway.EndpointType.REGIONAL],
     },
@@ -232,12 +238,12 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
   });
 
   // Create WAFv2 Web ACL and associate it with the API Gateway stage
-  const autoPushSlackWebAcl = new wafv2.CfnWebACL(scope, 'AutoPushSlackWebAcl', {
+  const slackPackageActionWebAcl = new wafv2.CfnWebACL(scope, 'SlackPackageActionWebAcl', {
     scope: 'REGIONAL',
     defaultAction: { allow: {} },
     visibilityConfig: {
       cloudWatchMetricsEnabled: true,
-      metricName: 'AutoPushSlackWebAcl',
+      metricName: 'SlackPackageActionWebAcl',
       sampledRequestsEnabled: true,
     },
     rules: [
@@ -260,9 +266,9 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
     ],
   });
   // Associate the Web ACL with the API Gateway stage
-  new wafv2.CfnWebACLAssociation(scope, 'AutoPushSlackWebAclAssociation', {
+  new wafv2.CfnWebACLAssociation(scope, 'SlackPackageActionWebAclAssociation', {
     resourceArn: slackApi.deploymentStage.stageArn,
-    webAclArn: autoPushSlackWebAcl.attrArn,
+    webAclArn: slackPackageActionWebAcl.attrArn,
   });
 
   // Create the /slack/actions resource
@@ -271,7 +277,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
   // Create request validator
   const requestValidator = new apigateway.RequestValidator(
     scope,
-    'AutoPushSlackApiRequestValidator',
+    'SlackPackageActionApiRequestValidator',
     {
       restApi: slackApi,
       validateRequestBody: true,
@@ -279,12 +285,12 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
     }
   );
 
-  const slackApiAutoPushRole = new iam.Role(scope, 'SlackApiAutoPushRole', {
+  const slackPackageActionApiRole = new iam.Role(scope, 'SlackPackageActionApiRole', {
     assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
-    description: 'Role assumed by Slack REST API Gateway to start autoPush executions',
+    description: 'Role assumed by Slack REST API Gateway to start slackPackageAction executions',
   });
 
-  props.autoPushSfn.grantStartExecution(slackApiAutoPushRole);
+  props.slackPackageActionSfn.grantStartExecution(slackPackageActionApiRole);
 
   // NOTE: This block is intentionally “escape-heavy” and is sensitive to small changes.
   // We are constructing the Step Functions StartExecution `input` value, which must be a
@@ -310,7 +316,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
 
   const startExecutionRequestTemplate = `#set($inputRoot = $input.path('$'))
   {
-    "stateMachineArn": "${props.autoPushSfn.stateMachineArn}",
+    "stateMachineArn": "${props.slackPackageActionSfn.stateMachineArn}",
     "name": "$context.requestId",
     "input": "${slackSfnInputEscaped}"
   }`;
@@ -320,7 +326,7 @@ export function buildSlackAutoPushApi(scope: Construct, props: BuildSlackAutoPus
     action: 'StartExecution',
     integrationHttpMethod: 'POST',
     options: {
-      credentialsRole: slackApiAutoPushRole,
+      credentialsRole: slackPackageActionApiRole,
       passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
       timeout: cdk.Duration.millis(29000),
       requestTemplates: {
