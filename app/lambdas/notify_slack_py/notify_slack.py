@@ -538,6 +538,16 @@ def handler(event, context):
                         "type": "button",
                         "text": {
                             "type": "plain_text",
+                            "text": "Cancel Push",
+                            "emoji": True,
+                        },
+                        "action_id": "auto_cancel_push",
+                        "value": button_value,
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
                             "text": "Deprecate",
                             "emoji": True,
                         },
@@ -808,6 +818,63 @@ def handler(event, context):
             thread_ts=main_message_ts,
             ephemeral=True,
         )
+
+    # ----------------------------------------------------
+    # Cancel push notifications
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "PUSH_CANCELLED":
+
+        # The user chose not to push and not to deprecate: the package stays active.
+        # Update the main card to a cancelled state and strip the buttons from the
+        # package-ready message so no further push/deprecate can be triggered from it.
+        cancelled_card_blocks = _build_main_message_blocks(
+            job_name, package_name, ':octagonal_sign: Push cancelled (package still active)'
+        )
+
+        main_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=main_message_ts,
+            blocks=cancelled_card_blocks,
+        )
+
+        # Update the package-ready message without a blocks payload, which removes the
+        # Push, Cancel Push and Deprecate buttons. The package is still active, so we
+        # keep the core details.
+        cancelled_details_text = (
+            f"*Package ID:* `{package_id}`\n"
+            f"*Share Destination:* `{share_destination}`\n"
+        )
+
+        package_ready_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=package_ready_message_ts,
+            text=cancelled_details_text,
+        )
+
+        # Post a thread reply showing who cancelled the push.
+        cancelled_text = (
+            f"*Push cancelled* by <@{user_id}>. The package is *still active* and can "
+            f"be pushed later."
+        )
+
+        cancelled_message_response = _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            thread_ts=main_message_ts,
+            text=cancelled_text,
+        )
+
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
+            "packageReadyMessageError": package_ready_message_update_response.get("error"),
+            "cancelledMessageOk": cancelled_message_response.get("ok"),
+            "cancelledMessageError": cancelled_message_response.get("error"),
+        }
 
     # ----------------------------------------------------
     # Expiry notifications

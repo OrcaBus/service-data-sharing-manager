@@ -111,6 +111,10 @@
         {
           "Condition": "{% $actionId = 'auto_deprecate_package' %}",
           "Next": "Deprecate Package"
+        },
+        {
+          "Condition": "{% $actionId = 'auto_cancel_push' %}",
+          "Next": "Notify Slack: Push Cancelled"
         }
       ],
       "Default": "Notify Slack: Push Triggered"
@@ -315,6 +319,39 @@
           "mainMessageTs": "{% $mainMessageTs %}",
           "packageReadyMessageTs": "{% $packageReadyMessageTs %}",
           "alreadyDeprecated": "{% $alreadyDeprecated %}"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    },
+    "Notify Slack: Push Cancelled": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "slackNotificationType": "PUSH_CANCELLED",
+          "jobName": "{% $jobName %}",
+          "packageId": "{% $packageId %}",
+          "packageName": "{% $packageName %}",
+          "shareDestination": "{% $shareDestination %}",
+          "userId": "{% $userId %}",
+          "channelId": "{% $channelId %}",
+          "mainMessageTs": "{% $mainMessageTs %}",
+          "packageReadyMessageTs": "{% $packageReadyMessageTs %}"
         }
       },
       "Retry": [
