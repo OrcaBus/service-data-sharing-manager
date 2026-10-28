@@ -66,7 +66,8 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 #                                 ▼
 # ┌────────────────────────────────────────────────────────────┐
 # │ Context extracted from button value:                       │
-# │   - actionId (auto_push_package | auto_deprecate_package,  │
+# │   - actionId (push_package | cancel_push_package |         │
+# │     deprecate_package,                                     │
 # │     used to branch to the push or deprecate flow)          │
 # │   - packageId                                              │
 # │   - packageName                                            │
@@ -531,7 +532,7 @@ def handler(event, context):
                             "emoji": True,
                         },
                         "style": "primary",
-                        "action_id": "auto_push_package",
+                        "action_id": "push_package",
                         "value": button_value,
                     },
                     {
@@ -541,17 +542,17 @@ def handler(event, context):
                             "text": "Cancel Push",
                             "emoji": True,
                         },
-                        "action_id": "auto_cancel_push",
+                        "action_id": "cancel_push_package",
                         "value": button_value,
                     },
                     {
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": "Deprecate",
+                            "text": "Deprecate Package",
                             "emoji": True,
                         },
-                        "action_id": "auto_deprecate_package",
+                        "action_id": "deprecate_package",
                         "value": button_value,
                     },
                 ],
@@ -829,7 +830,7 @@ def handler(event, context):
         # Update the main card to a cancelled state and strip the buttons from the
         # package-ready message so no further push/deprecate can be triggered from it.
         cancelled_card_blocks = _build_main_message_blocks(
-            job_name, package_name, ':octagonal_sign: Push cancelled (package still active)'
+            job_name, package_name, ':heavy_multiplication_x: Push cancelled'
         )
 
         main_message_update_response = _update_message(
@@ -840,8 +841,7 @@ def handler(event, context):
         )
 
         # Update the package-ready message without a blocks payload, which removes the
-        # Push, Cancel Push and Deprecate buttons. The package is still active, so we
-        # keep the core details.
+        # Push, Cancel Push and Deprecate buttons.
         cancelled_details_text = (
             f"*Package ID:* `{package_id}`\n"
             f"*Share Destination:* `{share_destination}`\n"
@@ -856,8 +856,7 @@ def handler(event, context):
 
         # Post a thread reply showing who cancelled the push.
         cancelled_text = (
-            f"*Push cancelled* by <@{user_id}>. The package is *still active* and can "
-            f"be pushed later."
+            f"*Push cancelled* by <@{user_id}>."
         )
 
         cancelled_message_response = _post_message(

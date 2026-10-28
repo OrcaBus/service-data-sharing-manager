@@ -109,11 +109,11 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Condition": "{% $actionId = 'auto_deprecate_package' %}",
+          "Condition": "{% $actionId = 'deprecate_package' %}",
           "Next": "Deprecate Package"
         },
         {
-          "Condition": "{% $actionId = 'auto_cancel_push' %}",
+          "Condition": "{% $actionId = 'cancel_push_package' %}",
           "Next": "Notify Slack: Push Cancelled"
         }
       ],
