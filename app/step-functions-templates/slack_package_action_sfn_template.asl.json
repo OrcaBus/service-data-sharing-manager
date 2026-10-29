@@ -109,6 +109,10 @@
       "Type": "Choice",
       "Choices": [
         {
+          "Condition": "{% $actionId = 'push_package' %}",
+          "Next": "Notify Slack: Push Triggered"
+        },
+        {
           "Condition": "{% $actionId = 'deprecate_package' %}",
           "Next": "Deprecate Package"
         },
@@ -117,7 +121,35 @@
           "Next": "Notify Slack: Push Declined"
         }
       ],
-      "Default": "Notify Slack: Push Triggered"
+      "Default": "Notify Slack: Unknown Action"
+    },
+    "Notify Slack: Unknown Action": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "${__notify_slack_lambda_function_arn__}",
+        "Payload": {
+          "slackNotificationType": "UNKNOWN_ACTION",
+          "userId": "{% $userId %}",
+          "channelId": "{% $channelId %}",
+          "mainMessageTs": "{% $mainMessageTs %}"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
     },
     "Notify Slack: Push Triggered": {
       "Type": "Task",

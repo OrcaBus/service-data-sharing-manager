@@ -942,6 +942,23 @@ def handler(event, context):
             "expiredMessageError": expired_message_response.get("error"),
         }
 
+    # ----------------------------------------------------
+    # Unknown action: the action id didn't match any known button.
+    # Nothing is triggered; just tell the user.
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "UNKNOWN_ACTION":
+        unknown_action_text = ":warning: Unrecognised action."
+
+        return _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            user=user_id,
+            text=unknown_action_text,
+            thread_ts=main_message_ts,
+            ephemeral=True,
+        )
+
     else:
         return {
             "ok": False,
