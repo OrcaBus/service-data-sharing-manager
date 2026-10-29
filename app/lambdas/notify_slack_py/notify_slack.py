@@ -66,7 +66,7 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 #                                 ▼
 # ┌────────────────────────────────────────────────────────────┐
 # │ Context extracted from button value:                       │
-# │   - actionId (push_package | cancel_push_package |         │
+# │   - actionId (push_package | decline_push_package |         │
 # │     deprecate_package,                                     │
 # │     used to branch to the push or deprecate flow)          │
 # │   - packageId                                              │
@@ -539,10 +539,10 @@ def handler(event, context):
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": "Cancel Push",
+                            "text": "Don't Push",
                             "emoji": True,
                         },
-                        "action_id": "cancel_push_package",
+                        "action_id": "decline_push_package",
                         "value": button_value,
                     },
                     {
@@ -821,28 +821,28 @@ def handler(event, context):
         )
 
     # ----------------------------------------------------
-    # Cancel push notifications
+    # Decline push notifications
     # ----------------------------------------------------
 
-    elif slack_notification_type == "PUSH_CANCELLED":
+    elif slack_notification_type == "PUSH_DECLINED":
 
         # The user chose not to push and not to deprecate: the package stays active.
-        # Update the main card to a cancelled state and strip the buttons from the
+        # Update the main card to a declined state and strip the buttons from the
         # package-ready message so no further push/deprecate can be triggered from it.
-        cancelled_card_blocks = _build_main_message_blocks(
-            job_name, package_name, ':heavy_multiplication_x: Push cancelled'
+        declined_card_blocks = _build_main_message_blocks(
+            job_name, package_name, ':heavy_multiplication_x: Push declined'
         )
 
         main_message_update_response = _update_message(
             bot_token=bot_token,
             channel=channel_id,
             ts=main_message_ts,
-            blocks=cancelled_card_blocks,
+            blocks=declined_card_blocks,
         )
 
         # Update the package-ready message without a blocks payload, which removes the
-        # Push, Cancel Push and Deprecate buttons.
-        cancelled_details_text = (
+        # Push, Don't Push and Deprecate buttons.
+        declined_details_text = (
             f"*Package ID:* `{package_id}`\n"
             f"*Share Destination:* `{share_destination}`\n"
         )
@@ -851,19 +851,19 @@ def handler(event, context):
             bot_token=bot_token,
             channel=channel_id,
             ts=package_ready_message_ts,
-            text=cancelled_details_text,
+            text=declined_details_text,
         )
 
-        # Post a thread reply showing who cancelled the push.
-        cancelled_text = (
-            f"*Push cancelled* by <@{user_id}>."
+        # Post a thread reply showing who declined the push.
+        declined_text = (
+            f"*Push declined* by <@{user_id}>."
         )
 
-        cancelled_message_response = _post_message(
+        declined_message_response = _post_message(
             bot_token=bot_token,
             channel=channel_id,
             thread_ts=main_message_ts,
-            text=cancelled_text,
+            text=declined_text,
         )
 
         return {
@@ -871,8 +871,8 @@ def handler(event, context):
             "mainMessageError": main_message_update_response.get("error"),
             "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
             "packageReadyMessageError": package_ready_message_update_response.get("error"),
-            "cancelledMessageOk": cancelled_message_response.get("ok"),
-            "cancelledMessageError": cancelled_message_response.get("error"),
+            "declinedMessageOk": declined_message_response.get("ok"),
+            "declinedMessageError": declined_message_response.get("error"),
         }
 
     # ----------------------------------------------------

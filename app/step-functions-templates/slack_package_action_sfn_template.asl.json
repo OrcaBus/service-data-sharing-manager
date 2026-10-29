@@ -113,8 +113,8 @@
           "Next": "Deprecate Package"
         },
         {
-          "Condition": "{% $actionId = 'cancel_push_package' %}",
-          "Next": "Notify Slack: Push Cancelled"
+          "Condition": "{% $actionId = 'decline_push_package' %}",
+          "Next": "Notify Slack: Push Declined"
         }
       ],
       "Default": "Notify Slack: Push Triggered"
@@ -337,13 +337,13 @@
       ],
       "End": true
     },
-    "Notify Slack: Push Cancelled": {
+    "Notify Slack: Push Declined": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Arguments": {
         "FunctionName": "${__notify_slack_lambda_function_arn__}",
         "Payload": {
-          "slackNotificationType": "PUSH_CANCELLED",
+          "slackNotificationType": "PUSH_DECLINED",
           "jobName": "{% $jobName %}",
           "packageId": "{% $packageId %}",
           "packageName": "{% $packageName %}",
