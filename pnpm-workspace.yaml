@@ -5,3 +5,9 @@ minimumReleaseAgeExclude:
   - js-yaml@4.1.2
 overrides:
   js-yaml@<=4.1.1: ^4.1.2
+# deepmerge advisory GHSA-gcqx-w48m-w2h4 (low): no fixed version published upstream
+# (latest is 4.3.1, advisory names 4.3.2 which does not exist). Ignored until a fix ships.
+# Only reaches the tree via jest (devDependency), not shipped code.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-gcqx-w48m-w2h4
