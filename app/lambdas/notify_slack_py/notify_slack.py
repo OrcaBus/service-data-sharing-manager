@@ -66,7 +66,8 @@ from orcabus_api_tools.utils.requests_helpers import get_request
 #                                 ▼
 # ┌────────────────────────────────────────────────────────────┐
 # │ Context extracted from button value:                       │
-# │   - actionId (auto_push_package | auto_deprecate_package,  │
+# │   - actionId (push_package | decline_push_package |         │
+# │     deprecate_package,                                     │
 # │     used to branch to the push or deprecate flow)          │
 # │   - packageId                                              │
 # │   - packageName                                            │
@@ -531,17 +532,27 @@ def handler(event, context):
                             "emoji": True,
                         },
                         "style": "primary",
-                        "action_id": "auto_push_package",
+                        "action_id": "push_package",
                         "value": button_value,
                     },
                     {
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": "Deprecate",
+                            "text": "Don't Push",
                             "emoji": True,
                         },
-                        "action_id": "auto_deprecate_package",
+                        "action_id": "decline_push_package",
+                        "value": button_value,
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Deprecate Package",
+                            "emoji": True,
+                        },
+                        "action_id": "deprecate_package",
                         "value": button_value,
                     },
                 ],
@@ -810,6 +821,61 @@ def handler(event, context):
         )
 
     # ----------------------------------------------------
+    # Decline push notifications
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "PUSH_DECLINED":
+
+        # The user chose not to push and not to deprecate: the package stays active.
+        # Update the main card to a declined state and strip the buttons from the
+        # package-ready message so no further push/deprecate can be triggered from it.
+        declined_card_blocks = _build_main_message_blocks(
+            job_name, package_name, ':heavy_multiplication_x: Push declined'
+        )
+
+        main_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=main_message_ts,
+            blocks=declined_card_blocks,
+        )
+
+        # Update the package-ready message without a blocks payload, which removes the
+        # Push, Don't Push and Deprecate buttons.
+        declined_details_text = (
+            f"*Package ID:* `{package_id}`\n"
+            f"*Share Destination:* `{share_destination}`\n"
+        )
+
+        package_ready_message_update_response = _update_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            ts=package_ready_message_ts,
+            text=declined_details_text,
+        )
+
+        # Post a thread reply showing who declined the push.
+        declined_text = (
+            f"*Push declined* by <@{user_id}>."
+        )
+
+        declined_message_response = _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            thread_ts=main_message_ts,
+            text=declined_text,
+        )
+
+        return {
+            "mainMessageOk": main_message_update_response.get("ok"),
+            "mainMessageError": main_message_update_response.get("error"),
+            "packageReadyMessageOk": package_ready_message_update_response.get("ok"),
+            "packageReadyMessageError": package_ready_message_update_response.get("error"),
+            "declinedMessageOk": declined_message_response.get("ok"),
+            "declinedMessageError": declined_message_response.get("error"),
+        }
+
+    # ----------------------------------------------------
     # Expiry notifications
     # ----------------------------------------------------
 
@@ -875,6 +941,23 @@ def handler(event, context):
             "expiredMessageOk": expired_message_response.get("ok"),
             "expiredMessageError": expired_message_response.get("error"),
         }
+
+    # ----------------------------------------------------
+    # Unknown action: the action id didn't match any known button.
+    # Nothing is triggered; just tell the user.
+    # ----------------------------------------------------
+
+    elif slack_notification_type == "UNKNOWN_ACTION":
+        unknown_action_text = ":warning: Unrecognised action."
+
+        return _post_message(
+            bot_token=bot_token,
+            channel=channel_id,
+            user=user_id,
+            text=unknown_action_text,
+            thread_ts=main_message_ts,
+            ephemeral=True,
+        )
 
     else:
         return {
