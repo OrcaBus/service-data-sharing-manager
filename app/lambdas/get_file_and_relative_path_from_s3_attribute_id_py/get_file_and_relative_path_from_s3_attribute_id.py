@@ -8,7 +8,7 @@ Get file from the s3 object id
 # Standard imports
 import typing
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 # Data sharing tools
 from data_sharing_tools import DataType, PrimaryDataPathPrefixType, SecondaryAnalysisPathPrefixType
@@ -24,6 +24,20 @@ if typing.TYPE_CHECKING:
     from data_sharing_tools import FileObjectWithRelativePathTypeDef
     from orcabus_api_tools.workflow import WorkflowRun
     from orcabus_api_tools.fastq import FastqListRow
+
+
+def get_gzip_compression_size_in_bytes(
+        fastq_obj: 'FastqListRow',
+        ingest_id: str
+) -> Optional[int]:
+    """
+    The fastq object holds both reads (r1 and r2), but we are processing a single file.
+    Match the file to its read by ingest id and return the gzip compression size of that read.
+    """
+    for read_ in (fastq_obj['readSet']['r1'], fastq_obj['readSet'].get('r2')):
+        if read_ and read_['ingestId'] == ingest_id:
+            return read_['gzipCompressionSizeInBytes']
+    return None
 
 
 def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
@@ -84,10 +98,15 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
 
     elif data_type == 'fastq':
         fastq_obj: 'FastqListRow' = event.get("fastqObject")
+
+        # Get the gzip compression size (in bytes) of this file from the fastq manager read set
+        gzip_compression_size_in_bytes = get_gzip_compression_size_in_bytes(fastq_obj, file_object['ingestId'])
+
         file_object_with_relative_path: 'FileObjectWithRelativePathTypeDef' = dict(
             **file_object,
             **{
                 'dataType': data_type,
+                'gzipCompressionSizeInBytes': gzip_compression_size_in_bytes,
                 'relativePath': str(
                     Path(primary_data_path_prefix) /
                     fastq_obj['instrumentRunId'] /
