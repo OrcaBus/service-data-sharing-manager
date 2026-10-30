@@ -52,6 +52,7 @@ def upload_file(file_contents: str, s3_uri: str):
 def get_script_template(
         file_count: int,
         total_data_size: int,
+        total_decompressed_data_size: int,
         display_tree: str
 ):
     """
@@ -254,7 +255,11 @@ def get_script_template(
 
     # Provide summary
     echo "Downloading __FILE_COUNT__ files to ${download_path}" 1>&2
-    echo "A total of __TOTAL_DATA_SIZE__ ( __HF_DATA_SIZE__ ) will be downloaded to ${download_path}" 1>&2
+    if [[ "${decompress_ora}" == "true" ]]; then
+        echo "A total of __TOTAL_DECOMPRESSED_DATA_SIZE__ ( __HF_DECOMPRESSED_DATA_SIZE__ ) will be downloaded to ${download_path}" 1>&2
+    else
+        echo "A total of __TOTAL_DATA_SIZE__ ( __HF_DATA_SIZE__ ) will be downloaded to ${download_path}" 1>&2
+    fi
     if [[ "${parallel}" == "true" ]]; then
         echo "Using GNU parallel with ${parallel_jobs} concurrent downloads" 1>&2
     fi
@@ -266,6 +271,10 @@ def get_script_template(
         "__TOTAL_DATA_SIZE__", str(total_data_size)
     ).replace(
         "__HF_DATA_SIZE__", format_size(total_data_size, binary=True),
+    ).replace(
+        "__TOTAL_DECOMPRESSED_DATA_SIZE__", str(total_decompressed_data_size)
+    ).replace(
+        "__HF_DECOMPRESSED_DATA_SIZE__", format_size(total_decompressed_data_size, binary=True),
     ).replace(
         "__PRINT_TREE__", display_tree
     )
@@ -308,6 +317,15 @@ def get_download_file_template(download_url_dicts: List[Dict[str, str]]):
         file_count=len(download_url_dicts),
         total_data_size=sum(map(
             lambda download_url_dict_iter_: download_url_dict_iter_['fileSizeInBytes'],
+            download_url_dicts
+        )),
+        # Total size on disk when decompressing ORA, .ora files become .gz files of the gzip size
+        total_decompressed_data_size=sum(map(
+            lambda download_url_dict_iter_: (
+                download_url_dict_iter_['gzipCompressionSizeInBytes']
+                if str(download_url_dict_iter_['relativePath']).endswith('.ora')
+                else download_url_dict_iter_['fileSizeInBytes']
+            ),
             download_url_dicts
         )),
         display_tree=generate_tree(
