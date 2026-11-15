@@ -26,6 +26,11 @@ if typing.TYPE_CHECKING:
     from orcabus_api_tools.fastq import FastqListRow
 
 
+# Illumina DRAGEN docs state .ora files are expected to be 4-6x smaller than the equivalent .fastq.gz
+# https://support-docs.illumina.com/SW/DRAGEN_v40/Content/SW/DRAGEN/ORACompression.htm
+ORA_TO_GZIP_COMPRESSION_RATIO = 5
+
+
 def get_gzip_compression_size_in_bytes(
         fastq_obj: 'FastqListRow',
         ingest_id: str
@@ -101,6 +106,14 @@ def handler(event, context) -> Dict[str, 'FileObjectWithRelativePathTypeDef']:
 
         # Get the gzip compression size (in bytes) of this file from the fastq manager read set
         gzip_compression_size_in_bytes = get_gzip_compression_size_in_bytes(fastq_obj, file_object['ingestId'])
+
+        # If the fastq manager has no gzip size, estimate it
+        # .ora files use the compression ratio, .gz files are already gzip so use their own size
+        if gzip_compression_size_in_bytes is None:
+            if file_object['key'].endswith('.ora'):
+                gzip_compression_size_in_bytes = file_object['size'] * ORA_TO_GZIP_COMPRESSION_RATIO
+            else:
+                gzip_compression_size_in_bytes = file_object['size']
 
         file_object_with_relative_path: 'FileObjectWithRelativePathTypeDef' = dict(
             **file_object,
