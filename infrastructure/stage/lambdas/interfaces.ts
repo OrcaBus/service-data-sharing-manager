@@ -147,6 +147,7 @@ export const lambdaRequirementsMap: { [key in LambdaName]: Requirements } = {
   listPortalRunIdsInLibrary: {
     needsDataSharingToolsLayer: true,
     needsOrcabusApiToolsLayer: true,
+    needsMartLayer: true,
     needsHigherMemory: true,
   },
   packageFileToJsonlData: {
