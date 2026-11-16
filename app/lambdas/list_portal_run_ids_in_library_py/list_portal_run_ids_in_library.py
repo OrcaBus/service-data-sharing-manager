@@ -115,9 +115,9 @@ def handler(event, context) -> Dict[str, List[str]]:
         lambda workflow_obj_iter_: {
             "orcabusId": workflow_obj_iter_['orcabusId'],
             "timestamp": workflow_obj_iter_['currentState']['timestamp'],
-            "workflowName": workflow_obj_iter_['workflow']['workflowName'],
+            "workflowName": workflow_obj_iter_['workflow']['name'],
             "portalRunId": workflow_obj_iter_['portalRunId'],
-            "workflowVersion": workflow_obj_iter_['workflow']['workflowVersion'],
+            "workflowVersion": workflow_obj_iter_['workflow']['version'],
         },
         get_workflows_from_library_id(library['libraryId'])
     ))
