@@ -160,7 +160,8 @@ def get_script_template(
 
             # Download the file
             if [[ "${decompress}" == "true" ]]; then
-                echo "Downloading ${file_size} bytes (${hf_file_size}) of '${file_path}', decompressing to '${gz_file_path}' (approx. ${hf_gz_file_size} on disk), ${count_num} / __FILE_COUNT__" 1>&2
+                echo "Downloading ${file_size} bytes (${hf_file_size}) of '${file_path}', ${count_num} / __FILE_COUNT__" 1>&2
+                echo "  decompressing to '${gz_file_path}' (approx. ${hf_gz_file_size} on disk)" 1>&2
             else
                 echo "Downloading ${file_size} bytes (${hf_file_size}) to '${file_path}', ${count_num} / __FILE_COUNT__" 1>&2
             fi
@@ -267,10 +268,9 @@ def get_script_template(
 
     # Provide summary
     echo "Downloading __FILE_COUNT__ files to ${download_path}" 1>&2
+    echo "A total of __TOTAL_DATA_SIZE__ ( __HF_DATA_SIZE__ ) will be downloaded to ${download_path}" 1>&2
     if [[ "${decompress_ora}" == "true" ]]; then
-        echo "A total of __TOTAL_DATA_SIZE__ ( __HF_DATA_SIZE__ ) will be downloaded to ${download_path} (approx. __HF_DECOMPRESSED_DATA_SIZE__ on disk after ORA decompression)" 1>&2
-    else
-        echo "A total of __TOTAL_DATA_SIZE__ ( __HF_DATA_SIZE__ ) will be downloaded to ${download_path}" 1>&2
+        echo "  (approx. __HF_DECOMPRESSED_DATA_SIZE__ on disk after ORA decompression)" 1>&2
     fi
     if [[ "${parallel}" == "true" ]]; then
         echo "Using GNU parallel with ${parallel_jobs} concurrent downloads" 1>&2
