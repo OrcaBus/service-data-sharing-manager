@@ -33,6 +33,7 @@ SecondaryAnalysisPathPrefixType = Literal[
 class FileObjectWithRelativePathTypeDef(FileObject):
     dataType: DataType
     relativePath: Union[Path, str]
+    gzipCompressionSizeInBytes: NotRequired[int]
 
 
 JobStatusType = Literal[

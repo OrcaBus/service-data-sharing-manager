@@ -52,6 +52,7 @@ def upload_file(file_contents: str, s3_uri: str):
 def get_script_template(
         file_count: int,
         total_data_size: int,
+        total_decompressed_data_size: int,
         display_tree: str
 ):
     """
@@ -117,10 +118,29 @@ def get_script_template(
         local file_size="$3"
         local hf_file_size="$4"
         local count_num="$5"
+        local hf_gz_file_size="$6"
         local dest_file_size
+        local decompress="false"
+        local gz_file_path
+        local partial_gz_file_path
 
-        # Check if the file exists and it is the correct size
-        if [[ -f "${file_path}" ]]; then
+        # When decompressing ORA, the .ora is downloaded but a .gz is written to disk
+        if [[ "${decompress_ora}" == "true" ]] && [[ "${file_path}" == *.ora ]]; then
+            decompress="true"
+            gz_file_path="${file_path%.ora}.gz"
+            # orad writes to a partial file first, which is renamed once decompression has finished
+            partial_gz_file_path="${file_path%.ora}.partial.gz"
+        fi
+
+        # Check if the file already exists
+        if [[ "${decompress}" == "true" ]]; then
+            # The .gz size is only an estimate so we cannot compare sizes,
+            # but the .gz only exists once decompression has finished
+            if [[ -f "${gz_file_path}" ]]; then
+                echo "File already exists: ${gz_file_path}" 1>&2
+                return
+            fi
+        elif [[ -f "${file_path}" ]]; then
             local dest_file_size="$(stat --format %s "${file_path}")"
             if [[ "${dest_file_size}" -eq "${file_size}" ]]; then
                 echo "File already exists: ${file_path}" 1>&2
@@ -128,8 +148,8 @@ def get_script_template(
             fi
         fi
 
-        if [[ "${decompress_ora}" == "true" ]] && [[ "${file_path}" == *.ora ]]; then
-            curl_command="curl --silent --url \\\"${file_url}\\\" | orad --quiet --ora-reference \\\"${ORADATA_PATH}\\\" --force --gz --out \\\"${file_path%.ora}.gz\\\" -"
+        if [[ "${decompress}" == "true" ]]; then
+            curl_command="curl --silent --url \\\"${file_url}\\\" | orad --quiet --ora-reference \\\"${ORADATA_PATH}\\\" --force --gz --out \\\"${partial_gz_file_path}\\\" - && mv \\\"${partial_gz_file_path}\\\" \\\"${gz_file_path}\\\""
         else
             curl_command="curl --silent --create-dirs --continue-at - --output \\\"${file_path}\\\" --url \\\"${file_url}\\\""
         fi
@@ -139,7 +159,12 @@ def get_script_template(
             mkdir -p "$(dirname "${file_path}")"
 
             # Download the file
-            echo "Downloading ${file_size} bytes (${hf_file_size}) to '${file_path}', ${count_num} / __FILE_COUNT__" 1>&2
+            if [[ "${decompress}" == "true" ]]; then
+                echo "Downloading ${file_size} bytes (${hf_file_size}) of '${file_path}', ${count_num} / __FILE_COUNT__" 1>&2
+                echo "  decompressing to '${gz_file_path}' (approx. ${hf_gz_file_size} on disk)" 1>&2
+            else
+                echo "Downloading ${file_size} bytes (${hf_file_size}) to '${file_path}', ${count_num} / __FILE_COUNT__" 1>&2
+            fi
 
             eval ${curl_command}
         else
@@ -244,6 +269,9 @@ def get_script_template(
     # Provide summary
     echo "Downloading __FILE_COUNT__ files to ${download_path}" 1>&2
     echo "A total of __TOTAL_DATA_SIZE__ ( __HF_DATA_SIZE__ ) will be downloaded to ${download_path}" 1>&2
+    if [[ "${decompress_ora}" == "true" ]]; then
+        echo "  (approx. __HF_DECOMPRESSED_DATA_SIZE__ on disk after ORA decompression)" 1>&2
+    fi
     if [[ "${parallel}" == "true" ]]; then
         echo "Using GNU parallel with ${parallel_jobs} concurrent downloads" 1>&2
     fi
@@ -255,6 +283,8 @@ def get_script_template(
         "__TOTAL_DATA_SIZE__", str(total_data_size)
     ).replace(
         "__HF_DATA_SIZE__", format_size(total_data_size, binary=True),
+    ).replace(
+        "__HF_DECOMPRESSED_DATA_SIZE__", format_size(total_decompressed_data_size, binary=True),
     ).replace(
         "__PRINT_TREE__", display_tree
     )
@@ -299,6 +329,15 @@ def get_download_file_template(download_url_dicts: List[Dict[str, str]]):
             lambda download_url_dict_iter_: download_url_dict_iter_['fileSizeInBytes'],
             download_url_dicts
         )),
+        # Total size on disk when decompressing ORA, .ora files become .gz files of the gzip size
+        total_decompressed_data_size=sum(map(
+            lambda download_url_dict_iter_: (
+                download_url_dict_iter_['gzipCompressionSizeInBytes']
+                if str(download_url_dict_iter_['relativePath']).endswith('.ora')
+                else download_url_dict_iter_['fileSizeInBytes']
+            ),
+            download_url_dicts
+        )),
         display_tree=generate_tree(
             list(map(
                 lambda download_url_dict_iter_: Path(download_url_dict_iter_['relativePath']),
@@ -319,11 +358,11 @@ def get_download_file_template(download_url_dicts: List[Dict[str, str]]):
         export ORADATA_PATH="${ORADATA_PATH:-}"
 
         parallel --jobs "${parallel_jobs}" --colsep '\\t' --halt soon,fail=1 \\
-            download_file {1} "${download_path}/{2}" {3} {4} {5} \\
+            download_file {1} "${download_path}/{2}" {3} {4} {5} {6} \\
             :::: <(cat <<'__PARALLEL_ARGS_EOF__'
     """).lstrip("\n")
 
-    # Each line is tab-separated: url, relative_path, size_bytes, hf_size, count
+    # Each line is tab-separated: url, relative_path, size_bytes, hf_size, count, hf_gzip_size
     script_template += '\n'.join(
         map(
             lambda download_url_dict_iter_with_index_: '\t'.join(
@@ -333,6 +372,7 @@ def get_download_file_template(download_url_dicts: List[Dict[str, str]]):
                     f"{download_url_dict_iter_with_index_[1]['fileSizeInBytes']}",
                     f"{format_size(download_url_dict_iter_with_index_[1]['fileSizeInBytes'], binary=True)}",
                     f"{(download_url_dict_iter_with_index_[0] + 1)}",
+                    f"{format_size(download_url_dict_iter_with_index_[1]['gzipCompressionSizeInBytes'], binary=True)}",
                 ]
             ),
             enumerate(download_url_dicts)
@@ -354,6 +394,7 @@ def get_download_file_template(download_url_dicts: List[Dict[str, str]]):
                     f"\"{download_url_dict_iter_with_index_[1]['fileSizeInBytes']}\"",
                     f"\"{format_size(download_url_dict_iter_with_index_[1]['fileSizeInBytes'], binary=True)}\"",
                     f"\"{(download_url_dict_iter_with_index_[0] + 1)}\"",  # Enumerate
+                    f"\"{format_size(download_url_dict_iter_with_index_[1]['gzipCompressionSizeInBytes'], binary=True)}\"",
                 ]
             ),
             enumerate(download_url_dicts)
@@ -388,6 +429,8 @@ def handler(event, context):
                 "presignedUrl": file_object_iter_['presignedUrl'],
                 "relativePath": file_object_iter_['relativePath'],
                 "fileSizeInBytes": file_object_iter_['size'],
+                # Size of the .gz written by orad, falls back to the file size if unknown
+                "gzipCompressionSizeInBytes": file_object_iter_.get('gzipCompressionSizeInBytes') or file_object_iter_['size'],
             },
             all_file_objects
         ))
